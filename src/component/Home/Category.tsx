@@ -24,7 +24,7 @@ export default function CategoryBanner() {
           {/* Overlay */}
           <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors duration-300" />
           {/* Label — vertically & horizontally centered */}
-          <span className="absolute inset-0 flex items-center justify-center text-white font-['Inter'] font-bold text-base tracking-widest whitespace-nowrap">
+          <span className="absolute inset-0 flex items-center justify-center text-white font-['Inter'] font-bold text-base tracking-widest whitespace-nowrap group-hover:underline underline-offset-4">
             {cat.label}
           </span>
           {/* Column divider */}

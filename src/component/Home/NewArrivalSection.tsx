@@ -1,4 +1,4 @@
-import { MENS_PRODUCTS, WOMENS_PRODUCTS } from "@/data/ProductsData";
+import {  MENS_PRODUCTS, WOMENS_PRODUCTS } from "@/data/ProductsData";
 import { Product } from "@/interface/Product";
 import ProductCard from "@/ui/ProductCard";
 
@@ -58,6 +58,8 @@ export default function NewArrivalsSection() {
 
       <ProductRow gender="Women" products={WOMENS_PRODUCTS} />
       <ProductRow gender="Men's" products={MENS_PRODUCTS} />
+  
+
     </section>
   );
 }

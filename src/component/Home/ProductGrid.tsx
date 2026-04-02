@@ -4,7 +4,7 @@ const products = [
   { id: 1, image: "/socks1.webp", name: "Product 1" },
   { id: 2, image: "/socks2.webp", name: "Product 2" },
   { id: 3, image: "/socks3.webp", name: "Product 3" },
-  { id: 4, image: "/socks4.webp", name: "Product 4" },
+  { id: 4, image: "/socks5.webp", name: "Product 4" },
 ];
 
 export default function ProductGrid() {

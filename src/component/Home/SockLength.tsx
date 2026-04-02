@@ -4,7 +4,7 @@ const SOCK_LENGTHS = [
   { label: "No Show",  image: "/socks1.webp"  },
   { label: "Ankle",    image: "/socks2.webp"    },
   { label: "Quarter",  image: "/socks3.webp"  },
-  { label: "Half Calf",image: "/socks4.webp"},
+  { label: "Half Calf",image: "/socks5.webp"},
   { label: "Calf",     image: "/socks5.webp"     },
   { label: "Knee High",image: "/socks6.webp"},
 ];

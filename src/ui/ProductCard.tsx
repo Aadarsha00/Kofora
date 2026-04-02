@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { Product } from "@/interface/Product";
 
 export default function ProductCard({ product }: { product: Product }) {
+  const router = useRouter();
   const [activeColor, setActiveColor] = useState(0);
   const [imageIndex, setImageIndex] = useState(0);
   const [hovered, setHovered] = useState(false);
@@ -12,24 +14,33 @@ export default function ProductCard({ product }: { product: Product }) {
   const variant = product.colors[activeColor];
   const images = variant.images;
 
-  const handleColorChange = (i: number) => {
+  const handleColorChange = useCallback((i: number) => {
     setActiveColor(i);
     setImageIndex(0);
-  };
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setHovered(false);
+    setImageIndex(0);
+  }, []);
 
   return (
     <div
-      className={`flex flex-col gap-3 cursor-pointer rounded-2xl transition-all duration-300 ${
+      className={`flex flex-col gap-3 rounded-2xl transition-all duration-300 ${
         hovered
           ? "bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] p-3 -m-3"
           : "bg-transparent p-0 m-0"
       }`}
       onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => { setHovered(false); setImageIndex(0); }}
+      onMouseLeave={handleMouseLeave}
     >
-      {/* ── Card Container ──────────────────────────────────────────── */}
-      <div className="relative w-full aspect-3/4 bg-[#EFEFEF] rounded-2xl overflow-hidden">
-
+      {/* Card image — hard navigation to real standalone page */}
+      <div
+        className="relative w-full aspect-[3/4] bg-[#EFEFEF] rounded-2xl overflow-hidden cursor-pointer"
+        onClick={() => {
+          window.location.href = `/products/${product.gender}/${product.slug}`;
+        }}
+      >
         {/* Primary image */}
         <div className="absolute inset-0">
           {images[imageIndex] ? (
@@ -51,12 +62,12 @@ export default function ProductCard({ product }: { product: Product }) {
           </div>
         )}
 
-        {/* Image nav — arrows + pill dots, visible on hover */}
+        {/* Image nav */}
         {images.length > 1 && (
           <div className={`absolute bottom-3 left-0 right-0 flex items-center justify-between px-4 transition-opacity duration-300 ${hovered ? "opacity-100" : "opacity-0"}`}>
             <button
               className="text-gray-600 hover:text-black text-lg font-light"
-              onClick={(e) => { e.preventDefault(); setImageIndex((i) => Math.max(0, i - 1)); }}
+              onClick={(e) => { e.stopPropagation(); setImageIndex((i) => Math.max(0, i - 1)); }}
             >
               ←
             </button>
@@ -64,14 +75,14 @@ export default function ProductCard({ product }: { product: Product }) {
               {images.map((_, i) => (
                 <button
                   key={i}
-                  onClick={(e) => { e.preventDefault(); setImageIndex(i); }}
+                  onClick={(e) => { e.stopPropagation(); setImageIndex(i); }}
                   className={`rounded-full transition-all duration-300 ${imageIndex === i ? "w-8 h-1.5 bg-black" : "w-1.5 h-1.5 bg-gray-400"}`}
                 />
               ))}
             </div>
             <button
               className="text-gray-600 hover:text-black text-lg font-light"
-              onClick={(e) => { e.preventDefault(); setImageIndex((i) => Math.min(images.length - 1, i + 1)); }}
+              onClick={(e) => { e.stopPropagation(); setImageIndex((i) => Math.min(images.length - 1, i + 1)); }}
             >
               →
             </button>
@@ -79,7 +90,7 @@ export default function ProductCard({ product }: { product: Product }) {
         )}
       </div>
 
-      {/* ── Color Swatches ──────────────────────────────────────────── */}
+      {/* Color Swatches */}
       <div className="flex items-center gap-2">
         {product.colors.map((c, i) => (
           <button
@@ -97,8 +108,13 @@ export default function ProductCard({ product }: { product: Product }) {
         ))}
       </div>
 
-      {/* ── Product Info ────────────────────────────────────────────── */}
-      <div className="flex flex-col gap-1">
+      {/* Product Info — also navigates to real page on click */}
+      <div
+        className="flex flex-col gap-1 cursor-pointer"
+        onClick={() => {
+          window.location.href = `/products/${product.gender}/${product.slug}`;
+        }}
+      >
         <p className="font-semibold text-[15px] text-black leading-snug">{product.name}</p>
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-[15px] font-bold text-black">NPR {product.price.toLocaleString()}</span>
@@ -114,9 +130,12 @@ export default function ProductCard({ product }: { product: Product }) {
         )}
       </div>
 
-      {/* ── Quick View — below card, fades in on hover ──────────────── */}
+      {/* Quick View — soft navigation, triggers modal interception */}
       <div className={`transition-all duration-300 ${hovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"}`}>
-        <button className="w-full border border-black rounded-md py-2.5 text-sm font-bold tracking-wide text-black hover:bg-black hover:text-white transition-colors duration-200">
+        <button
+          onClick={() => router.push(`/products/${product.gender}/${product.slug}`)}
+          className="w-full border border-black rounded-md py-2.5 text-sm font-bold tracking-wide text-black hover:bg-black hover:text-white transition-colors duration-200"
+        >
           Quick View +
         </button>
       </div>

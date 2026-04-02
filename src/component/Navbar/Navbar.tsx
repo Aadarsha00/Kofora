@@ -5,7 +5,7 @@ const NAV_ITEMS = ["WOMEN", "MEN", "KIDS", "SIZE CHART", "ABOUT", "CONTACT"];
 
 export default function MainNavbar() {
   return (
-    <div className="sticky top-0 z-50 w-full h-18 bg-white flex flex-col items-start justify-center px-12.25 py-6 gap-2.5 shadow-sm">
+    <div className="sticky top-0 z-50 w-full h-18 bg-white flex flex-col items-start justify-center px-12.25 py-6 gap-2.5 shadow-none">
       <div className="flex flex-row justify-center items-center gap-60 w-full">
 
         {/* Logo */}

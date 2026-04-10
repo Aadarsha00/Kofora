@@ -10,7 +10,6 @@ import SockLengthGuide from "@/component/Home/SockLength";
 export default function Home() {
   return(
     <>
-    
     <CategoryBanner/>
     <Hero/>
     <ProductGrid/>

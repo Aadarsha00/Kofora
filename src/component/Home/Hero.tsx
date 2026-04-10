@@ -5,8 +5,8 @@ const heroData = {
   subtitle: "Premium Comfort guaranteed for life",
   image: "/hero.webp",
   ctas: [
-    { label: "SHOP MEN",   href: "/mens"   },
-    { label: "SHOP WOMEN", href: "/womens" },
+    { label: "SHOP MEN",   href: "/collections/men"   },
+    { label: "SHOP WOMEN", href: "/collections/women" },
   ],
 };
 

@@ -36,9 +36,9 @@ export default function ProductCard({ product }: { product: Product }) {
     >
       {/* Card image — hard navigation to real standalone page */}
       <div
-        className="relative w-full aspect-[3/4] bg-[#EFEFEF] rounded-2xl overflow-hidden cursor-pointer"
+        className="relative w-full aspect-3/4 bg-[#EFEFEF] rounded-2xl overflow-hidden cursor-pointer"
         onClick={() => {
-          window.location.href = `/products/${product.gender}/${product.slug}`;
+          window.location.href = `/collections/${product.gender}/${product.slug}`;
         }}
       >
         {/* Primary image */}
@@ -112,7 +112,7 @@ export default function ProductCard({ product }: { product: Product }) {
       <div
         className="flex flex-col gap-1 cursor-pointer"
         onClick={() => {
-          window.location.href = `/products/${product.gender}/${product.slug}`;
+          window.location.href = `/collections/${product.gender}/${product.slug}`;
         }}
       >
         <p className="font-semibold text-[15px] text-black leading-snug">{product.name}</p>
@@ -133,7 +133,7 @@ export default function ProductCard({ product }: { product: Product }) {
       {/* Quick View — soft navigation, triggers modal interception */}
       <div className={`transition-all duration-300 ${hovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"}`}>
         <button
-          onClick={() => router.push(`/products/${product.gender}/${product.slug}`)}
+          onClick={() => router.push(`/collections/${product.gender}/${product.slug}`)}
           className="w-full border border-black rounded-md py-2.5 text-sm font-bold tracking-wide text-black hover:bg-black hover:text-white transition-colors duration-200"
         >
           Quick View +

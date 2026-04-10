@@ -9,9 +9,9 @@ import { getProductBySlug } from "@/data/ProductsData";
 import ProductFeatures from "./ProductFeature";
 
 export default function ProductDetails({ isModal = false }: { isModal?: boolean }) {
-  const { gender, slug } = useParams();
+  const { gender, slug } = useParams<{ gender: string; slug: string }>();
   const router = useRouter();
-  const product = getProductBySlug(gender as string, slug as string);
+  const product = getProductBySlug(gender, slug);
 
   const [activeColor, setActiveColor] = useState(0);
   const [activeSize, setActiveSize] = useState<number | null>(null);
@@ -48,10 +48,10 @@ export default function ProductDetails({ isModal = false }: { isModal?: boolean 
   const total = images.length;
 
   const CAROUSEL_WIDTH = 650;
-  const CAROUSEL_HEIGHT = 650;
+  const CAROUSEL_HEIGHT = 700;
   const GAP = 2;
   const SLIDE_WIDTH = CAROUSEL_WIDTH;
-  const CAROUSEL_LEFT = 0;
+  const CAROUSEL_LEFT = 60;
 
   const prev = () => setImageIndex((i) => (i === 0 ? total - 1 : i - 1));
   const next = () => setImageIndex((i) => (i === total - 1 ? 0 : i + 1));
@@ -73,7 +73,6 @@ export default function ProductDetails({ isModal = false }: { isModal?: boolean 
       }
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Close — only in modal */}
       {isModal && (
         <button
           onClick={handleClose}
@@ -83,19 +82,22 @@ export default function ProductDetails({ isModal = false }: { isModal?: boolean 
         </button>
       )}
 
-      {/* ── Top: Left + Right panels side by side ── */}
       <div className={`flex shrink-0 ${isModal ? "h-[96vh]" : "min-h-screen"}`}>
-
-        {/* ── LEFT: Info Panel ── */}
-        <div className="w-137.5 shrink-0 flex flex-col px-10 py-8 overflow-y-auto">
-          <p className="text-xs text-gray-400 mb-4">
-            <Link href={`/products/${gender}`} className="hover:underline capitalize text-gray-400">
-              {gender}&apos;s
+        <div className="w-137.5 shrink-0 flex flex-col px-10 py-8 overflow-y-auto relative z-10">
+          <p className="text-xs text-gray-400 mb-4 flex items-center gap-1">
+            <Link
+              href={`/collections/${gender}`}
+              className="hover:underline capitalize text-gray-400"
+            >
+              {gender}
             </Link>
-            {" / "}
-            <span className="capitalize">{product.category}</span>
-            {" / "}
-            <span>Product Page →</span>
+            <span>/</span>
+            <Link
+              href={`/collections/${gender}/${slug}`}
+              className="hover:underline text-gray-400"
+            >
+              {slug}
+            </Link>
           </p>
 
           <h1 className="text-4xl font-bold leading-tight mb-3 text-black">
@@ -112,6 +114,7 @@ export default function ProductDetails({ isModal = false }: { isModal?: boolean 
               </p>
             )}
           </div>
+
           {product.packSavings && (
             <p className="text-sm text-green-700 font-semibold mb-2">
               {product.packSavings}
@@ -120,8 +123,7 @@ export default function ProductDetails({ isModal = false }: { isModal?: boolean 
 
           <div className="mb-4 mt-3">
             <p className="text-sm font-medium mb-2 text-black">
-              Color:{" "}
-              <span className="font-normal text-gray-600">{variant.label}</span>
+              Color: <span className="font-normal text-gray-600">{variant.label}</span>
             </p>
             <div className="flex gap-2">
               {product.colors.map((c, i) => (
@@ -159,6 +161,7 @@ export default function ProductDetails({ isModal = false }: { isModal?: boolean 
                   Size Guide
                 </button>
               </div>
+
               <div className="grid grid-cols-3 gap-1.5">
                 {product.sizes.map((size) => (
                   <button
@@ -190,6 +193,7 @@ export default function ProductDetails({ isModal = false }: { isModal?: boolean 
                 <span>International Shipping + Free Returns Details</span>
                 <Plus size={16} />
               </button>
+
               {shippingOpen && (
                 <>
                   <p className="text-xs text-gray-500 pb-2">
@@ -212,6 +216,7 @@ export default function ProductDetails({ isModal = false }: { isModal?: boolean 
                 <span>Product &amp; Material Details</span>
                 <Plus size={16} />
               </button>
+
               {detailsOpen && (
                 <p className="text-xs text-gray-500 pb-4">
                   {product.productDetails}
@@ -221,8 +226,7 @@ export default function ProductDetails({ isModal = false }: { isModal?: boolean 
           )}
         </div>
 
-        {/* ── RIGHT: Carousel ── */}
-        <div className="flex-1 flex flex-col justify-start pt-16 overflow-hidden relative">
+        <div className="flex-1 flex flex-col justify-start pt-8 overflow-hidden relative">
           <div
             style={{
               width: `${CAROUSEL_WIDTH}px`,
@@ -265,7 +269,6 @@ export default function ProductDetails({ isModal = false }: { isModal?: boolean 
             </ul>
           </div>
 
-          {/* Arrows + counter */}
           <div
             style={{
               position: "absolute",
@@ -294,7 +297,6 @@ export default function ProductDetails({ isModal = false }: { isModal?: boolean 
         </div>
       </div>
 
-      {/* ── Features Section ── */}
       <ProductFeatures />
     </div>
   );

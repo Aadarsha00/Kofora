@@ -38,7 +38,7 @@ export default function RootLayout({
         <Provider>
           <AnnouncementBar/>
           <MainNavbar/>
-          <DiscountPill/>
+          <DiscountPill/> 
           {children}
           <Footer/>
           {modal}

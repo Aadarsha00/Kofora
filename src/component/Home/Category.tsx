@@ -1,9 +1,9 @@
 import Image from "next/image";
 
 const categoryBanners = [
-  { label: "WOMEN'S", image: "/women.webp", href: "/womens" },
-  { label: "MEN'S",   image: "/men.webp",   href: "/mens"   },
-  { label: "KID'S",   image: "/kid.webp",   href: "/kids"   },
+  { label: "WOMEN'S", image: "/women.webp", href: "collections/women" },
+  { label: "MEN'S",   image: "/men.webp",   href: "collections/men"   },
+  { label: "KID'S",   image: "/kid.webp",   href: "collections/kids"   },
 ];
 
 export default function CategoryBanner() {

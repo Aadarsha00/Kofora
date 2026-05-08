@@ -1,8 +1,37 @@
-import { Product } from "@/interface/Product";
-
 export type SockHeight = "No-Show" | "Ankle" | "Quarter" | "Crew" | "Half-Calf" | "Knee-High" | "Calf";
 
-export const WOMENS_PRODUCTS: Product[] = [
+interface StaticProductFeature {
+  image: string;
+  title: string;
+  description: string;
+}
+
+interface StaticProductColor {
+  color: string;
+  label: string;
+  images: string[];
+}
+
+export interface StaticProduct {
+  id: number;
+  slug: string;
+  gender: string;
+  name: string;
+  price: number;
+  originalPrice?: number;
+  packSavings?: string;
+  category: string;
+  height: SockHeight;
+  weight: string;
+  sizes: number[];
+  shippingDetails: string;
+  productDetails: string;
+  colors: StaticProductColor[];
+  tagline?: string;
+  features?: StaticProductFeature[];
+}
+
+export const WOMENS_PRODUCTS: StaticProduct[] = [
   {
     id: 1,
     slug: "friday-clog",
@@ -145,7 +174,7 @@ export const WOMENS_PRODUCTS: Product[] = [
   },
 ];
 
-export const MENS_PRODUCTS: Product[] = [
+export const MENS_PRODUCTS: StaticProduct[] = [
   {
     id: 5,
     slug: "friday-slide",
@@ -248,20 +277,20 @@ export const MENS_PRODUCTS: Product[] = [
   },
 ];
 
-export const ALL_PRODUCTS: Product[] = [...WOMENS_PRODUCTS, ...MENS_PRODUCTS];
+export const ALL_PRODUCTS: StaticProduct[] = [...WOMENS_PRODUCTS, ...MENS_PRODUCTS];
 
-export function getAllProducts(): Product[] {
+export function getAllProducts(): StaticProduct[] {
   return ALL_PRODUCTS;
 }
 
-export function getProductBySlug(gender: string, slug: string): Product | undefined {
+export function getProductBySlug(gender: string, slug: string): StaticProduct | undefined {
   return ALL_PRODUCTS.find((p) => p.gender === gender && p.slug === slug);
 }
 
-export function getProductsByGender(gender: string): Product[] {
+export function getProductsByGender(gender: string): StaticProduct[] {
   return ALL_PRODUCTS.filter((p) => p.gender === gender);
 }
 
-export function getProductsByHeight(height: SockHeight): Product[] {
+export function getProductsByHeight(height: SockHeight): StaticProduct[] {
   return ALL_PRODUCTS.filter((p) => p.height === height);
 }

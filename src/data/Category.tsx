@@ -1,6 +1,12 @@
-import { Category } from "@/interface/Category";
+interface StaticCategory {
+  slug: string;
+  title: string;
+  subtitle: string;
+  image: string;
+  imageAlt: string;
+}
 
-export const categories: Category[] = [
+export const categories: StaticCategory[] = [
   {
     slug: "women",
     title: "WOMEN SOCKS",
@@ -31,7 +37,7 @@ export const categories: Category[] = [
   },
 ];
  
-export function getCategoryBySlug(slug: string): Category | undefined {
+export function getCategoryBySlug(slug: string): StaticCategory | undefined {
   console.log("[getCategoryBySlug] Looking for slug:", slug);
   console.log("[getCategoryBySlug] Available slugs:", categories.map(c => c.slug));
   const result = categories.find((c) => c.slug === slug);

@@ -1,22 +1,75 @@
-import { LoginInput, SignupInput } from "@/schema/auth.schema";
-const DUMMY_USER = {
-  email: "test@kofora.com",
-  password: "password123",
-  name: "Test User",
-};
-
-export async function dummyLogin({ email, password }: LoginInput) {
-  await new Promise((res) => setTimeout(res, 800));
-  if (email === DUMMY_USER.email && password === DUMMY_USER.password) {
-    return { user: { name: DUMMY_USER.name, email: DUMMY_USER.email } };
-  }
-  throw new Error("Invalid email or password");
+// Request/Response Types
+export interface LoginRequest {
+  email: string;
+  password: string;
 }
 
-export async function dummySignup({ name, email }: SignupInput) {
-  await new Promise((res) => setTimeout(res, 800));
-  if (email === DUMMY_USER.email) {
-    throw new Error("Email already in use");
-  }
-  return { user: { name, email } };
+export interface SignupRequest {
+  email: string;
+  username: string;
+  password: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+}
+
+export interface User {
+  id: number;
+  email: string;
+  username: string;
+  first_name?: string;
+  last_name?: string;
+  phone?: string;
+  role?: string;
+  marketing_opt_in?: boolean;
+  is_email_verified: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AuthResponse {
+  success: boolean;
+  message: string;
+  data: {
+    access: string;
+    refresh: string;
+    user?: User;
+  };
+}
+
+export interface OTPRequest {
+  email: string;
+}
+
+export interface OTPVerifyRequest {
+  email: string;
+  code: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  new_password: string;
+}
+
+export interface TokenRefreshResponse {
+  success: boolean;
+  message: string;
+  data: {
+    access: string;
+  };
+}
+
+export interface LogoutRequest {
+  refresh: string;
+}
+
+export interface AuthState {
+  user: User | null;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  error: string | null;
 }

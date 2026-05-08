@@ -1,7 +1,13 @@
 import { Product } from "@/interface/Product";
 import ProductCard from "@/ui/ProductCard";
 
-export default function ProductGrid({ products }: { products: Product[] }) {
+export default function ProductGrid({
+  products,
+  gender,
+}: {
+  products: Product[];
+  gender: string;
+}) {
   if (products.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
@@ -14,7 +20,7 @@ export default function ProductGrid({ products }: { products: Product[] }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-10">
       {products.map((product) => (
-        <ProductCard key={product.id} product={product} />
+        <ProductCard key={product.id} product={product} gender={gender} />
       ))}
     </div>
   );

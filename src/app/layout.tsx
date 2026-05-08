@@ -1,19 +1,21 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { DM_Sans, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import Provider from "@/provider/provider";
 import MainNavbar from "@/component/Navbar/Navbar";
 import Footer from "@/component/Footer/Footer";
 import DiscountPill from "@/ui/DiscountPill";
 import AnnouncementBar from "@/component/Navbar/Annoucement";
+import { CartDrawer } from "@/component/Cart/cartDrawer";
+import ProductModal from "@/component/Product/ProductModal";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const dmSans = DM_Sans({
+  variable: "--font-body",
   subsets: ["latin"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const plusJakartaSans = Plus_Jakarta_Sans({
+  variable: "--font-heading",
   subsets: ["latin"],
 });
 
@@ -23,16 +25,14 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-  children,
-  modal,
+  children, 
 }: Readonly<{
   children: React.ReactNode;
-  modal: React.ReactNode;
 }>) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${dmSans.variable} ${plusJakartaSans.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Provider>
@@ -41,7 +41,8 @@ export default function RootLayout({
           <DiscountPill/> 
           {children}
           <Footer/>
-          {modal}
+          <ProductModal/>
+          <CartDrawer/>
         </Provider>
         
       </body>

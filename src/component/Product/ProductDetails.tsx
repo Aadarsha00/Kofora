@@ -1,24 +1,158 @@
 "use client";
-
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Plus, X, ArrowLeft, ArrowRight } from "@phosphor-icons/react";
-import { getProductBySlug } from "@/data/ProductsData";
+import { Product, ProductVariant } from "@/interface/Product";
 import ProductFeatures from "./ProductFeature";
+import { useProductById } from "@/hooks/useProducts";
+import { useAuth } from "@/context/AuthContext";
+import { useGuestCartStore } from "@/store/guestCartStore";
+import { useAddToCart } from "@/hooks/useCart";
+import { useCartSidebarStore } from "@/store/cartSidebarStore";
 
-export default function ProductDetails({ isModal = false }: { isModal?: boolean }) {
+interface ColorGroup {
+  color: string;
+  label: string;
+  sizes: string[];
+  variantIds: number[];
+  images: string[];
+}
+
+const DEFAULT_COLOR = "#888888";
+
+function hasText(value: string | null | undefined): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Failed to add item to cart";
+}
+
+function buildColorGroups(product: Product): ColorGroup[] {
+  const generalImages = product.images
+    .filter((i) => i.is_active && i.variant_id === null)
+    .map((i) => i.image);
+
+  const activeVariants = product.variants?.filter((variant) => variant.is_active) ?? [];
+
+  if (activeVariants.length === 0) {
+    return [
+      {
+        color: DEFAULT_COLOR,
+        label: "Default",
+        sizes: [],
+        variantIds: [],
+        images: generalImages.length
+          ? generalImages
+          : product.images.filter((i) => i.is_active).map((i) => i.image),
+      },
+    ];
+  }
+
+  const groups: ColorGroup[] = [];
+
+  for (const variant of activeVariants) {
+    const size = variant.size?.trim() ?? "";
+    const color = variant.color?.trim() || DEFAULT_COLOR;
+
+    const existing = groups.find((g) => g.color === color);
+    if (existing) {
+      if (size && !existing.sizes.includes(size)) existing.sizes.push(size);
+      existing.variantIds.push(variant.id);
+    } else {
+      const title = variant.title?.trim() ?? "";
+      const colorLabel = title.includes("/")
+        ? title.split("/")[0].trim()
+        : variant.color?.trim();
+
+      const variantImages = product.images
+        .filter((img) => img.is_active && img.variant_id === variant.id)
+        .map((img) => img.image);
+
+      groups.push({
+        color,
+        label: hasText(colorLabel) ? colorLabel : "Default",
+        sizes: size ? [size] : [],
+        variantIds: [variant.id],
+        images: variantImages.length ? variantImages : generalImages,
+      });
+    }
+  }
+
+  return groups;
+}
+
+function getSelectedVariant(
+  product: Product,
+  group: ColorGroup | undefined,
+  activeSize: string | null
+): ProductVariant | undefined {
+  if (!group) {
+    return product.variants.find((v) => v.is_active) ?? product.variants[0];
+  }
+
+  return (
+    product.variants.find(
+      (v) => group.variantIds.includes(v.id) && v.size?.trim() === activeSize
+    ) ?? product.variants.find((v) => group.variantIds.includes(v.id))
+  );
+}
+
+function isVariantPurchasable(variant: ProductVariant | undefined): variant is ProductVariant {
+  return Boolean(variant?.is_active && variant.available_quantity > 0);
+}
+
+function getFirstPurchasableSize(product: Product | undefined, group: ColorGroup | undefined): string | null {
+  if (!product || !group) return null;
+
+  const variant = product.variants.find(
+    (item) => group.variantIds.includes(item.id) && isVariantPurchasable(item)
+  );
+
+  return variant?.size?.trim() || null;
+}
+
+export default function ProductDetails({
+  isModal = false,
+  onClose,
+  productId,
+}: {
+  isModal?: boolean;
+  onClose?: () => void;
+  productId?: number;
+}) {
   const { gender, slug } = useParams<{ gender: string; slug: string }>();
-  const router = useRouter();
-  const product = getProductBySlug(gender, slug);
+  const searchParams = useSearchParams();
+  const { isAuthenticated } = useAuth();
+  const { mutate: addToCart, isPending: addToCartPending } = useAddToCart();
+  const addGuestItem = useGuestCartStore((state) => state.addItem);
+  const guestItems = useGuestCartStore((state) => state.items);
+  const { openCart } = useCartSidebarStore();
+
+  const id = productId ?? Number(searchParams.get("id"));
+  const { data: product, isLoading, isError } = useProductById(id);
+
+  const colorGroups = useMemo(
+    () => (product ? buildColorGroups(product) : []),
+    [product]
+  );
 
   const [activeColor, setActiveColor] = useState(0);
-  const [activeSize, setActiveSize] = useState<number | null>(null);
+  const [activeSize, setActiveSize] = useState<string | null>(null);
   const [shippingOpen, setShippingOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
   const [visible, setVisible] = useState(false);
+
+  const activeColorIndex = colorGroups[activeColor] ? activeColor : 0;
+  const activeGroup = colorGroups[activeColorIndex] ?? colorGroups[0];
+  const selectedSize = activeGroup?.sizes.length
+    ? activeSize && activeGroup.sizes.includes(activeSize)
+      ? activeSize
+      : getFirstPurchasableSize(product, activeGroup) ?? activeGroup.sizes[0]
+    : null;
 
   useEffect(() => {
     if (!isModal) return;
@@ -33,28 +167,132 @@ export default function ProductDetails({ isModal = false }: { isModal?: boolean 
   const handleClose = useCallback(() => {
     if (!isModal) return;
     setVisible(false);
-    setTimeout(() => router.back(), 350);
-  }, [router, isModal]);
+    setTimeout(() => onClose?.(), 350);
+  }, [onClose, isModal]);
 
-  const handleColorChange = useCallback((i: number) => {
-    setActiveColor(i);
-    setImageIndex(0);
-  }, []);
+  const handleColorChange = useCallback(
+    (i: number) => {
+      setActiveColor(i);
+      setImageIndex(0);
+      setActiveSize(colorGroups[i]?.sizes[0] ?? null);
+    },
+    [colorGroups]
+  );
 
-  if (!product) return null;
+  function handleAddToBag() {
+    if (!product) return;
 
-  const variant = product.colors[activeColor];
-  const images = variant.images;
+    const group =
+      activeGroup ??
+      { color: DEFAULT_COLOR, label: "Default", sizes: [], variantIds: [], images: [] };
+    const variant = getSelectedVariant(product, group, selectedSize);
+
+    console.log("[handleAddToBag] ── ADD TO BAG CLICKED ──");
+    console.log("[handleAddToBag] Product:", JSON.stringify({ id: product.id, name: product.name }));
+    console.log("[handleAddToBag] Color group:", JSON.stringify(group));
+    console.log("[handleAddToBag] All product.variants:", JSON.stringify(product.variants));
+    console.log("[handleAddToBag] Selected variant:", JSON.stringify(variant));
+    console.log("[handleAddToBag] activeSize:", selectedSize);
+    console.log("[handleAddToBag] isAuthenticated:", isAuthenticated);
+    console.log("[handleAddToBag] Payload that will be sent to backend:", {
+      variantId: variant?.id,
+      quantity: 1,
+    });
+
+    if (group?.sizes.length && !selectedSize) {
+      console.log("[handleAddToBag] ❌ Blocked: size required but not selected");
+      alert("Please select a size");
+      return;
+    }
+
+    if (!variant) {
+      const message =
+        product.variants.length === 0
+          ? "This product is currently unavailable."
+          : "Please select a valid variant";
+      console.log("[handleAddToBag] ❌ Blocked: no variant found. group.variantIds:", group.variantIds);
+      alert(message);
+      return;
+    }
+
+    if (!isVariantPurchasable(variant)) {
+      alert("This size is currently out of stock.");
+      return;
+    }
+
+    const availableQuantity = variant.available_quantity;
+    const guestExistingQuantity =
+      guestItems.find((item) => item.variantId === variant.id)?.quantity ?? 0;
+    if (!isAuthenticated && guestExistingQuantity + 1 > availableQuantity) {
+      alert(`Only ${availableQuantity} item${availableQuantity === 1 ? "" : "s"} available.`);
+      return;
+    }
+
+    if (isAuthenticated) {
+      console.log("[handleAddToBag] 🔄 Calling addToCart with variantId:", variant.id);
+      addToCart(
+        { variantId: variant.id, quantity: 1 },
+        {
+          onSuccess: (data) => {
+            console.log("[handleAddToBag] ✅ addToCart success:", JSON.stringify(data));
+            openCart();
+          },
+          onError: (error: unknown) => {
+            console.error("[handleAddToBag] ❌ addToCart error:", error);
+            alert(getErrorMessage(error));
+          },
+        }
+      );
+    } else {
+      console.log("[handleAddToBag] 🛒 Adding to guest cart - variantId:", variant.id, "price:", variant.price);
+      addGuestItem(variant.id, product.name, 1, variant.price, availableQuantity);
+      console.log("[handleAddToBag] ✅ Guest cart item added, opening cart");
+      openCart();
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-gray-400 text-sm">
+        Loading…
+      </div>
+    );
+  }
+
+  if (isError || !product) {
+    return (
+      <div className="flex items-center justify-center min-h-screen text-gray-400 text-sm">
+        Product not found.
+      </div>
+    );
+  }
+
+  const group = activeGroup;
+  const selectedVariant = getSelectedVariant(product, group, selectedSize);
+  const isPurchasable = isVariantPurchasable(selectedVariant);
+  const displayPrice = selectedVariant ? parseFloat(selectedVariant.price) : 0;
+  const displayOriginal = selectedVariant?.compare_at_price
+    ? parseFloat(selectedVariant.compare_at_price)
+    : null;
+
+  let variantSpecificImages: string[] = [];
+  if (selectedVariant) {
+    variantSpecificImages = product.images
+      .filter((img) => img.is_active && img.variant_id === selectedVariant.id)
+      .map((img) => img.image);
+  }
+  const images = variantSpecificImages.length > 0 ? variantSpecificImages : (group?.images.length ? group.images : []);
   const total = images.length;
+  const currentImageIndex = total > 0 ? Math.min(imageIndex, total - 1) : 0;
 
-  const CAROUSEL_WIDTH = 650;
-  const CAROUSEL_HEIGHT = 700;
+  const CAROUSEL_HEIGHT = 650;
   const GAP = 2;
-  const SLIDE_WIDTH = CAROUSEL_WIDTH;
-  const CAROUSEL_LEFT = 60;
+  const SLIDE_WIDTH = 560;
+  const CAROUSEL_LEFT = 120;
+  const CAROUSEL_TOP = 64;
 
-  const prev = () => setImageIndex((i) => (i === 0 ? total - 1 : i - 1));
-  const next = () => setImageIndex((i) => (i === total - 1 ? 0 : i + 1));
+  const prev = () => setImageIndex(currentImageIndex === 0 ? total - 1 : currentImageIndex - 1);
+  const next = () => setImageIndex(currentImageIndex === total - 1 ? 0 : currentImageIndex + 1);
 
   const content = (
     <div
@@ -83,6 +321,7 @@ export default function ProductDetails({ isModal = false }: { isModal?: boolean 
       )}
 
       <div className={`flex shrink-0 ${isModal ? "h-[96vh]" : "min-h-screen"}`}>
+        {/* ── Left panel ── */}
         <div className="w-137.5 shrink-0 flex flex-col px-10 py-8 overflow-y-auto relative z-10">
           <p className="text-xs text-gray-400 mb-4 flex items-center gap-1">
             <Link
@@ -106,85 +345,109 @@ export default function ProductDetails({ isModal = false }: { isModal?: boolean 
 
           <div className="flex items-center gap-3 mb-1">
             <p className="text-xl font-medium text-black">
-              NPR {product.price.toLocaleString()}
+              {product.base_currency}{" "}
+              {displayPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
             </p>
-            {product.originalPrice && (
+            {displayOriginal && displayOriginal > displayPrice && (
               <p className="text-base text-gray-400 line-through">
-                NPR {product.originalPrice.toLocaleString()}
+                {product.base_currency}{" "}
+                {displayOriginal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
               </p>
             )}
           </div>
 
-          {product.packSavings && (
-            <p className="text-sm text-green-700 font-semibold mb-2">
-              {product.packSavings}
-            </p>
+          {/* Color selector */}
+          {colorGroups.length > 0 && (
+            <div className="mb-4 mt-3">
+              <p className="text-sm font-medium mb-2 text-black">
+                Color:{" "}
+                <span className="font-normal text-gray-600">{group?.label}</span>
+              </p>
+              <div className="flex gap-2">
+                {colorGroups.map((g, i) => (
+                  <button
+                    key={i}
+                    title={g.label}
+                    onClick={() => handleColorChange(i)}
+                    className={`w-9 h-9 rounded-full transition-all duration-200 ${
+                      i === activeColorIndex
+                        ? "ring-2 ring-offset-2 ring-black"
+                        : "hover:ring-1 hover:ring-gray-400 hover:ring-offset-1"
+                    }`}
+                    style={{
+                      backgroundColor: g.color,
+                      border:
+                        g.color === "#FFFFFF" ||
+                        g.color === "#ffffff" ||
+                        g.color === "#E8E4DC"
+                          ? "1px solid #ccc"
+                          : "none",
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
           )}
 
-          <div className="mb-4 mt-3">
-            <p className="text-sm font-medium mb-2 text-black">
-              Color: <span className="font-normal text-gray-600">{variant.label}</span>
-            </p>
-            <div className="flex gap-2">
-              {product.colors.map((c, i) => (
-                <button
-                  key={i}
-                  title={c.label}
-                  onClick={() => handleColorChange(i)}
-                  className={`w-9 h-9 rounded-full transition-all duration-200 ${
-                    i === activeColor
-                      ? "ring-2 ring-offset-2 ring-black"
-                      : "hover:ring-1 hover:ring-gray-400 hover:ring-offset-1"
-                  }`}
-                  style={{
-                    backgroundColor: c.color,
-                    border:
-                      c.color === "#FFFFFF" || c.color === "#E8E4DC"
-                        ? "1px solid #ccc"
-                        : "none",
-                  }}
-                />
-              ))}
-            </div>
-          </div>
-
-          {product.sizes && product.sizes.length > 0 && (
+          {/* Size selector */}
+          {group?.sizes.length > 0 && (
             <div className="mb-4">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-sm font-medium text-black">
                   Size:{" "}
                   <span className="font-normal text-gray-700">
-                    {activeSize ?? ""}
+                    {selectedSize ?? ""}
                   </span>
                 </p>
                 <button className="text-sm underline text-gray-500 hover:text-black transition-colors">
                   Size Guide
                 </button>
               </div>
-
               <div className="grid grid-cols-3 gap-1.5">
-                {product.sizes.map((size) => (
-                  <button
-                    key={size}
-                    onClick={() => setActiveSize(size)}
-                    className={`py-3 text-sm rounded transition-all text-black ${
-                      activeSize === size
-                        ? "border-2 border-black font-semibold bg-white"
-                        : "border border-gray-200 bg-gray-100 hover:border-gray-400 hover:bg-gray-50"
-                    }`}
-                  >
-                    {size}
-                  </button>
-                ))}
+                {group.sizes.map((size) => {
+                  const sizeVariant = getSelectedVariant(product, group, size);
+                  const sizeAvailable = isVariantPurchasable(sizeVariant);
+
+                  return (
+                    <button
+                      key={size}
+                      onClick={() => {
+                        if (!sizeAvailable) return;
+                        setActiveSize(size);
+                        setImageIndex(0);
+                      }}
+                      disabled={!sizeAvailable}
+                      title={!sizeAvailable ? "Out of stock" : undefined}
+                      className={`py-3 text-sm rounded transition-all text-black ${
+                        selectedSize === size
+                          ? "border-2 border-black font-semibold bg-white"
+                          : "border border-gray-200 bg-gray-100 hover:border-gray-400 hover:bg-gray-50"
+                      } ${!sizeAvailable ? "opacity-40 line-through cursor-not-allowed hover:border-gray-200 hover:bg-gray-100" : ""}`}
+                    >
+                      {size}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
 
-          <button className="w-full bg-[#1e3a5f] text-white py-4 font-bold text-sm hover:bg-[#162d4a] transition-colors mb-3 rounded">
-            Add to Bag
+          <button
+            onClick={handleAddToBag}
+            disabled={addToCartPending || !isPurchasable}
+            title={!isPurchasable ? "This product does not have a purchasable variant." : undefined}
+            className="w-full bg-[#253E38] text-white py-4 font-bold text-sm hover:bg-[#1e3530] transition-colors mb-3 rounded disabled:opacity-60"
+          >
+            {!isPurchasable ? "Unavailable" : addToCartPending ? "Adding..." : "Add to Bag"}
           </button>
 
-          {product.shippingDetails && (
+          {!isPurchasable && (
+            <p className="text-xs text-red-600 mb-3">
+              This product is currently unavailable.
+            </p>
+          )}
+
+          {product.short_description && (
             <div className="bg-gray-50 px-5 mb-1">
               <button
                 className="w-full flex items-center justify-between py-3.5 text-sm font-semibold text-black"
@@ -193,11 +456,10 @@ export default function ProductDetails({ isModal = false }: { isModal?: boolean 
                 <span>International Shipping + Free Returns Details</span>
                 <Plus size={16} />
               </button>
-
               {shippingOpen && (
                 <>
                   <p className="text-xs text-gray-500 pb-2">
-                    {product.shippingDetails}
+                    {product.short_description}
                   </p>
                   <p className="text-xs text-blue-500 underline pb-4 cursor-pointer">
                     Shipping &amp; Return Details
@@ -207,7 +469,7 @@ export default function ProductDetails({ isModal = false }: { isModal?: boolean 
             </div>
           )}
 
-          {product.productDetails && (
+          {product.full_description && (
             <div className="bg-gray-50 px-5">
               <button
                 className="w-full flex items-center justify-between py-3.5 text-sm font-semibold text-black"
@@ -216,23 +478,27 @@ export default function ProductDetails({ isModal = false }: { isModal?: boolean 
                 <span>Product &amp; Material Details</span>
                 <Plus size={16} />
               </button>
-
               {detailsOpen && (
                 <p className="text-xs text-gray-500 pb-4">
-                  {product.productDetails}
+                  {product.full_description}
                 </p>
               )}
             </div>
           )}
         </div>
 
-        <div className="flex-1 flex flex-col justify-start pt-8 overflow-hidden relative">
+        {/* ── Right panel: carousel ── */}
+        <div className="flex-1 overflow-hidden relative">
           <div
             style={{
-              width: `${CAROUSEL_WIDTH}px`,
+              position: "absolute",
+              left: `${CAROUSEL_LEFT}px`,
+              right: 0,
+              top: `${CAROUSEL_TOP}px`,
               height: `${CAROUSEL_HEIGHT}px`,
-              position: "relative",
-              marginLeft: `${CAROUSEL_LEFT}px`,
+              overflow: "hidden",
+              borderTopLeftRadius: "16px",
+              borderBottomLeftRadius: "8px",
             }}
           >
             <ul
@@ -243,7 +509,7 @@ export default function ProductDetails({ isModal = false }: { isModal?: boolean 
                 margin: 0,
                 padding: 0,
                 transition: "transform 300ms ease",
-                transform: `translateX(calc(-${imageIndex} * ${SLIDE_WIDTH + GAP}px))`,
+                transform: `translateX(calc(-${currentImageIndex} * ${SLIDE_WIDTH + GAP}px))`,
               }}
             >
               {images.map((img, i) => (
@@ -255,7 +521,7 @@ export default function ProductDetails({ isModal = false }: { isModal?: boolean 
                     marginRight: `${GAP}px`,
                     position: "relative",
                     overflow: "hidden",
-                    borderRadius: i === imageIndex ? "16px 0 0 8px" : "0",
+                    borderRadius: i === currentImageIndex ? "16px 0 0 8px" : "0",
                   }}
                 >
                   <Image
@@ -269,31 +535,33 @@ export default function ProductDetails({ isModal = false }: { isModal?: boolean 
             </ul>
           </div>
 
-          <div
-            style={{
-              position: "absolute",
-              left: `${CAROUSEL_LEFT + CAROUSEL_WIDTH}px`,
-              top: `${50 + CAROUSEL_HEIGHT}px`,
-              transform: "translateX(-50%)",
-              display: "flex",
-              alignItems: "center",
-              gap: "12px",
-              backgroundColor: "white",
-              padding: "8px 16px",
-              borderRadius: "5px",
-              boxShadow: "0 1px 6px rgba(0,0,0,0.12)",
-            }}
-          >
-            <button onClick={prev} className="hover:opacity-60 transition text-black">
-              <ArrowLeft size={18} />
-            </button>
-            <span className="text-sm font-medium tabular-nums text-black">
-              {imageIndex + 1} / {total}
-            </span>
-            <button onClick={next} className="hover:opacity-60 transition text-black">
-              <ArrowRight size={18} />
-            </button>
-          </div>
+          {total > 1 && (
+            <div
+              style={{
+                position: "absolute",
+                left: `${CAROUSEL_LEFT + SLIDE_WIDTH + GAP / 2}px`,
+                top: `${CAROUSEL_TOP + CAROUSEL_HEIGHT + 2}px`,
+                transform: "translate(-50%)",
+                display: "flex",
+                alignItems: "center",
+                gap: "12px",
+                backgroundColor: "white",
+                padding: "8px 16px",
+                borderRadius: "5px",
+                boxShadow: "0 1px 6px rgba(0,0,0,0.12)",
+              }}
+            >
+              <button onClick={prev} className="hover:opacity-60 transition text-black">
+                <ArrowLeft size={18} />
+              </button>
+              <span className="text-sm font-medium tabular-nums text-black">
+                {currentImageIndex + 1} / {total}
+              </span>
+              <button onClick={next} className="hover:opacity-60 transition text-black">
+                <ArrowRight size={18} />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

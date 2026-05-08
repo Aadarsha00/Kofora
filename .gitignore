@@ -39,3 +39,20 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# IDE
+.vscode/
+.idea/
+*.iml
+*.sublime-workspace
+*.sublime-project
+
+# OS
+Thumbs.db
+
+# Logs
+lerna-debug.log*
+
+# Mac files
+.AppleDouble
+.LSOverride

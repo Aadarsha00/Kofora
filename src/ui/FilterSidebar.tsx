@@ -1,25 +1,21 @@
 "use client";
-import { SockHeight } from "@/data/ProductsData";
+
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { memo, useCallback, useMemo, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Slider } from "./slider";
+import type { SubCategoryOption } from "@/lib/categoryFilters";
 
 interface FilterSidebarProps {
-  availableHeights: SockHeight[];
+  availableSubCategories: SubCategoryOption[];
   minPrice: number;
   maxPrice: number;
 }
 
 const PARAMS = {
-  height: "filter.p.m.custom.sub_category",
-  gender: "filter.p.m.custom.gender1",
-  availability: "filter.p.m.custom.availability",
-  minPrice: "filter.v.price.gte",
-  maxPrice: "filter.v.price.lte",
+  subCategory: "sub_category",
+  minPrice: "min_price",
+  maxPrice: "max_price",
 } as const;
-
-const GENDER_OPTIONS = ["Men", "Women"] as const;
-const AVAILABILITY_OPTIONS = ["In stock", "Out of stock"] as const;
 
 interface FilterSectionProps {
   title: string;
@@ -55,7 +51,9 @@ function FilterSection({
 
       <div
         className={`grid transition-all duration-300 ease-in-out ${
-          open ? "grid-rows-[1fr] opacity-100 pt-3" : "grid-rows-[0fr] opacity-0 pt-0"
+          open
+            ? "grid-rows-[1fr] opacity-100 pt-3"
+            : "grid-rows-[0fr] opacity-0 pt-0"
         }`}
       >
         <div className="overflow-hidden">{children}</div>
@@ -96,8 +94,22 @@ const CheckboxOption = memo(function CheckboxOption({
   );
 });
 
+function parsePriceParam(
+  value: string | null,
+  fallback: number,
+  min: number,
+  max: number
+) {
+  if (value === null) return fallback;
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+
+  return Math.min(Math.max(parsed, min), max);
+}
+
 export default function FilterSidebar({
-  availableHeights,
+  availableSubCategories,
   minPrice,
   maxPrice,
 }: FilterSidebarProps) {
@@ -105,22 +117,52 @@ export default function FilterSidebar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const activeHeights = searchParams.getAll(PARAMS.height);
-  const activeGenders = searchParams.getAll(PARAMS.gender);
-  const activeAvailability = searchParams.getAll(PARAMS.availability);
+  console.log("🏷️ FilterSidebar Props - minPrice:", minPrice, "maxPrice:", maxPrice);
 
-  const activeMinPrice = Number(searchParams.get(PARAMS.minPrice) ?? minPrice);
-  const activeMaxPrice = Number(searchParams.get(PARAMS.maxPrice) ?? maxPrice);
+  const activeSubCategories = searchParams.getAll(PARAMS.subCategory);
 
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragPrice, setDragPrice] = useState([activeMinPrice, activeMaxPrice]);
+  const rawMinPrice = parsePriceParam(
+    searchParams.get(PARAMS.minPrice),
+    minPrice,
+    minPrice,
+    maxPrice
+  );
 
-  const displayPrice = isDragging ? dragPrice : [activeMinPrice, activeMaxPrice];
+  const rawMaxPrice = parsePriceParam(
+    searchParams.get(PARAMS.maxPrice),
+    maxPrice,
+    minPrice,
+    maxPrice
+  );
+
+  console.log("📌 rawMinPrice:", rawMinPrice, "rawMaxPrice:", rawMaxPrice);
+
+  const activeMinPrice = Math.min(rawMinPrice, rawMaxPrice);
+  const activeMaxPrice = Math.max(rawMinPrice, rawMaxPrice);
+
+  console.log("🎯 activeMinPrice:", activeMinPrice, "activeMaxPrice:", activeMaxPrice);
+
+  const [draftPrice, setDraftPrice] = useState<[number, number]>([
+    activeMinPrice,
+    activeMaxPrice,
+  ]);
+
+  console.log("📝 draftPrice state:", draftPrice);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+    console.log("🔄 useEffect: Updating draftPrice to:", [activeMinPrice, activeMaxPrice]);
+      setDraftPrice([activeMinPrice, activeMaxPrice]);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [activeMinPrice, activeMaxPrice]);
+
+  const displayPrice = draftPrice;
+
+  console.log("🖥️ displayPrice:", displayPrice);
 
   const hasFilters =
-    activeHeights.length > 0 ||
-    activeGenders.length > 0 ||
-    activeAvailability.length > 0 ||
+    activeSubCategories.length > 0 ||
     activeMinPrice !== minPrice ||
     activeMaxPrice !== maxPrice;
 
@@ -156,26 +198,21 @@ export default function FilterSidebar({
     [buildQueryString, router]
   );
 
- 
-
   const clearAll = useCallback(() => {
-    router.replace(pathname, { scroll: false });
-  }, [pathname, router]);
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete(PARAMS.subCategory);
+    params.delete(PARAMS.minPrice);
+    params.delete(PARAMS.maxPrice);
 
-  const sortedHeights = useMemo(() => {
-    const order: SockHeight[] = [
-      "No-Show",
-      "Ankle",
-      "Quarter",
-      "Crew",
-      "Half-Calf",
-      "Knee-High",
-    ];
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [pathname, router, searchParams]);
 
-    return [...availableHeights].sort(
-      (a, b) => order.indexOf(a) - order.indexOf(b)
+  const sortedSubCategories = useMemo(() => {
+    return [...availableSubCategories].sort((a, b) =>
+      a.label.localeCompare(b.label)
     );
-  }, [availableHeights]);
+  }, [availableSubCategories]);
 
   return (
     <aside className="sticky top-6 w-56 shrink-0 self-start">
@@ -189,63 +226,70 @@ export default function FilterSidebar({
         </button>
       )}
 
-      <FilterSection title="Gender">
-        {GENDER_OPTIONS.map((gender) => (
-          <CheckboxOption
-            key={gender}
-            label={gender}
-            checked={activeGenders.includes(gender)}
-            onChange={() => toggleMultiValueParam(PARAMS.gender, gender)}
-          />
-        ))}
-      </FilterSection>
-
-      <FilterSection title="Sock Height">
-        {sortedHeights.map((height) => (
-          <CheckboxOption
-            key={height}
-            label={height}
-            checked={activeHeights.includes(height)}
-            onChange={() => toggleMultiValueParam(PARAMS.height, height)}
-          />
-        ))}
-      </FilterSection>
-
-      <FilterSection title="Availability">
-        {AVAILABILITY_OPTIONS.map((status) => (
-          <CheckboxOption
-            key={status}
-            label={status}
-            checked={activeAvailability.includes(status)}
-            onChange={() => toggleMultiValueParam(PARAMS.availability, status)}
-          />
-        ))}
+      <FilterSection title="Sub Category">
+        {sortedSubCategories.length > 0 ? (
+          sortedSubCategories.map((subCategory) => (
+            <CheckboxOption
+              key={subCategory.id}
+              label={subCategory.label}
+              checked={activeSubCategories.includes(subCategory.value)}
+              onChange={() =>
+                toggleMultiValueParam(PARAMS.subCategory, subCategory.value)
+              }
+            />
+          ))
+        ) : (
+          <p className="text-xs text-gray-400">No sub categories available</p>
+        )}
       </FilterSection>
 
       <FilterSection title="Price Range">
         <div className="mb-3 flex items-center justify-between text-xs text-gray-500">
-          <span>NPR {displayPrice[0].toLocaleString()}</span>
-          <span>NPR {displayPrice[1].toLocaleString()}</span>
+          <span>USD {displayPrice[0].toLocaleString()}</span>
+          <span>USD {displayPrice[1].toLocaleString()}</span>
         </div>
 
         <Slider
           min={minPrice}
           max={maxPrice}
-          step={100}
+          step={1}
           value={displayPrice}
-          className="py-1"
+          className="mb-2"
           onValueChange={(val) => {
-            setIsDragging(true);
-            setDragPrice(val);
+            console.log("🎚️ onValueChange - raw value:", val);
+            console.log("🎚️ onValueChange - displayPrice before:", displayPrice);
+            setDraftPrice([val[0], val[1]]);
+            console.log("🎚️ onValueChange - displayPrice after:", [val[0], val[1]]);
           }}
-          onValueCommit={([newMin, newMax]) => {
-            setIsDragging(false);
+          onValueCommit={(val) => {
+            console.log("✅ onValueCommit - received values:", val);
+            console.log("📊 Price range: min=", minPrice, "max=", maxPrice);
+            
+            const newMin = Math.min(val[0], val[1]);
+            const newMax = Math.max(val[0], val[1]);
+
+            console.log("🔄 Sorted - newMin:", newMin, "newMax:", newMax);
+            setDraftPrice([newMin, newMax]);
+
             const url = buildQueryString((params) => {
+              console.log("🔗 Before URL construction - params:", params.toString());
               params.delete(PARAMS.minPrice);
               params.delete(PARAMS.maxPrice);
-              if (newMin !== minPrice) params.set(PARAMS.minPrice, String(newMin));
-              if (newMax !== maxPrice) params.set(PARAMS.maxPrice, String(newMax));
+
+              if (newMin > minPrice) {
+                params.set(PARAMS.minPrice, String(newMin));
+                console.log("✏️ Set min_price param:", newMin);
+              }
+
+              if (newMax < maxPrice) {
+                params.set(PARAMS.maxPrice, String(newMax));
+                console.log("✏️ Set max_price param:", newMax);
+              }
+              
+              console.log("🔗 Final URL params:", params.toString());
             });
+
+            console.log("📍 Navigating to URL:", url);
             router.replace(url, { scroll: false });
           }}
         />

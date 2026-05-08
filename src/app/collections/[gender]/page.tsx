@@ -1,9 +1,11 @@
 import HeroGender from "@/component/Gender/HeroGender";
 import CollectionView from "@/component/Gender/CollectionView";
-import { getCategoryBySlug, categories } from "@/data/Category";
+
 import { notFound } from "next/navigation";
+import { getCategories, getCategoryBySlug } from "@/api/category.api";
 
 export async function generateStaticParams() {
+  const categories = await getCategories();
   return categories.map((category) => ({ gender: category.slug }));
 }
 
@@ -12,18 +14,22 @@ export default async function CollectionPage({
   searchParams,
 }: {
   params: Promise<{ gender: string }>;
-  searchParams: Promise<{ sort_by?: string; "filter.p.m.custom.sub_category"?: string | string[] }>;
+  searchParams: Promise<{ sort_by?: string }>;
 }) {
   const { gender } = await params;
   const resolvedSearchParams = await searchParams;
 
-  const category = getCategoryBySlug(gender);
-  if (!category) notFound();
+  let category;
+  try {
+    category = await getCategoryBySlug(gender);
+  } catch {
+    notFound();
+  }
 
   return (
     <main>
       <HeroGender category={category!} />
-      <CollectionView gender={gender} searchParams={resolvedSearchParams} />
+      <CollectionView categoryId={category!.id} gender={gender} searchParams={resolvedSearchParams} />
     </main>
   );
 }

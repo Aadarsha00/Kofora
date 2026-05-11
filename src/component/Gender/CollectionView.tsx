@@ -104,30 +104,30 @@
 
     return (
       <section className="w-full bg-white">
-        <div className="max-w-7xl mx-auto px-6 py-10 flex gap-10 items-start">
+        <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 md:px-6 md:py-10 lg:flex-row lg:gap-10 lg:items-start">
           <FilterSidebar
             availableSubCategories={availableSubCategories}
             minPrice={unfilteredPriceRange.minPrice}
             maxPrice={unfilteredPriceRange.maxPrice}
           />
 
-          <div className="flex-1">
-            <div className="mb-8 translate-x-15">
+          <div className="min-w-0 flex-1">
+            <div className="mb-6 md:mb-8">
               <h2 className="text-lg font-semibold capitalize text-black mb-1">
                 {gender}
               </h2>
 
-              <div className="flex items-center gap-3 text-sm text-gray-500">
+              <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
                 <span>Sort:</span>
                 <SortSelect sortOptions={SORT_OPTIONS} currentSort={sortBy} />
-                <span className="ml-auto">
+                <span className="w-full sm:ml-auto sm:w-auto">
                   Showing {fullyFilteredProducts.length} product
                   {fullyFilteredProducts.length !== 1 ? "s" : ""}
                 </span>
               </div>
             </div>
 
-            <div className="translate-x-15">
+            <div>
               <ProductGrid products={fullyFilteredProducts} gender={gender} />
             </div>
           </div>

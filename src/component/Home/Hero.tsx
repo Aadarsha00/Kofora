@@ -5,7 +5,7 @@ import Link from "next/link"
 
 export default function Hero() {
   return (
-    <section className="relative w-full h-[560px] md:h-140 overflow-hidden">
+    <section className="relative h-[520px] w-full overflow-hidden md:h-140">
       <Image
         src={HERO_DATA.image}
         alt="Hero"
@@ -13,21 +13,21 @@ export default function Hero() {
         className="object-cover"
         priority
       />
-      <div className="absolute inset-0 bg-gradient-to-r from-black/50 via-black/20 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/25 to-transparent md:bg-gradient-to-r" />
 
-      <div className="absolute top-1/2 -translate-y-1/2 left-6 md:left-18 flex flex-col gap-4 max-w-[90%] md:max-w-175">
-        <h1 className="text-white font-black text-4xl md:text-[56px] leading-none tracking-tight uppercase">
+      <div className="absolute inset-x-5 bottom-8 flex max-w-[92%] flex-col gap-4 md:inset-x-auto md:left-18 md:top-1/2 md:max-w-175 md:-translate-y-1/2">
+        <h1 className="text-4xl font-black uppercase leading-none tracking-tight text-white md:text-[56px]">
           {HERO_DATA.title}
         </h1>
         <p className="text-white italic text-base md:text-lg font-light">
           {HERO_DATA.subtitle}
         </p>
-        <div className="flex flex-row gap-4 mt-2 flex-wrap">
+        <div className="mt-2 grid grid-cols-2 gap-3 sm:flex sm:flex-row sm:flex-wrap md:gap-4">
           {HERO_DATA.ctas.map((cta) => (
             <Link
               key={cta.label}
               href={cta.href}
-              className="bg-[#253E38] text-white font-bold text-sm tracking-widest px-6 py-3 hover:bg-[#1a2e28] transition-colors whitespace-nowrap"
+              className="bg-[#253E38] px-4 py-3 text-center text-xs font-bold tracking-widest text-white transition-colors hover:bg-[#1a2e28] sm:px-6 sm:text-sm"
             >
               {cta.label}
             </Link>

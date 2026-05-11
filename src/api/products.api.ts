@@ -55,9 +55,32 @@ export const getProductById = async (id: number): Promise<Product> => {
 export const searchProducts = async (query: string): Promise<Product[]> => {
   try {
     const response = await api.get<PaginatedApiResponse>(
-      `/products/?${DEFAULT_PARAMS}&search=${query}`
+      `/products/?${DEFAULT_PARAMS}&search=${encodeURIComponent(query)}`
     );
     return response.data.data.results ?? [];
+  } catch (error: any) {
+    throw error?.response?.data;
+  }
+};
+
+export const getProductsByCategoryIds = async (
+  categoryIds: number[]
+): Promise<Product[]> => {
+  try {
+    if (categoryIds.length === 0) return [];
+
+    const results = await Promise.all(
+      categoryIds.map(async (categoryId) => {
+        const response = await api.get<PaginatedApiResponse>(
+          `/products/?${DEFAULT_PARAMS}&categories=${categoryId}`
+        );
+        return response.data.data.results ?? [];
+      })
+    );
+
+    return Array.from(
+      new Map(results.flat().map((product) => [product.id, product])).values()
+    );
   } catch (error: any) {
     throw error?.response?.data;
   }

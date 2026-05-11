@@ -6,9 +6,9 @@ import { useState } from "react"
 export default function SockLengthGuide() {
   const [selected, setSelected] = useState<string | null>(null)
   return (
-    <section className="w-full grid grid-cols-3 md:flex md:flex-row">
+    <section className="grid w-full grid-cols-2 sm:grid-cols-3 md:flex md:flex-row">
       {SOCK_LENGTHS.map((sock) => (
-        <div key={sock.label} className="flex-1 relative aspect-3/4">
+        <div key={sock.label} className="relative aspect-[4/5] flex-1 md:aspect-3/4">
 
           {/* Front — image */}
           <div
@@ -38,14 +38,14 @@ export default function SockLengthGuide() {
           >
             <button
               onClick={() => setSelected(null)}
-              className="absolute top-3 right-3 text-black text-lg leading-none hover:opacity-50 cursor-pointer"
+              className="absolute right-3 top-3 text-lg leading-none text-black hover:opacity-50"
             >
               ✕
             </button>
-            <p className="px-4 md:px-6 pt-16 md:pt-20 pb-4 font-semibold text-xs md:text-sm tracking-widest uppercase text-black">
+            <p className="px-4 pb-3 pt-12 text-xs font-semibold uppercase tracking-widest text-black md:px-6 md:pb-4 md:pt-20 md:text-sm">
               {sock.label}
             </p>
-            <div className="flex flex-col flex-1 px-4 md:px-6">
+            <div className="flex flex-1 flex-col px-4 md:px-6">
               {SOCK_CATEGORIES.map((cat, i) => (
                 <Link
                   key={cat.label}

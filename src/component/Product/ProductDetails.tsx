@@ -293,12 +293,13 @@ export default function ProductDetails({
 
   const prev = () => setImageIndex(currentImageIndex === 0 ? total - 1 : currentImageIndex - 1);
   const next = () => setImageIndex(currentImageIndex === total - 1 ? 0 : currentImageIndex + 1);
+  const mobileImage = images[currentImageIndex];
 
   const content = (
     <div
       className={
         isModal
-          ? "relative bg-white flex flex-col w-[92vw] h-[96vh] shadow-2xl overflow-y-auto rounded-t-2xl"
+          ? "relative flex h-[96vh] w-full flex-col overflow-y-auto rounded-t-2xl bg-white shadow-2xl sm:w-[92vw]"
           : "relative bg-white flex flex-col w-full min-h-screen"
       }
       style={
@@ -320,9 +321,39 @@ export default function ProductDetails({
         </button>
       )}
 
-      <div className={`flex shrink-0 ${isModal ? "h-[96vh]" : "min-h-screen"}`}>
+      <div className={`flex shrink-0 flex-col lg:flex-row ${isModal ? "lg:h-[96vh]" : "min-h-screen"}`}>
+        <div className="relative order-1 w-full bg-[#f4f1ec] lg:hidden">
+          <div className="relative aspect-square w-full overflow-hidden">
+            {mobileImage ? (
+              <Image
+                src={mobileImage}
+                alt={`${product.name} view ${currentImageIndex + 1}`}
+                fill
+                priority={!isModal}
+                sizes="100vw"
+                className="object-cover"
+              />
+            ) : (
+              <div className="h-full w-full bg-[#E8E6E1]" />
+            )}
+          </div>
+
+          {total > 1 && (
+            <div className="absolute inset-x-4 bottom-4 flex items-center justify-between rounded bg-white/95 px-4 py-2 shadow-sm">
+              <button onClick={prev} className="text-black" aria-label="Previous image">
+                <ArrowLeft size={18} />
+              </button>
+              <span className="text-sm font-medium tabular-nums text-black">
+                {currentImageIndex + 1} / {total}
+              </span>
+              <button onClick={next} className="text-black" aria-label="Next image">
+                <ArrowRight size={18} />
+              </button>
+            </div>
+          )}
+        </div>
         {/* ── Left panel ── */}
-        <div className="w-137.5 shrink-0 flex flex-col px-10 py-8 overflow-y-auto relative z-10">
+        <div className="order-2 relative z-10 flex w-full shrink-0 flex-col overflow-y-auto px-5 py-6 lg:order-1 lg:w-137.5 lg:px-10 lg:py-8">
           <p className="text-xs text-gray-400 mb-4 flex items-center gap-1">
             <Link
               href={`/collections/${gender}`}
@@ -339,7 +370,7 @@ export default function ProductDetails({
             </Link>
           </p>
 
-          <h1 className="text-4xl font-bold leading-tight mb-3 text-black">
+          <h1 className="mb-3 text-3xl font-bold leading-tight text-black md:text-4xl">
             {product.name}
           </h1>
 
@@ -399,11 +430,11 @@ export default function ProductDetails({
                     {selectedSize ?? ""}
                   </span>
                 </p>
-                <button className="text-sm underline text-gray-500 hover:text-black transition-colors">
+                <Link href="/size-chart" className="text-sm underline text-gray-500 hover:text-black transition-colors">
                   Size Guide
-                </button>
+                </Link>
               </div>
-              <div className="grid grid-cols-3 gap-1.5">
+              <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 lg:grid-cols-3">
                 {group.sizes.map((size) => {
                   const sizeVariant = getSelectedVariant(product, group, size);
                   const sizeAvailable = isVariantPurchasable(sizeVariant);
@@ -488,7 +519,7 @@ export default function ProductDetails({
         </div>
 
         {/* ── Right panel: carousel ── */}
-        <div className="flex-1 overflow-hidden relative">
+        <div className="relative hidden flex-1 overflow-hidden lg:block">
           <div
             style={{
               position: "absolute",

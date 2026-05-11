@@ -28,7 +28,7 @@ export function CartDrawer() {
       <div
         className={`
           fixed top-0 right-0 h-full z-50
-          w-[20vw] min-w-[320px]
+          w-full max-w-sm
           bg-white border-l border-gray-200
           flex flex-col
           transition-transform duration-300 ease-in-out

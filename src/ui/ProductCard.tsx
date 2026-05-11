@@ -161,9 +161,9 @@ export default function ProductCard({
 
   return (
     <div
-      className={`flex flex-col gap-2.5 rounded-2xl transition-all duration-300 ${
+      className={`flex min-w-0 flex-col gap-2 rounded-2xl transition-all duration-300 md:gap-2.5 ${
         hovered
-          ? "bg-white shadow-[0_4px_24px_rgba(0,0,0,0.10)] p-3 -m-3"
+          ? "md:bg-white md:shadow-[0_4px_24px_rgba(0,0,0,0.10)] md:p-3 md:-m-3"
           : "bg-transparent p-0 m-0"
       }`}
       onMouseEnter={() => setHovered(true)}
@@ -171,7 +171,7 @@ export default function ProductCard({
     >
       <Link
         href={href}
-        className="relative w-full rounded-xl overflow-hidden block bg-[#EFEFEF]"
+        className="relative block w-full overflow-hidden rounded-lg bg-[#EFEFEF] md:rounded-xl"
         style={{ aspectRatio: "1 / 1" }}
       >
         {currentImage ? (
@@ -260,12 +260,12 @@ export default function ProductCard({
       )}
 
       <Link href={href} className="flex flex-col gap-0.5 px-0.5">
-        <p className="font-semibold text-[14px] text-black leading-snug">
+        <p className="font-semibold text-[13px] leading-snug text-black md:text-[14px]">
           {product.name}
         </p>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-[14px] font-bold text-black">
+          <span className="text-[13px] font-bold text-black md:text-[14px]">
             {product.base_currency} {price.toLocaleString()}
           </span>
 
@@ -277,21 +277,21 @@ export default function ProductCard({
         </div>
 
         {product.short_description && (
-          <p className="text-xs text-gray-400 mt-0.5">
+          <p className="mt-0.5 line-clamp-2 text-[11px] leading-snug text-gray-400 md:text-xs">
             {product.short_description}
           </p>
         )}
       </Link>
 
       <div
-        className={`px-0.5 flex gap-2 transition-all duration-300 ${
-          hovered ? "opacity-100 translate-y-0" : "opacity-0 translate-y-1"
+        className={`flex translate-y-0 gap-2 px-0.5 opacity-100 transition-all duration-300 ${
+          hovered ? "md:translate-y-0 md:opacity-100" : "md:translate-y-1 md:opacity-0"
         }`}
       >
         <button
           type="button"
           onClick={() => open(product.id, gender, product.slug)}
-          className="w-full border border-black rounded-md py-2 text-sm font-semibold tracking-wide text-black hover:bg-black hover:text-white transition-colors duration-200"
+          className="w-full rounded-md border border-black py-2 text-xs font-semibold tracking-wide text-black transition-colors duration-200 hover:bg-black hover:text-white md:py-2 md:text-sm"
         >
           Quick View
         </button>

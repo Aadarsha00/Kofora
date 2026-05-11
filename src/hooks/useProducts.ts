@@ -5,6 +5,7 @@ import {
   getProductById,
   searchProducts,
   getProductBySlug,
+  getProductsByCategoryIds,
 } from "../api/products.api";
 import { Category } from "@/interface/Category";
 import { Product } from "@/interface/Product";
@@ -114,6 +115,30 @@ export const useSearchProducts = (query: string) => {
       return normalizeProducts(products);
     },
     enabled: !!query,
+  });
+};
+
+export const useSearchPageProducts = (query: string, categoryIds: number[]) => {
+  return useQuery({
+    queryKey: ["products", "search-page", query, categoryIds],
+    queryFn: async () => {
+      const [productMatches, categoryMatches] = await Promise.all([
+        searchProducts(query),
+        getProductsByCategoryIds(categoryIds),
+      ]);
+
+      const merged = Array.from(
+        new Map(
+          [...productMatches, ...categoryMatches].map((product) => [
+            product.id,
+            product,
+          ])
+        ).values()
+      );
+
+      return normalizeProducts(merged);
+    },
+    enabled: query.trim().length > 0,
   });
 };
 

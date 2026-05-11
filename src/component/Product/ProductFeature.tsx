@@ -11,12 +11,12 @@ export default function ProductFeatures() {
   if (!product || !product.features || !product.tagline) return null;
 
   return (
-    <div className="w-full bg-gray-100 px-10 -mt-40 pb-12 pt-10">
-      <h2 className="text-3xl font-black text-black uppercase text-center tracking-tight mb-10">
+    <div className="w-full bg-gray-100 px-5 pb-10 pt-10 lg:-mt-40 lg:px-10 lg:pb-12">
+      <h2 className="mb-8 text-center text-2xl font-black uppercase tracking-tight text-black md:text-3xl lg:mb-10">
         {product.tagline}
       </h2>
 
-      <div className="grid grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
         {product.features.map((feature, i) => (
           <div key={i} className="flex flex-col">
             <div className="relative w-full aspect-square rounded-lg overflow-hidden mb-4">

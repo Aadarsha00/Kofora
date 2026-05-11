@@ -215,7 +215,7 @@ export default function FilterSidebar({
   }, [availableSubCategories]);
 
   return (
-    <aside className="sticky top-6 w-56 shrink-0 self-start">
+    <aside className="w-full shrink-0 self-start border-b border-gray-200 pb-2 lg:sticky lg:top-24 lg:w-56 lg:border-b-0 lg:pb-0">
       {hasFilters && (
         <button
           type="button"

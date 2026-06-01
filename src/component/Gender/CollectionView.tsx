@@ -9,6 +9,7 @@
     getAvailableSubCategoriesFromProducts,
     getProductPriceRange,
   } from "@/lib/categoryFilters";
+  import { Product } from "@/interface/Product";
 
   interface CollectionViewProps {
     categoryId: number;
@@ -27,13 +28,31 @@
     { label: "Price, high to low", value: "price-desc" },
   ];
 
+  function getLowestVariantPrice(product: Product): number {
+    const prices = product.variants
+      .filter((variant) => variant.is_active)
+      .map((variant) => Number(variant.price))
+      .filter(Number.isFinite);
+
+    return prices.length ? Math.min(...prices) : Number.POSITIVE_INFINITY;
+  }
+
+  function sortProducts(products: Product[], sortBy: string): Product[] {
+    if (sortBy === "price-asc") {
+      return [...products].sort((a, b) => getLowestVariantPrice(a) - getLowestVariantPrice(b));
+    }
+
+    if (sortBy === "price-desc") {
+      return [...products].sort((a, b) => getLowestVariantPrice(b) - getLowestVariantPrice(a));
+    }
+
+    return products;
+  }
+
   export default async function CollectionView({
     gender,
     searchParams,
   }: CollectionViewProps) {
-    console.log("🔍 CollectionView - gender:", gender);
-    console.log("🔍 Raw searchParams:", searchParams);
-    
     const sortBy = searchParams.sort_by || "best-selling";
 
     const selectedSubCategories = Array.isArray(searchParams.sub_category)
@@ -41,9 +60,6 @@
       : searchParams.sub_category
       ? [searchParams.sub_category]
       : [];
-    
-    console.log("🔍 selectedSubCategories:", selectedSubCategories);
-
     const selectedMinPrice =
       searchParams.min_price !== undefined
         ? Number(searchParams.min_price)
@@ -59,22 +75,7 @@
       getCategories(),
     ]);
 
-    console.log("📂 Category fetched:", {
-      id: category?.id,
-      name: category?.name,
-      slug: category?.slug,
-    });
-
-    const products = await getProductsByGender(category, { sort_by: sortBy });
-
-    console.log("📦 Products retrieved:", {
-      count: products.length,
-      gender,
-    });
-
-    if (products.length === 0) {
-      console.log("⚠️ NO PRODUCTS FOUND FOR:", gender);
-    }
+    const products = await getProductsByGender(category);
 
     const availableSubCategories = getAvailableSubCategoriesFromProducts(
       products,
@@ -91,16 +92,12 @@
       gender
     );
 
-    console.log("📦 After SubCategory Filter:", {
-      before: products.length,
-      after: subCategoryFilteredProducts.length,
-    });
-
     const fullyFilteredProducts = filterProductsByPrice(
       subCategoryFilteredProducts,
       selectedMinPrice,
       selectedMaxPrice
     );
+    const sortedProducts = sortProducts(fullyFilteredProducts, sortBy);
 
     return (
       <section className="w-full bg-white">
@@ -121,14 +118,14 @@
                 <span>Sort:</span>
                 <SortSelect sortOptions={SORT_OPTIONS} currentSort={sortBy} />
                 <span className="w-full sm:ml-auto sm:w-auto">
-                  Showing {fullyFilteredProducts.length} product
-                  {fullyFilteredProducts.length !== 1 ? "s" : ""}
+                  Showing {sortedProducts.length} product
+                  {sortedProducts.length !== 1 ? "s" : ""}
                 </span>
               </div>
             </div>
 
             <div>
-              <ProductGrid products={fullyFilteredProducts} gender={gender} />
+              <ProductGrid products={sortedProducts} gender={gender} />
             </div>
           </div>
         </div>

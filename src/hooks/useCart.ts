@@ -18,16 +18,9 @@ export const useCart = () => {
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const enabled = isAuthenticated && !authLoading;
 
-  console.log(`[useCart] enabled=${enabled} | isAuthenticated=${isAuthenticated} | authLoading=${authLoading}`);
-
   return useQuery({
     queryKey: CART_QUERY_KEY,
-    queryFn: async () => {
-      console.log("[useCart] 🔄 queryFn fired — calling getCart API");
-      const result = await getCart();
-      console.log("[useCart] ✅ getCart response:", JSON.stringify(result, null, 2));
-      return result;
-    },
+    queryFn: getCart,
     enabled,
   });
 };
@@ -35,21 +28,12 @@ export const useCart = () => {
 export const useForceRefetchCart = () => {
   const queryClient = useQueryClient();
   return useCallback(async () => {
-    console.log("[useForceRefetchCart] 🔄 Forcing cart fetch via fetchQuery...");
     try {
-      const result = await queryClient.fetchQuery({
+      return await queryClient.fetchQuery({
         queryKey: CART_QUERY_KEY,
-        queryFn: async () => {
-          console.log("[useForceRefetchCart] queryFn fired — calling getCart API");
-          const data = await getCart();
-          console.log("[useForceRefetchCart] ✅ getCart response:", JSON.stringify(data, null, 2));
-          return data;
-        },
+        queryFn: getCart,
       });
-      console.log("[useForceRefetchCart] ✅ fetchQuery resolved. Cart in cache:", queryClient.getQueryData(CART_QUERY_KEY));
-      return result;
     } catch (err) {
-      console.error("[useForceRefetchCart] ❌ fetchQuery failed:", err);
       throw err;
     }
   }, [queryClient]);
@@ -58,9 +42,7 @@ export const useForceRefetchCart = () => {
 export const useClearCartCache = () => {
   const queryClient = useQueryClient();
   return useCallback(() => {
-    console.log("[useClearCartCache] Removing cart cache...");
     queryClient.removeQueries({ queryKey: CART_QUERY_KEY });
-    console.log("[useClearCartCache] ✅ Cart cache removed");
   }, [queryClient]);
 };
 
@@ -181,16 +163,12 @@ export const useMergeGuestCart = () => {
 
   return useMutation({
     mutationFn: (itemsToMerge: GuestCartItem[]) => {
-      console.log("[useMergeGuestCart] mutationFn called with items:", JSON.stringify(itemsToMerge));
       if (!itemsToMerge || itemsToMerge.length === 0) {
-        console.log("[useMergeGuestCart] ⏭️ No guest items to merge, skipping API call");
         return Promise.resolve(null);
       }
-      console.log("[useMergeGuestCart] 🔄 Calling mergeGuestCart API with", itemsToMerge.length, "items");
       return mergeGuestCart(itemsToMerge);
     },
     onSuccess: (data, itemsToMerge) => {
-      console.log("[useMergeGuestCart] ✅ Merge success. Response:", JSON.stringify(data, null, 2));
       if (data) {
         queryClient.setQueryData(CART_QUERY_KEY, data);
         queryClient.invalidateQueries({ queryKey: CART_QUERY_KEY });
@@ -204,14 +182,10 @@ export const useMergeGuestCart = () => {
 
         if (allRequestedItemsMerged) {
           clearGuestCart();
-          console.log("[useMergeGuestCart] Cache updated and guest cart cleared");
         } else {
           console.warn("[useMergeGuestCart] Some guest items were not merged; keeping guest cart in localStorage");
           return;
         }
-        console.log("[useMergeGuestCart] ✅ Cache updated and guest cart cleared");
-      } else {
-        console.log("[useMergeGuestCart] ℹ️ No data returned, cache not updated");
       }
     },
     onError: (error) => {

@@ -6,15 +6,9 @@ import * as authApi from "@/api/auth.api";
 
 export const useLogin = () => {
   return useMutation({
-    mutationFn: (credentials: LoginRequest) => {
-      console.log("[useLogin] Calling login API...");
-      return authApi.login(credentials);
-    },
-    onSuccess: (data) => {
-      console.log("[useLogin] ✅ Login API success. Raw response:", JSON.stringify(data, null, 2));
-    },
+    mutationFn: (credentials: LoginRequest) => authApi.login(credentials),
     onError: (err) => {
-      console.error("[useLogin] ❌ Login API error:", err);
+      console.error("[useLogin] Login API error:", err);
     },
   });
 };
@@ -29,19 +23,13 @@ export const useLogout = (onLogoutComplete?: () => void) => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => {
-      console.log("[useLogout] Calling logout API...");
-      return authApi.logout();
-    },
+    mutationFn: () => authApi.logout(),
     onSuccess: () => {
-      console.log("[useLogout] ✅ Logout API success");
-      console.log("[useLogout] Cart cache BEFORE remove:", queryClient.getQueryData(["cart"]));
       queryClient.removeQueries({ queryKey: ["cart"] });
-      console.log("[useLogout] Cart cache AFTER remove:", queryClient.getQueryData(["cart"]));
       onLogoutComplete?.();
     },
     onError: (err) => {
-      console.error("[useLogout] ❌ Logout API error:", err);
+      console.error("[useLogout] Logout API error:", err);
       queryClient.removeQueries({ queryKey: ["cart"] });
       onLogoutComplete?.();
     },
@@ -81,6 +69,6 @@ export const useResetPassword = () => {
 
 export const useGoogleLogin = () => {
   return useMutation({
-    mutationFn: (code: string) => authApi.googleLogin(code),
+    mutationFn: (credential: string) => authApi.googleLogin(credential),
   });
 };

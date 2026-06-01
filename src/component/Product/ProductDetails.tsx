@@ -6,7 +6,7 @@ import Link from "next/link";
 import { Plus, X, ArrowLeft, ArrowRight } from "@phosphor-icons/react";
 import { Product, ProductVariant } from "@/interface/Product";
 import ProductFeatures from "./ProductFeature";
-import { useProductById } from "@/hooks/useProducts";
+import { useProductById, useProductBySlug } from "@/hooks/useProducts";
 import { useAuth } from "@/context/AuthContext";
 import { useGuestCartStore } from "@/store/guestCartStore";
 import { useAddToCart } from "@/hooks/useCart";
@@ -21,9 +21,38 @@ interface ColorGroup {
 }
 
 const DEFAULT_COLOR = "#888888";
+const COLOR_NAME_TO_CSS: Record<string, string> = {
+  black: "#000000",
+  white: "#ffffff",
+  red: "#dc2626",
+  blue: "#2563eb",
+  navy: "#1f2a44",
+  green: "#16a34a",
+  yellow: "#facc15",
+  pink: "#f9a8d4",
+  purple: "#9333ea",
+  brown: "#92400e",
+  orange: "#f97316",
+  gray: "#808080",
+  grey: "#808080",
+  tan: "#d2b48c",
+  khaki: "#c3b091",
+  cream: "#f5f0dc",
+  beige: "#d6c6a8",
+};
 
 function hasText(value: string | null | undefined): value is string {
   return typeof value === "string" && value.trim().length > 0;
+}
+
+function colorToCss(color?: string) {
+  if (!color) return DEFAULT_COLOR;
+  const value = color.trim();
+  const lowerValue = value.toLowerCase();
+  if (COLOR_NAME_TO_CSS[lowerValue]) return COLOR_NAME_TO_CSS[lowerValue];
+  if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(value)) return value;
+  if (/^[0-9A-Fa-f]{3}$|^[0-9A-Fa-f]{6}$/.test(value)) return `#${value}`;
+  return DEFAULT_COLOR;
 }
 
 function getErrorMessage(error: unknown): string {
@@ -131,8 +160,16 @@ export default function ProductDetails({
   const guestItems = useGuestCartStore((state) => state.items);
   const { openCart } = useCartSidebarStore();
 
-  const id = productId ?? Number(searchParams.get("id"));
-  const { data: product, isLoading, isError } = useProductById(id);
+  const queryProductId = Number(searchParams.get("id"));
+  const id =
+    productId ??
+    (Number.isFinite(queryProductId) && queryProductId > 0 ? queryProductId : undefined);
+  const shouldFetchBySlug = !id && hasText(slug);
+  const productByIdQuery = useProductById(id);
+  const productBySlugQuery = useProductBySlug(slug ?? "", shouldFetchBySlug);
+  const product = productByIdQuery.data ?? productBySlugQuery.data;
+  const isLoading = id ? productByIdQuery.isLoading : productBySlugQuery.isLoading;
+  const isError = id ? productByIdQuery.isError : productBySlugQuery.isError;
 
   const colorGroups = useMemo(
     () => (product ? buildColorGroups(product) : []),
@@ -187,20 +224,7 @@ export default function ProductDetails({
       { color: DEFAULT_COLOR, label: "Default", sizes: [], variantIds: [], images: [] };
     const variant = getSelectedVariant(product, group, selectedSize);
 
-    console.log("[handleAddToBag] ── ADD TO BAG CLICKED ──");
-    console.log("[handleAddToBag] Product:", JSON.stringify({ id: product.id, name: product.name }));
-    console.log("[handleAddToBag] Color group:", JSON.stringify(group));
-    console.log("[handleAddToBag] All product.variants:", JSON.stringify(product.variants));
-    console.log("[handleAddToBag] Selected variant:", JSON.stringify(variant));
-    console.log("[handleAddToBag] activeSize:", selectedSize);
-    console.log("[handleAddToBag] isAuthenticated:", isAuthenticated);
-    console.log("[handleAddToBag] Payload that will be sent to backend:", {
-      variantId: variant?.id,
-      quantity: 1,
-    });
-
     if (group?.sizes.length && !selectedSize) {
-      console.log("[handleAddToBag] ❌ Blocked: size required but not selected");
       alert("Please select a size");
       return;
     }
@@ -210,7 +234,6 @@ export default function ProductDetails({
         product.variants.length === 0
           ? "This product is currently unavailable."
           : "Please select a valid variant";
-      console.log("[handleAddToBag] ❌ Blocked: no variant found. group.variantIds:", group.variantIds);
       alert(message);
       return;
     }
@@ -229,12 +252,10 @@ export default function ProductDetails({
     }
 
     if (isAuthenticated) {
-      console.log("[handleAddToBag] 🔄 Calling addToCart with variantId:", variant.id);
       addToCart(
         { variantId: variant.id, quantity: 1 },
         {
-          onSuccess: (data) => {
-            console.log("[handleAddToBag] ✅ addToCart success:", JSON.stringify(data));
+          onSuccess: () => {
             openCart();
           },
           onError: (error: unknown) => {
@@ -244,9 +265,7 @@ export default function ProductDetails({
         }
       );
     } else {
-      console.log("[handleAddToBag] 🛒 Adding to guest cart - variantId:", variant.id, "price:", variant.price);
       addGuestItem(variant.id, product.name, 1, variant.price, availableQuantity);
-      console.log("[handleAddToBag] ✅ Guest cart item added, opening cart");
       openCart();
     }
   }
@@ -395,27 +414,28 @@ export default function ProductDetails({
                 <span className="font-normal text-gray-600">{group?.label}</span>
               </p>
               <div className="flex gap-2">
-                {colorGroups.map((g, i) => (
-                  <button
-                    key={i}
-                    title={g.label}
-                    onClick={() => handleColorChange(i)}
-                    className={`w-9 h-9 rounded-full transition-all duration-200 ${
-                      i === activeColorIndex
-                        ? "ring-2 ring-offset-2 ring-black"
-                        : "hover:ring-1 hover:ring-gray-400 hover:ring-offset-1"
-                    }`}
-                    style={{
-                      backgroundColor: g.color,
-                      border:
-                        g.color === "#FFFFFF" ||
-                        g.color === "#ffffff" ||
-                        g.color === "#E8E4DC"
-                          ? "1px solid #ccc"
-                          : "none",
-                    }}
-                  />
-                ))}
+                {colorGroups.map((g, i) => {
+                  const swatchColor = colorToCss(g.color);
+                  return (
+                    <button
+                      key={i}
+                      title={g.label}
+                      onClick={() => handleColorChange(i)}
+                      className={`w-9 h-9 rounded-full transition-all duration-200 ${
+                        i === activeColorIndex
+                          ? "ring-2 ring-offset-2 ring-black"
+                          : "hover:ring-1 hover:ring-gray-400 hover:ring-offset-1"
+                      }`}
+                      style={{
+                        backgroundColor: swatchColor,
+                        border:
+                          swatchColor === "#ffffff" || swatchColor === "#FFFFFF" || swatchColor === "#E8E4DC"
+                            ? "1px solid #ccc"
+                            : "none",
+                      }}
+                    />
+                  );
+                })}
               </div>
             </div>
           )}
@@ -596,7 +616,7 @@ export default function ProductDetails({
         </div>
       </div>
 
-      <ProductFeatures />
+      <ProductFeatures product={product} />
     </div>
   );
 

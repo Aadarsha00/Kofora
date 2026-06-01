@@ -1,37 +1,60 @@
-"use client";
-
 import Image from "next/image";
-import { useParams } from "next/navigation";
-import { getProductBySlug } from "@/data/ProductsData";
+import { Product } from "@/interface/Product";
 
-export default function ProductFeatures() {
-  const { gender, slug } = useParams();
-  const product = getProductBySlug(gender as string, slug as string);
+export default function ProductFeatures({ product }: { product: Product }) {
+  const activeImages = product.images.filter((image) => image.is_active);
+  const featureImage = activeImages[1]?.image ?? activeImages[0]?.image;
+  const highlights = [
+    product.short_description
+      ? {
+          title: "Comfort",
+          description: product.short_description,
+        }
+      : null,
+    product.full_description
+      ? {
+          title: "Details",
+          description: product.full_description,
+        }
+      : null,
+    product.brand
+      ? {
+          title: "Brand",
+          description: `${product.brand} essentials built for daily wear.`,
+        }
+      : null,
+  ].filter(Boolean) as { title: string; description: string }[];
 
-  if (!product || !product.features || !product.tagline) return null;
+  if (!featureImage && highlights.length === 0) return null;
 
   return (
-    <div className="w-full bg-gray-100 px-5 pb-10 pt-10 lg:-mt-40 lg:px-10 lg:pb-12">
-      <h2 className="mb-8 text-center text-2xl font-black uppercase tracking-tight text-black md:text-3xl lg:mb-10">
-        {product.tagline}
-      </h2>
-
-      <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-        {product.features.map((feature, i) => (
-          <div key={i} className="flex flex-col">
-            <div className="relative w-full aspect-square rounded-lg overflow-hidden mb-4">
-              <Image
-                src={feature.image}
-                alt={feature.title}
-                fill
-                className="object-cover"
-              />
-            </div>
-            <h3 className="text-base font-bold text-black mb-1">{feature.title}</h3>
-            <p className="text-sm text-gray-500 leading-relaxed">{feature.description}</p>
+    <section className="w-full bg-[#f7f7f4] px-5 py-12 md:px-10 md:py-16">
+      <div className="mx-auto grid max-w-6xl gap-8 lg:grid-cols-[minmax(0,1fr)_420px] lg:items-center">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.18em] text-gray-500">Product Highlights</p>
+          <h2 className="mt-3 text-3xl font-bold text-black md:text-4xl">{product.name}</h2>
+          <div className="mt-8 grid gap-5 sm:grid-cols-3 lg:grid-cols-1">
+            {highlights.map((feature) => (
+              <div key={feature.title} className="border-t border-gray-300 pt-4">
+                <h3 className="text-sm font-bold uppercase tracking-wide text-black">{feature.title}</h3>
+                <p className="mt-2 line-clamp-4 text-sm leading-6 text-gray-600">{feature.description}</p>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
+
+        {featureImage && (
+          <div className="relative aspect-[4/5] w-full overflow-hidden bg-gray-200">
+            <Image
+              src={featureImage}
+              alt={activeImages[1]?.alt_text || activeImages[0]?.alt_text || product.name}
+              fill
+              sizes="(max-width: 1024px) 100vw, 420px"
+              className="object-cover"
+            />
+          </div>
+        )}
       </div>
-    </div>
+    </section>
   );
 }

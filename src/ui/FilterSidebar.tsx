@@ -17,17 +17,15 @@ const PARAMS = {
   maxPrice: "max_price",
 } as const;
 
-interface FilterSectionProps {
-  title: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}
-
 function FilterSection({
   title,
   children,
   defaultOpen = true,
-}: FilterSectionProps) {
+}: {
+  title: string;
+  children: React.ReactNode;
+  defaultOpen?: boolean;
+}) {
   const [open, setOpen] = useState(defaultOpen);
 
   return (
@@ -41,7 +39,6 @@ function FilterSection({
         <span className="text-xs font-semibold uppercase tracking-widest text-gray-800">
           {title}
         </span>
-
         <span
           className={`inline-block h-2.5 w-2.5 border-r-2 border-b-2 border-gray-600 transition-transform duration-200 ${
             open ? "-rotate-135" : "rotate-45"
@@ -51,9 +48,7 @@ function FilterSection({
 
       <div
         className={`grid transition-all duration-300 ease-in-out ${
-          open
-            ? "grid-rows-[1fr] opacity-100 pt-3"
-            : "grid-rows-[0fr] opacity-0 pt-0"
+          open ? "grid-rows-[1fr] opacity-100 pt-3" : "grid-rows-[0fr] opacity-0 pt-0"
         }`}
       >
         <div className="overflow-hidden">{children}</div>
@@ -62,17 +57,15 @@ function FilterSection({
   );
 }
 
-interface CheckboxOptionProps {
-  label: string;
-  checked: boolean;
-  onChange: () => void;
-}
-
 const CheckboxOption = memo(function CheckboxOption({
   label,
   checked,
   onChange,
-}: CheckboxOptionProps) {
+}: {
+  label: string;
+  checked: boolean;
+  onChange: () => void;
+}) {
   return (
     <label className="group mb-2 flex cursor-pointer items-center gap-2.5">
       <input
@@ -81,30 +74,17 @@ const CheckboxOption = memo(function CheckboxOption({
         onChange={onChange}
         className="h-4 w-4 cursor-pointer border-gray-300 accent-black"
       />
-      <span
-        className={`text-sm transition-colors ${
-          checked
-            ? "font-medium text-black"
-            : "text-gray-500 group-hover:text-black"
-        }`}
-      >
+      <span className={`text-sm transition-colors ${checked ? "font-medium text-black" : "text-gray-500 group-hover:text-black"}`}>
         {label}
       </span>
     </label>
   );
 });
 
-function parsePriceParam(
-  value: string | null,
-  fallback: number,
-  min: number,
-  max: number
-) {
+function parsePriceParam(value: string | null, fallback: number, min: number, max: number) {
   if (value === null) return fallback;
-
   const parsed = Number(value);
   if (!Number.isFinite(parsed)) return fallback;
-
   return Math.min(Math.max(parsed, min), max);
 }
 
@@ -116,55 +96,24 @@ export default function FilterSidebar({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-
-  console.log("🏷️ FilterSidebar Props - minPrice:", minPrice, "maxPrice:", maxPrice);
-
   const activeSubCategories = searchParams.getAll(PARAMS.subCategory);
-
-  const rawMinPrice = parsePriceParam(
-    searchParams.get(PARAMS.minPrice),
-    minPrice,
-    minPrice,
-    maxPrice
-  );
-
-  const rawMaxPrice = parsePriceParam(
-    searchParams.get(PARAMS.maxPrice),
-    maxPrice,
-    minPrice,
-    maxPrice
-  );
-
-  console.log("📌 rawMinPrice:", rawMinPrice, "rawMaxPrice:", rawMaxPrice);
-
+  const rawMinPrice = parsePriceParam(searchParams.get(PARAMS.minPrice), minPrice, minPrice, maxPrice);
+  const rawMaxPrice = parsePriceParam(searchParams.get(PARAMS.maxPrice), maxPrice, minPrice, maxPrice);
   const activeMinPrice = Math.min(rawMinPrice, rawMaxPrice);
   const activeMaxPrice = Math.max(rawMinPrice, rawMaxPrice);
-
-  console.log("🎯 activeMinPrice:", activeMinPrice, "activeMaxPrice:", activeMaxPrice);
-
-  const [draftPrice, setDraftPrice] = useState<[number, number]>([
-    activeMinPrice,
-    activeMaxPrice,
-  ]);
-
-  console.log("📝 draftPrice state:", draftPrice);
-
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-    console.log("🔄 useEffect: Updating draftPrice to:", [activeMinPrice, activeMaxPrice]);
-      setDraftPrice([activeMinPrice, activeMaxPrice]);
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [activeMinPrice, activeMaxPrice]);
-
+  const [draftPrice, setDraftPrice] = useState<[number, number]>([activeMinPrice, activeMaxPrice]);
   const displayPrice = draftPrice;
-
-  console.log("🖥️ displayPrice:", displayPrice);
-
   const hasFilters =
     activeSubCategories.length > 0 ||
     activeMinPrice !== minPrice ||
     activeMaxPrice !== maxPrice;
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => {
+      setDraftPrice([activeMinPrice, activeMaxPrice]);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [activeMinPrice, activeMaxPrice]);
 
   const buildQueryString = useCallback(
     (updater: (params: URLSearchParams) => void) => {
@@ -183,7 +132,6 @@ export default function FilterSidebar({
         const alreadySelected = currentValues.includes(value);
 
         params.delete(key);
-
         if (alreadySelected) {
           currentValues
             .filter((item) => item !== value)
@@ -203,15 +151,12 @@ export default function FilterSidebar({
     params.delete(PARAMS.subCategory);
     params.delete(PARAMS.minPrice);
     params.delete(PARAMS.maxPrice);
-
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }, [pathname, router, searchParams]);
 
   const sortedSubCategories = useMemo(() => {
-    return [...availableSubCategories].sort((a, b) =>
-      a.label.localeCompare(b.label)
-    );
+    return [...availableSubCategories].sort((a, b) => a.label.localeCompare(b.label));
   }, [availableSubCategories]);
 
   return (
@@ -233,9 +178,7 @@ export default function FilterSidebar({
               key={subCategory.id}
               label={subCategory.label}
               checked={activeSubCategories.includes(subCategory.value)}
-              onChange={() =>
-                toggleMultiValueParam(PARAMS.subCategory, subCategory.value)
-              }
+              onChange={() => toggleMultiValueParam(PARAMS.subCategory, subCategory.value)}
             />
           ))
         ) : (
@@ -255,41 +198,19 @@ export default function FilterSidebar({
           step={1}
           value={displayPrice}
           className="mb-2"
-          onValueChange={(val) => {
-            console.log("🎚️ onValueChange - raw value:", val);
-            console.log("🎚️ onValueChange - displayPrice before:", displayPrice);
-            setDraftPrice([val[0], val[1]]);
-            console.log("🎚️ onValueChange - displayPrice after:", [val[0], val[1]]);
-          }}
+          onValueChange={(val) => setDraftPrice([val[0], val[1]])}
           onValueCommit={(val) => {
-            console.log("✅ onValueCommit - received values:", val);
-            console.log("📊 Price range: min=", minPrice, "max=", maxPrice);
-            
             const newMin = Math.min(val[0], val[1]);
             const newMax = Math.max(val[0], val[1]);
-
-            console.log("🔄 Sorted - newMin:", newMin, "newMax:", newMax);
             setDraftPrice([newMin, newMax]);
 
             const url = buildQueryString((params) => {
-              console.log("🔗 Before URL construction - params:", params.toString());
               params.delete(PARAMS.minPrice);
               params.delete(PARAMS.maxPrice);
-
-              if (newMin > minPrice) {
-                params.set(PARAMS.minPrice, String(newMin));
-                console.log("✏️ Set min_price param:", newMin);
-              }
-
-              if (newMax < maxPrice) {
-                params.set(PARAMS.maxPrice, String(newMax));
-                console.log("✏️ Set max_price param:", newMax);
-              }
-              
-              console.log("🔗 Final URL params:", params.toString());
+              if (newMin > minPrice) params.set(PARAMS.minPrice, String(newMin));
+              if (newMax < maxPrice) params.set(PARAMS.maxPrice, String(newMax));
             });
 
-            console.log("📍 Navigating to URL:", url);
             router.replace(url, { scroll: false });
           }}
         />

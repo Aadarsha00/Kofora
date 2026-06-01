@@ -93,7 +93,7 @@ export default function PaymentSuccessPage() {
       );
       queryClient.invalidateQueries({ queryKey: ["cart"] });
       queryClient.invalidateQueries({ queryKey: ["orders"] });
-      router.replace("/account");
+      router.replace("/orders");
     };
 
     const handleError = (err: unknown, fallback: string) => {
@@ -102,7 +102,7 @@ export default function PaymentSuccessPage() {
         clearGuestCart();
         queryClient.removeQueries({ queryKey: ["cart"] });
         queryClient.invalidateQueries({ queryKey: ["orders"] });
-        router.replace("/account");
+        router.replace("/orders");
         return;
       }
       confirmationStarted.current = false;

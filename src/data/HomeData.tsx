@@ -21,9 +21,9 @@ export const FOOT_BANNER_DATA = {
 }
 
 export const FOOT_PRODUCT_GRID = [
-  { id: 1, image: "/women3.webp", subtitle: "Comfort Beyond Socks", title: "SLIPPERS & SHOES", href: "/collections/slippers" },
-  { id: 2, image: "/women1.webp", subtitle: "Comfort Beyond Socks", title: "Best Seller",       href: "/collections/best-sellers" },
-  { id: 3, image: "/women2.webp", subtitle: "Comfort Beyond Socks", title: "New Release",       href: "/collections/new-releases" },
+  { id: 1, image: "/women3.webp", subtitle: "Comfort Beyond Socks", title: "SOCKS", href: "/collections/socks" },
+  { id: 2, image: "/women1.webp", subtitle: "Comfort Beyond Socks", title: "Best Seller", href: "/collections/women?sort_by=best-selling" },
+  { id: 3, image: "/women2.webp", subtitle: "Comfort Beyond Socks", title: "New Release", href: "/collections/men?sort_by=best-selling" },
 ]
 
 export const PRODUCT_GRID_ITEMS = [
@@ -46,5 +46,5 @@ export const SOCK_LENGTHS = [
 export const SOCK_CATEGORIES = [
   { label: "Women", href: (slug: string) => `/collections/women?sub_category=${slug}` },
   { label: "Men",   href: (slug: string) => `/collections/men?sub_category=${slug}`   },
-  { label: "All",   href: (slug: string) => `/collections/all?sub_category=${slug}`   },
+  { label: "All",   href: (slug: string) => `/collections/socks?sub_category=${slug}` },
 ]

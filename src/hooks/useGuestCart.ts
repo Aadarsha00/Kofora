@@ -18,30 +18,25 @@ export const useGuestCart = () => {
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
       const stored = localStorage.getItem(GUEST_CART_KEY);
-      console.log("[GuestCart] useEffect - Loading from localStorage:", { stored, hasKey: !!stored });
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          console.log("[GuestCart] useEffect - Parsed items:", parsed);
           setItems(parsed);
         } catch (error) {
           console.error("[GuestCart] Failed to parse stored cart:", error);
         }
       }
       setIsLoading(false);
-      console.log("[GuestCart] useEffect - isLoading set to false");
     });
     return () => cancelAnimationFrame(frame);
   }, []);
 
   // Save to localStorage whenever items change
   useEffect(() => {
-    console.log("[GuestCart] Saving to localStorage:", { items, itemCount: items.length });
     localStorage.setItem(GUEST_CART_KEY, JSON.stringify(items));
   }, [items]);
 
   const addItem = useCallback((variantId: number, productName: string, quantity: number) => {
-    console.log("[GuestCart] addItem called:", { variantId, productName, quantity });
     setItems((prevItems) => {
       const existing = prevItems.find((item) => item.variantId === variantId);
       if (existing) {
@@ -50,11 +45,9 @@ export const useGuestCart = () => {
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
-        console.log("[GuestCart] Updated item, new items:", updated);
         return updated;
       }
       const newItems = [...prevItems, { variantId, productName, quantity }];
-      console.log("[GuestCart] Added new item, new items:", newItems);
       return newItems;
     });
   }, []);
@@ -76,10 +69,7 @@ export const useGuestCart = () => {
   }, []);
 
   const getItemCount = useCallback(() => {
-    const count = items.reduce((total, item) => total + item.quantity, 0);
-    const stored = localStorage.getItem(GUEST_CART_KEY);
-    console.log("[GuestCart] getItemCount:", { count, itemsInState: items.length, itemsInStorage: stored ? JSON.parse(stored).length : 0 });
-    return count;
+    return items.reduce((total, item) => total + item.quantity, 0);
   }, [items]);
 
   return {

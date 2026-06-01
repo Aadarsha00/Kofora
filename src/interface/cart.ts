@@ -52,6 +52,10 @@ export interface ProductVariant {
   color: string;
   price: string;
   stock_quantity: number;
+  available_quantity?: number;
+  image_override?: string | null;
+  image?: string | null;
+  image_alt_text?: string | null;
 }
 
 export interface CartVariantItem {

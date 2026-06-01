@@ -1,14 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { X, Eye, EyeSlash, GoogleLogo, FacebookLogo } from "@phosphor-icons/react";
+import { useCallback, useEffect, useState } from "react";
+import { Eye, EyeSlash, FacebookLogo, X } from "@phosphor-icons/react";
 import { SignupInput, signupSchema } from "@/schema/auth.schema";
-import { useSignup, useVerifyOTP } from "@/hooks/useAuthMutations";
+import { AuthResponse } from "@/interface/auth";
+import { useGoogleLogin, useSignup, useVerifyOTP } from "@/hooks/useAuthMutations";
+import { useAuth } from "@/context/AuthContext";
+import GoogleSignInButton from "@/component/Auth/GoogleSignInButton";
 
 interface SignupModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSwitchToLogin: () => void;
+}
+
+function getAuthErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error) return error.message;
+  if (typeof error === "object" && error !== null && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string") return message;
+  }
+  return fallback;
 }
 
 export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: SignupModalProps) {
@@ -26,8 +38,10 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
 
   const signupMutation = useSignup();
   const verifyOTPMutation = useVerifyOTP();
+  const googleLoginMutation = useGoogleLogin();
+  const { setAuthUser } = useAuth();
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setFirstName("");
     setLastName("");
     setEmail("");
@@ -37,7 +51,7 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
     setShowOTPStep(false);
     setErrors({});
     setApiError(null);
-  };
+  }, []);
 
   const handleSubmit = () => {
     setApiError(null);
@@ -71,7 +85,7 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
           setShowOTPStep(true);
         },
         onError: (error: unknown) => {
-          setApiError(error instanceof Error ? error.message : "Signup failed. Please try again.");
+          setApiError(getAuthErrorMessage(error, "Signup failed. Please try again."));
         },
       }
     );
@@ -88,17 +102,28 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
           onSwitchToLogin();
         },
         onError: (error: unknown) => {
-          const message =
-            error instanceof Error
-              ? error.message
-              : typeof error === "object" && error !== null && "message" in error
-              ? String((error as { message?: unknown }).message)
-              : "Invalid or expired verification code.";
-          setApiError(message);
+          setApiError(getAuthErrorMessage(error, "Invalid or expired verification code."));
         },
       }
     );
   };
+
+  const handleGoogleCredential = useCallback(
+    (credential: string) => {
+      setApiError(null);
+      googleLoginMutation.mutate(credential, {
+        onSuccess: (data: AuthResponse) => {
+          setAuthUser(data.data?.user ?? null);
+          resetForm();
+          onClose();
+        },
+        onError: (error: unknown) => {
+          setApiError(getAuthErrorMessage(error, "Google sign-in failed. Please try again."));
+        },
+      });
+    },
+    [googleLoginMutation, onClose, resetForm, setAuthUser]
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -120,7 +145,7 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
     >
       <div
         className="bg-white w-[480px] rounded-2xl p-8 relative text-black"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
       >
         <button onClick={onClose} className="absolute top-4 right-4 hover:opacity-50 transition-opacity cursor-pointer">
           <X size={20} />
@@ -135,14 +160,13 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
 
         {!showOTPStep ? (
           <>
-            {/* Email first */}
             <div className="mb-3">
               <input
                 type="email"
                 placeholder="Email"
                 value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
+                onChange={(event) => {
+                  setEmail(event.target.value);
                   if (errors.email) setErrors({ ...errors, email: undefined });
                 }}
                 className="w-full border border-gray-300 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-black transition-colors"
@@ -150,15 +174,14 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
             </div>
 
-            {/* First + Last name side by side */}
             <div className="flex gap-3 mb-3">
               <div className="flex-1">
                 <input
                   type="text"
                   placeholder="First Name"
                   value={firstName}
-                  onChange={(e) => {
-                    setFirstName(e.target.value);
+                  onChange={(event) => {
+                    setFirstName(event.target.value);
                     if (errors.name) setErrors({ ...errors, name: undefined });
                   }}
                   className="w-full border border-gray-300 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-black transition-colors"
@@ -169,8 +192,8 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
                   type="text"
                   placeholder="Last Name"
                   value={lastName}
-                  onChange={(e) => {
-                    setLastName(e.target.value);
+                  onChange={(event) => {
+                    setLastName(event.target.value);
                     if (errors.name) setErrors({ ...errors, name: undefined });
                   }}
                   className="w-full border border-gray-300 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-black transition-colors"
@@ -179,15 +202,14 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
             </div>
             {errors.name && <p className="text-red-500 text-xs -mt-2 mb-2">{errors.name}</p>}
 
-            {/* Password */}
             <div className="mb-3">
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   placeholder="Password"
                   value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
+                  onChange={(event) => {
+                    setPassword(event.target.value);
                     if (errors.password) setErrors({ ...errors, password: undefined });
                   }}
                   className="w-full border border-gray-300 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-black transition-colors"
@@ -203,15 +225,14 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
               {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
             </div>
 
-            {/* Confirm Password */}
             <div className="mb-3">
               <div className="relative">
                 <input
                   type={showConfirm ? "text" : "password"}
                   placeholder="Confirm Password"
                   value={confirmPassword}
-                  onChange={(e) => {
-                    setConfirmPassword(e.target.value);
+                  onChange={(event) => {
+                    setConfirmPassword(event.target.value);
                     if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: undefined });
                   }}
                   className="w-full border border-gray-300 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-black transition-colors"
@@ -232,7 +253,7 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
 
             <button
               onClick={handleSubmit}
-              disabled={signupMutation.isPending}
+              disabled={signupMutation.isPending || googleLoginMutation.isPending}
               className="w-full bg-[#253E38] text-white py-3 text-sm font-semibold tracking-wide hover:opacity-90 transition-opacity cursor-pointer rounded-sm disabled:opacity-60 mt-2"
             >
               {signupMutation.isPending ? "Creating account..." : "Sign Up"}
@@ -245,7 +266,7 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
                 type="text"
                 placeholder="Enter 6-digit code"
                 value={otp}
-                onChange={(e) => setOtp(e.target.value.slice(0, 6))}
+                onChange={(event) => setOtp(event.target.value.slice(0, 6))}
                 maxLength={6}
                 className="w-full border border-gray-300 rounded-sm px-4 py-3 text-sm text-center tracking-widest focus:outline-none focus:border-black transition-colors"
               />
@@ -273,10 +294,14 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
               <div className="flex-1 h-px bg-gray-200" />
             </div>
 
-            <button className="w-full border border-gray-300 rounded-sm py-3 text-sm font-medium flex items-center justify-center gap-3 hover:bg-gray-50 transition-colors cursor-pointer mb-3">
-              <GoogleLogo size={18} weight="bold" color="#4285F4" />
-              Continue with Google
-            </button>
+            <div className="mb-3">
+              <GoogleSignInButton
+                disabled={signupMutation.isPending || googleLoginMutation.isPending}
+                text="signup_with"
+                onCredential={handleGoogleCredential}
+                onError={setApiError}
+              />
+            </div>
 
             <button className="w-full border border-gray-300 rounded-sm py-3 text-sm font-medium flex items-center justify-center gap-3 hover:bg-gray-50 transition-colors cursor-pointer">
               <FacebookLogo size={18} weight="bold" color="#1877F2" />

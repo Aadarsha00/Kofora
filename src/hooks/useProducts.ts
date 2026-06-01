@@ -96,14 +96,17 @@ export const useFeaturedProducts = () => {
   });
 };
 
-export const useProductById = (id: number) => {
+export const useProductById = (id?: number | null) => {
+  const validId = typeof id === "number" && Number.isFinite(id) && id > 0;
+
   return useQuery({
-    queryKey: ["products", id],
+    queryKey: ["products", "id", id],
     queryFn: async () => {
+      if (!validId) throw new Error("Product id is required");
       const product = await getProductById(id);
       return normalizeProduct(product);
     },
-    enabled: !!id,
+    enabled: validId,
   });
 };
 
@@ -142,13 +145,13 @@ export const useSearchPageProducts = (query: string, categoryIds: number[]) => {
   });
 };
 
-export const useProductBySlug = (slug: string) => {
+export const useProductBySlug = (slug: string, enabled = true) => {
   return useQuery({
     queryKey: ["products", "slug", slug],
     queryFn: async () => {
       const product = await getProductBySlug(slug);
       return normalizeProduct(product);
     },
-    enabled: !!slug,
+    enabled: enabled && !!slug,
   });
 };

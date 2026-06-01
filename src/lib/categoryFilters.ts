@@ -53,7 +53,6 @@ export function getSubCategories(categories: Category[], genderSlug?: string): S
     });
   }
 
-  console.log(`[Filter] getSubCategories for "${genderSlug}":`, subCategories);
   return subCategories;
 }
 
@@ -63,15 +62,10 @@ export function getAvailableSubCategoriesFromProducts(
   genderSlug?: string
 ): SubCategoryOption[] {
   const subCategories = getSubCategories(categories, genderSlug);
-  
-  console.log("[Filter] All subcategories:", subCategories);
-  console.log("[Filter] Product category IDs:", products.map(p => ({ name: p.name, categories: p.categories })));
 
   const available = subCategories.filter((subCategory) =>
     products.some((product) => product.categories.includes(subCategory.id))
   );
-  
-  console.log("[Filter] Available subcategories:", available);
 
   return available;
 }
@@ -87,15 +81,6 @@ export function getProductSubCategory(
     product.categories.includes(subCategory.id)
   );
   
-  if (match) {
-    console.log(`[Filter] Product "${product.name}" has subcategory:`, {
-      id: match.id,
-      slug: match.value,
-      label: match.label,
-      categories: product.categories,
-    });
-  }
-  
   return match ?? null;
 }
 
@@ -105,31 +90,15 @@ export function filterProductsBySubCategory(
   selectedSubCategories: string[],
   genderSlug?: string
 ): Product[] {
-  console.log("[Filter] filterProductsBySubCategory called with:", {
-    productsCount: products.length,
-    selectedSubCategories,
-    genderSlug,
-  });
-  
   if (!selectedSubCategories.length) {
-    console.log("[Filter] No selected subcategories, returning all products");
     return products;
   }
 
   const filtered = products.filter((product) => {
     const subCategory = getProductSubCategory(product, categories, genderSlug);
-    
-    console.log(`[Filter] Checking product "${product.name}":`, {
-      hasSubCategory: !!subCategory,
-      subCategorySlug: subCategory?.value,
-      selectedSubCategories,
-      matches: subCategory ? selectedSubCategories.includes(subCategory.value) : false,
-    });
-    
     return subCategory ? selectedSubCategories.includes(subCategory.value) : false;
   });
-  
-  console.log(`[Filter] Filtered from ${products.length} to ${filtered.length} products`);
+
   return filtered;
 }
 

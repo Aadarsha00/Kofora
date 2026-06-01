@@ -89,7 +89,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } else {
       window.localStorage.removeItem(AUTH_USER_STORAGE_KEY);
     }
-    setIsAuthenticated(true); // ✅ Always mark as authenticated regardless of user data shape
+    setIsAuthenticated(Boolean(newUser) || Boolean(Cookies.get("access_token")));
   }, []);
 
   const value: AuthContextType = {

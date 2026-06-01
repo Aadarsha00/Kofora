@@ -10,7 +10,7 @@ import { useGuestCartStore } from "@/store/guestCartStore";
 import { useCart, useRemoveFromCart, useUpdateCartItem, useCartTotals, useApplyCoupon, useRemoveCoupon } from "@/hooks/useCart";
 import { useValidateCoupon } from "@/hooks/useDiscounts";
 import { useGuestDiscount } from "@/hooks/useGuestDiscount";
-import api from "@/axios/api.axios";
+import { getProductVariantsByIds } from "@/api/products.api";
 
 // Hex to Color Name mapping
 const hexToColorName: Record<string, string> = {
@@ -60,32 +60,6 @@ type VariantDisplayData = {
   productName?: string;
 };
 
-type ProductImageLookup = {
-  image?: string;
-  is_active?: boolean;
-  variant_id?: number | null;
-};
-
-type ProductVariantLookup = {
-  id: number;
-  price?: string | number;
-  size?: string;
-  color?: string;
-};
-
-type ProductLookup = {
-  name?: string;
-  images?: ProductImageLookup[];
-  variants?: ProductVariantLookup[];
-};
-
-type ProductsListResponse = {
-  data?: {
-    results?: ProductLookup[];
-  };
-  results?: ProductLookup[];
-};
-
 type AuthVariant = {
   id: number;
   product_name?: string;
@@ -93,6 +67,9 @@ type AuthVariant = {
   price?: string;
   color?: string;
   size?: string;
+  image?: string | null;
+  image_override?: string | null;
+  image_alt_text?: string | null;
 };
 
 type AuthVariantCartItem = {
@@ -129,7 +106,6 @@ export default function CartPage() {
   
   const { isAuthenticated } = useAuth();
   const { getGuestDiscount, clearGuestDiscount } = useGuestDiscount();
-  console.log("[CartPage] Rendering - isAuthenticated:", isAuthenticated);
   
   const { data: authenticatedCart, isLoading: cartLoading } = useCart();
   const { mutate: removeItem } = useRemoveFromCart();
@@ -187,7 +163,6 @@ export default function CartPage() {
   const handleRemoveCoupon = () => {
     removeCoupon(undefined, {
       onSuccess: () => {
-        console.log("[CartPage] Coupon removed successfully");
         setCouponError("");
         setCouponSuccess(true);
         setTimeout(() => setCouponSuccess(false), 3000);
@@ -205,43 +180,18 @@ export default function CartPage() {
     if (!isAuthenticated && guestItems.length > 0) {
       const variantIds = guestItems.map((item) => item.variantId);
 
-      api
-        .get(`/products/?page_size=100`)
-        .then((res: { data: ProductsListResponse }) => {
+      getProductVariantsByIds(variantIds)
+        .then((variants) => {
           const data: Record<number, VariantDisplayData> = {};
-          const products = res.data.data?.results || res.data?.results || [];
 
-          products.forEach((product) => {
-            if (product.variants) {
-              product.variants.forEach((variant) => {
-                if (variantIds.includes(variant.id)) {
-                  // Get variant-specific images first
-                  const variantImages = product.images?.filter(
-                    (img) => img.is_active && img.variant_id === variant.id
-                  ) || [];
-
-                  // Fall back to general product images
-                  const generalImages = product.images?.filter(
-                    (img) => img.is_active && img.variant_id === null
-                  ) || [];
-
-                  // Fall back to any active images
-                  const anyImages = product.images?.filter((img) => img.is_active) || [];
-
-                  const image = variantImages[0]?.image || generalImages[0]?.image || anyImages[0]?.image || "";
-
-                  data[variant.id] = {
-                    price: variant.price ? String(variant.price) : "0",
-                    image: image,
-                    size: variant.size || "",
-                    color: variant.color || "",
-                    productName: product.name || "",
-                  };
-
-                  console.log(`[CartPage] Variant ${variant.id}:`, { image, size: variant.size, color: variant.color });
-                }
-              });
-            }
+          variants.forEach((variant) => {
+            data[variant.id] = {
+              price: variant.price ? String(variant.price) : "0",
+              image: variant.image || variant.image_override || "",
+              size: variant.size || "",
+              color: variant.color || "",
+              productName: variant.product_name || "",
+            };
           });
 
           setVariantData(data);
@@ -256,52 +206,6 @@ export default function CartPage() {
         });
     }
   }, [guestItems, isAuthenticated]);
-
-  // Fetch variant images for authenticated items
-  useEffect(() => {
-    if (isAuthenticated && authenticatedCart?.variant_items && authenticatedCart.variant_items.length > 0) {
-      const variantIds = authenticatedCart.variant_items
-        .map((item) => item.variant?.id)
-        .filter((id): id is number => Boolean(id));
-      
-      if (variantIds.length === 0) return;
-
-      api
-        .get(`/products/?page_size=100`)
-        .then((res: { data: ProductsListResponse }) => {
-          const data: Record<number, VariantDisplayData> = {};
-          const products = res.data.data?.results || res.data?.results || [];
-
-          products.forEach((product) => {
-            if (product.variants) {
-              product.variants.forEach((variant) => {
-                if (variantIds.includes(variant.id)) {
-                  // Get variant-specific images first, then fall back to product images
-                  const variantImages = product.images?.filter(
-                    (img) => img.is_active && img.variant_id === variant.id
-                  ) || [];
-                  
-                  const generalImages = product.images?.filter(
-                    (img) => img.is_active && img.variant_id === null
-                  ) || [];
-
-                  const anyImages = product.images?.filter((img) => img.is_active) || [];
-                  
-                  const image = variantImages[0]?.image || generalImages[0]?.image || anyImages[0]?.image || "";
-                  
-                  data[variant.id] = { image, productName: product.name || "" };
-                }
-              });
-            }
-          });
-
-          setVariantData(prev => ({ ...prev, ...data }));
-        })
-        .catch((err) => {
-          console.error("[CartPage] Error fetching authenticated variant images:", err);
-        });
-    }
-  }, [isAuthenticated, authenticatedCart]);
 
   const authenticatedItems: DisplayCartItem[] = [
     ...(authenticatedCart?.variant_items ?? []),
@@ -429,7 +333,7 @@ export default function CartPage() {
                     priceValue = item.variant.price || "0";
                     colorValue = item.variant.color || "";
                     sizeValue = item.variant.size || "";
-                    imageUrl = fetchedData?.image || "";
+                    imageUrl = item.variant.image || item.variant.image_override || fetchedData?.image || "";
                   } else {
                     productName = item.bundle?.name ?? "Product";
                     priceValue = item.bundle?.price ?? "0";

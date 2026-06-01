@@ -1,23 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { X, Eye, EyeSlash, GoogleLogo, FacebookLogo } from "@phosphor-icons/react";
+import { useCallback, useEffect, useState } from "react";
+import { Eye, EyeSlash, FacebookLogo, X } from "@phosphor-icons/react";
 import Link from "next/link";
 import { LoginInput, loginSchema } from "@/schema/auth.schema";
 import { AuthResponse } from "@/interface/auth";
 import { useMergeGuestCart, useForceRefetchCart } from "@/hooks/useCart";
-import { useLogin } from "@/hooks/useAuthMutations";
+import { useGoogleLogin, useLogin } from "@/hooks/useAuthMutations";
 import { useAuth } from "@/context/AuthContext";
 import { useGuestCartStore } from "@/store/guestCartStore";
 import { useCartSidebarStore } from "@/store/cartSidebarStore";
 import { useGuestDiscount } from "@/hooks/useGuestDiscount";
 import { applyFirstOrderClaim } from "@/api/discount.api";
+import GoogleSignInButton from "@/component/Auth/GoogleSignInButton";
 
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSwitchToSignup: () => void;
 }
+
+type GuestCartItems = ReturnType<typeof useGuestCartStore.getState>["items"];
 
 function getErrorMessage(error: unknown): string {
   if (typeof error === "object" && error !== null && "message" in error) {
@@ -37,10 +40,60 @@ export default function LoginModal({ isOpen, onClose, onSwitchToSignup }: LoginM
   const mergeGuestCart = useMergeGuestCart();
   const forceRefetchCart = useForceRefetchCart();
   const loginMutation = useLogin();
+  const googleLoginMutation = useGoogleLogin();
   const { setAuthUser } = useAuth();
   const loadGuestCart = useGuestCartStore((state) => state.loadFromStorage);
   const openCart = useCartSidebarStore((state) => state.openCart);
   const { getGuestDiscount, clearGuestDiscount } = useGuestDiscount();
+
+  const finishAuthenticatedLogin = useCallback(
+    async (data: AuthResponse, guestItemsAtSubmit: GuestCartItems) => {
+      const userToSet = data.data?.user ?? null;
+      setAuthUser(userToSet);
+
+      const guestDiscount = getGuestDiscount();
+      if (guestDiscount && guestDiscount.email !== userToSet?.email) {
+        clearGuestDiscount();
+      }
+
+      try {
+        const latestGuestItems = useGuestCartStore.getState().items;
+        const mergeResult = await mergeGuestCart.mutateAsync(latestGuestItems);
+        if (mergeResult?.skipped_variant_ids?.length) {
+          setApiError("Some bag items could not be moved because they are out of stock or unavailable.");
+        }
+      } catch (error) {
+        console.error("[LoginModal] Guest cart merge failed:", error);
+      }
+
+      if (guestDiscount && guestDiscount.email === userToSet?.email) {
+        try {
+          await applyFirstOrderClaim(guestDiscount.claimToken);
+          clearGuestDiscount();
+        } catch (error) {
+          clearGuestDiscount();
+          setApiError(getErrorMessage(error));
+        }
+      }
+
+      try {
+        await forceRefetchCart();
+      } catch (error) {
+        console.error("[LoginModal] Cart refresh failed:", error);
+      }
+
+      if (useGuestCartStore.getState().items.length > 0) {
+        return;
+      }
+
+      if (guestItemsAtSubmit.length > 0) {
+        openCart();
+      }
+
+      onClose();
+    },
+    [clearGuestDiscount, forceRefetchCart, getGuestDiscount, mergeGuestCart, onClose, openCart, setAuthUser]
+  );
 
   const handleSubmit = () => {
     setApiError(null);
@@ -50,95 +103,41 @@ export default function LoginModal({ isOpen, onClose, onSwitchToSignup }: LoginM
       setErrors({ email: fieldErrors.email?.[0], password: fieldErrors.password?.[0] });
       return;
     }
+
     setErrors({});
     loadGuestCart();
     const guestItemsAtSubmit = useGuestCartStore.getState().items;
 
-    console.log("[LoginModal] 🚀 Starting login flow...");
-    console.log("[LoginModal] Guest items snapshot at login time:", JSON.stringify(guestItemsAtSubmit));
-
     loginMutation.mutate(
       { email, password },
       {
-        onSuccess: async (data: AuthResponse) => {
-          console.log("[LoginModal] ✅ STEP 1: Login success");
-          console.log("[LoginModal] Full response data:", JSON.stringify(data, null, 2));
-          console.log("[LoginModal] data.data?.user:", JSON.stringify(data.data?.user));
-
-          // STEP 1: Update auth context
-          const userToSet = data.data?.user ?? null;
-          console.log("[LoginModal] Setting auth user to:", userToSet?.email ?? "null (no user in response)");
-          setAuthUser(userToSet);
-
-          // VALIDATE DISCOUNT EMAIL MATCH
-          const guestDiscount = getGuestDiscount();
-          if (guestDiscount && guestDiscount.email !== userToSet?.email) {
-            console.log("[LoginModal] ⚠️ Discount email mismatch:", guestDiscount.email, "vs login email:", userToSet?.email);
-            console.log("[LoginModal] Clearing guest discount (email doesn't match)");
-            clearGuestDiscount();
-          } else if (guestDiscount && guestDiscount.email === userToSet?.email) {
-            console.log("[LoginModal] ✅ Discount email matches login email, keeping discount active");
-          }
-
-          // STEP 2: Merge guest cart
-          const latestGuestItems = useGuestCartStore.getState().items;
-          console.log("[LoginModal] STEP 2: Merging guest cart with", latestGuestItems.length, "items...");
-          try {
-            const mergeResult = await mergeGuestCart.mutateAsync(latestGuestItems);
-            console.log("[LoginModal] ✅ STEP 2 complete. Merge result:", JSON.stringify(mergeResult));
-            if (mergeResult?.skipped_variant_ids?.length) {
-              setApiError("Some bag items could not be moved because they are out of stock or unavailable.");
-            }
-            if (mergeResult?.capped_variant_ids?.length) {
-              console.info("[LoginModal] Some item quantities were capped to available stock.");
-            }
-          } catch (error) {
-            console.error("[LoginModal] ❌ STEP 2 failed (merge error):", error);
-          }
-
-          if (guestDiscount && guestDiscount.email === userToSet?.email) {
-            try {
-              const claimedCart = await applyFirstOrderClaim(guestDiscount.claimToken);
-              console.log("[LoginModal] First-order discount applied:", JSON.stringify(claimedCart));
-              clearGuestDiscount();
-            } catch (error) {
-              console.error("[LoginModal] First-order discount claim failed:", error);
-              clearGuestDiscount();
-              setApiError(getErrorMessage(error));
-            }
-          }
-
-          // STEP 3: Force fetch authenticated cart
-          console.log("[LoginModal] 🚀 STEP 3: Force fetching authenticated cart...");
-          try {
-            const cartResult = await forceRefetchCart();
-            console.log("[LoginModal] ✅ STEP 3 complete. Cart items count:",
-              (cartResult?.variant_items?.length ?? 0) + (cartResult?.bundle_items?.length ?? 0)
-            );
-            console.log("[LoginModal] ✅ STEP 3 full cart:", JSON.stringify(cartResult, null, 2));
-          } catch (error) {
-            console.error("[LoginModal] ❌ STEP 3 failed (cart fetch error):", error);
-          }
-
-          if (useGuestCartStore.getState().items.length > 0) {
-            console.log("[LoginModal] Login flow completed with unmerged guest items; keeping modal open");
-            return;
-          }
-
-          if (guestItemsAtSubmit.length > 0) {
-            openCart();
-          }
-
-          console.log("[LoginModal] ✅ Login flow complete, closing modal");
-          onClose();
+        onSuccess: (data: AuthResponse) => {
+          void finishAuthenticatedLogin(data, guestItemsAtSubmit);
         },
         onError: (error: unknown) => {
-          console.error("[LoginModal] ❌ Login mutation error:", error);
           setApiError(getErrorMessage(error));
         },
       }
     );
   };
+
+  const handleGoogleCredential = useCallback(
+    (credential: string) => {
+      setApiError(null);
+      loadGuestCart();
+      const guestItemsAtSubmit = useGuestCartStore.getState().items;
+
+      googleLoginMutation.mutate(credential, {
+        onSuccess: (data: AuthResponse) => {
+          void finishAuthenticatedLogin(data, guestItemsAtSubmit);
+        },
+        onError: (error: unknown) => {
+          setApiError(getErrorMessage(error));
+        },
+      });
+    },
+    [finishAuthenticatedLogin, googleLoginMutation, loadGuestCart]
+  );
 
   useEffect(() => {
     if (isOpen) {
@@ -153,6 +152,8 @@ export default function LoginModal({ isOpen, onClose, onSwitchToSignup }: LoginM
 
   if (!isOpen) return null;
 
+  const isAuthPending = loginMutation.isPending || googleLoginMutation.isPending;
+
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm"
@@ -160,7 +161,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToSignup }: LoginM
     >
       <div
         className="bg-white w-[480px] rounded-2xl p-8 relative text-black"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(event) => event.stopPropagation()}
       >
         <button onClick={onClose} className="absolute top-4 right-4 hover:opacity-50 transition-opacity cursor-pointer">
           <X size={20} />
@@ -176,8 +177,8 @@ export default function LoginModal({ isOpen, onClose, onSwitchToSignup }: LoginM
             type="email"
             placeholder="Email"
             value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
+            onChange={(event) => {
+              setEmail(event.target.value);
               if (errors.email) setErrors({ ...errors, email: undefined });
             }}
             className="w-full border border-gray-300 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-black transition-colors"
@@ -191,8 +192,8 @@ export default function LoginModal({ isOpen, onClose, onSwitchToSignup }: LoginM
               type={showPassword ? "text" : "password"}
               placeholder="Password"
               value={password}
-              onChange={(e) => {
-                setPassword(e.target.value);
+              onChange={(event) => {
+                setPassword(event.target.value);
                 if (errors.password) setErrors({ ...errors, password: undefined });
               }}
               className="w-full border border-gray-300 rounded-sm px-4 py-3 text-sm focus:outline-none focus:border-black transition-colors"
@@ -219,7 +220,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToSignup }: LoginM
 
         <button
           onClick={handleSubmit}
-          disabled={loginMutation.isPending}
+          disabled={isAuthPending}
           className="w-full bg-[#253E38] text-white py-3 text-sm font-semibold tracking-wide hover:opacity-90 transition-opacity cursor-pointer rounded-sm disabled:opacity-60"
         >
           {loginMutation.isPending ? "Logging in..." : "Log In"}
@@ -231,10 +232,13 @@ export default function LoginModal({ isOpen, onClose, onSwitchToSignup }: LoginM
           <div className="flex-1 h-px bg-gray-200" />
         </div>
 
-        <button className="w-full border border-gray-300 rounded-sm py-3 text-sm font-medium flex items-center justify-center gap-3 hover:bg-gray-50 transition-colors cursor-pointer mb-3">
-          <GoogleLogo size={18} weight="bold" color="#4285F4" />
-          Continue with Google
-        </button>
+        <div className="mb-3">
+          <GoogleSignInButton
+            disabled={isAuthPending}
+            onCredential={handleGoogleCredential}
+            onError={setApiError}
+          />
+        </div>
 
         <button className="w-full border border-gray-300 rounded-sm py-3 text-sm font-medium flex items-center justify-center gap-3 hover:bg-gray-50 transition-colors cursor-pointer">
           <FacebookLogo size={18} weight="bold" color="#1877F2" />

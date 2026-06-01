@@ -25,7 +25,6 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
       const token = Cookies.get("access_token");
-      console.log("[AuthProvider] Init - token:", !!token);
       setIsAuthenticated(!!token);
       setIsLoading(false);
     });
@@ -33,7 +32,6 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const logout = useCallback(() => {
-    console.log("[AuthProvider] Logout");
     Cookies.remove("access_token");
     Cookies.remove("refresh_token");
     setIsAuthenticated(false);
@@ -41,7 +39,6 @@ export const AuthProvider: FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   const setAuthUser = useCallback((newUser: User | null) => {
-    console.log("[AuthProvider] Login - user:", newUser?.email ?? "unknown");
     setUser(newUser);
     setIsAuthenticated(true);
   }, []);

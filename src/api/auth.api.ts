@@ -129,7 +129,10 @@ export const refreshToken = async (): Promise<any> => {
     }
     
     const response = await api.post("/auth/token/refresh/", { refresh: refreshToken });
-    const { access } = response.data.data;
+    const access = response.data?.access ?? response.data?.data?.access;
+    if (!access) {
+      throw new Error("Refresh response did not include an access token");
+    }
     
     // Update access token
     Cookies.set("access_token", access, { expires: 7 });
@@ -181,9 +184,9 @@ export const resetPassword = async (data: ResetPasswordRequest): Promise<any> =>
   }
 };
 
-export const googleLogin = async (code: string): Promise<any> => {
+export const googleLogin = async (credential: string): Promise<AuthResponse> => {
   try {
-    const response = await api.post("/auth/google/login/", { code });
+    const response = await api.post<AuthResponse>("/auth/google/login/", { credential });
     const { access, refresh } = response.data.data;
     
     // Store tokens in cookies

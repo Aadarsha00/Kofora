@@ -10,7 +10,7 @@ import { useGuestDiscount } from "@/hooks/useGuestDiscount";
 import { Trash2, X } from "lucide-react";
 import { HandbagIcon, TicketIcon } from "@phosphor-icons/react";
 import Link from "next/link";
-import api from "@/axios/api.axios";
+import { getProductVariantsByIds } from "@/api/products.api";
 
 // Hex to Color Name mapping
 const hexToColorName: Record<string, string> = {
@@ -68,33 +68,6 @@ type VariantDisplayData = {
   availableQuantity?: number;
 };
 
-type ProductImageLookup = {
-  image?: string;
-  is_active?: boolean;
-  variant_id?: number | null;
-};
-
-type ProductVariantLookup = {
-  id: number;
-  price?: string | number;
-  size?: string;
-  color?: string;
-  available_quantity?: number;
-};
-
-type ProductLookup = {
-  name?: string;
-  images?: ProductImageLookup[];
-  variants?: ProductVariantLookup[];
-};
-
-type ProductsListResponse = {
-  data?: {
-    results?: ProductLookup[];
-  };
-  results?: ProductLookup[];
-};
-
 type AuthVariant = {
   id: number;
   product_name?: string;
@@ -103,6 +76,9 @@ type AuthVariant = {
   color?: string;
   size?: string;
   available_quantity?: number;
+  image?: string | null;
+  image_override?: string | null;
+  image_alt_text?: string | null;
 };
 
 type AuthVariantCartItem = {
@@ -139,7 +115,6 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
   const { getGuestDiscount, clearGuestDiscount } = useGuestDiscount();
   
   const { isAuthenticated } = useAuth();
-  console.log("[CartSidebar] Rendering - isAuthenticated:", isAuthenticated);
   
   const { data: authenticatedCart, isLoading: cartLoading } = useCart();
   const { mutate: removeItem } = useRemoveFromCart();
@@ -155,7 +130,6 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
   const { mutate: removeCoupon } = useRemoveCoupon();
 
   useEffect(() => {
-    console.log("[CartSidebar] Mounting, loading guest cart from storage");
     const frame = requestAnimationFrame(() => {
       setHasMounted(true);
       loadGuestCart();
@@ -202,7 +176,6 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
   const handleRemoveCoupon = () => {
     removeCoupon(undefined, {
       onSuccess: () => {
-        console.log("[CartSidebar] Coupon removed successfully");
         setCouponError("");
         setCouponSuccess(true);
         setTimeout(() => setCouponSuccess(false), 3000);
@@ -217,53 +190,24 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
 
   // Fetch product/variant data (prices and images) for guest items
   useEffect(() => {
-    console.log("[CartSidebar] useEffect - guestItems:", guestItems, "isAuthenticated:", isAuthenticated);
-    
     if (!isAuthenticated && guestItems.length > 0) {
-      console.log("[CartSidebar] Fetching variant data for guest items");
       const variantIds = guestItems.map((item) => item.variantId);
-      console.log("[CartSidebar] variantIds to fetch:", variantIds);
       
-      api
-        .get(`/products/?page_size=100`)
-        .then((res: { data: ProductsListResponse }) => {
+      getProductVariantsByIds(variantIds)
+        .then((variants) => {
           const data: Record<number, VariantDisplayData> = {};
-          const products = res.data.data?.results || res.data?.results || [];
-          
-          products.forEach((product) => {
-            if (product.variants) {
-              product.variants.forEach((variant) => {
-                if (variantIds.includes(variant.id)) {
-                  // Get variant-specific images first, then fall back to general product images
-                  const variantImages = product.images?.filter(
-                    (img) => img.is_active && img.variant_id === variant.id
-                  ) || [];
-                  
-                  const generalImages = product.images?.filter(
-                    (img) => img.is_active && img.variant_id === null
-                  ) || [];
 
-                  // Fall back to any active images
-                  const anyImages = product.images?.filter((img) => img.is_active) || [];
-                  
-                  const image = variantImages[0]?.image || generalImages[0]?.image || anyImages[0]?.image || "";
-                  
-                  data[variant.id] = {
-                    price: variant.price ? String(variant.price) : "0",
-                    image: image,
-                    size: variant.size || "",
-                    color: variant.color || "",
-                    productName: product.name || "",
-                    availableQuantity: variant.available_quantity,
-                  };
-
-                  console.log("[CartSidebar] Variant " + variant.id + ":", { image, size: variant.size, color: variant.color });
-                }
-              });
-            }
+          variants.forEach((variant) => {
+            data[variant.id] = {
+              price: variant.price ? String(variant.price) : "0",
+              image: variant.image || variant.image_override || "",
+              size: variant.size || "",
+              color: variant.color || "",
+              productName: variant.product_name || "",
+              availableQuantity: variant.available_quantity,
+            };
           });
-          
-          console.log("[CartSidebar] Fetched variant data:", data);
+
           setVariantData(data);
         })
         .catch((err) => {
@@ -278,59 +222,12 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
     }
   }, [guestItems, isAuthenticated]);
 
-  // Fetch variant images for authenticated items
-  useEffect(() => {
-    if (isAuthenticated && authenticatedCart?.variant_items && authenticatedCart.variant_items.length > 0) {
-      const variantIds = authenticatedCart.variant_items
-        .map((item) => item.variant?.id)
-        .filter((id): id is number => Boolean(id));
-      
-      if (variantIds.length === 0) return;
-
-      api
-        .get(`/products/?page_size=100`)
-        .then((res: { data: ProductsListResponse }) => {
-          const data: Record<number, VariantDisplayData> = {};
-          const products = res.data.data?.results || res.data?.results || [];
-
-          products.forEach((product) => {
-            if (product.variants) {
-              product.variants.forEach((variant) => {
-                if (variantIds.includes(variant.id)) {
-                  // Get variant-specific images first, then fall back to product images
-                  const variantImages = product.images?.filter(
-                    (img) => img.is_active && img.variant_id === variant.id
-                  ) || [];
-                  
-                  const generalImages = product.images?.filter(
-                    (img) => img.is_active && img.variant_id === null
-                  ) || [];
-
-                  const anyImages = product.images?.filter((img) => img.is_active) || [];
-                  
-                  const image = variantImages[0]?.image || generalImages[0]?.image || anyImages[0]?.image || "";
-                  
-                  data[variant.id] = { image, productName: product.name || "" };
-                }
-              });
-            }
-          });
-
-          setVariantData(prev => ({ ...prev, ...data }));
-        })
-        .catch((err) => {
-          console.error("[CartSidebar] Error fetching authenticated variant images:", err);
-        });
-    }
-  }, [isAuthenticated, authenticatedCart]);
-
   const authenticatedItems: DisplayCartItem[] = [
     ...(authenticatedCart?.variant_items ?? []),
     ...(authenticatedCart?.bundle_items ?? []),
   ];
 
   const allItems: DisplayCartItem[] = isAuthenticated ? authenticatedItems : guestItems;
-  console.log("[CartSidebar] Render - isAuthenticated:", isAuthenticated, "allItems:", allItems);
   
   const itemCount = allItems.reduce((sum, item) => sum + item.quantity, 0);
   const isLoading = isAuthenticated ? cartLoading : false;
@@ -456,7 +353,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                     priceValue = item.variant.price || "0";
                     colorValue = item.variant.color || "";
                     sizeValue = item.variant.size || "";
-                    imageUrl = fetchedData?.image || "";
+                    imageUrl = item.variant.image || item.variant.image_override || fetchedData?.image || "";
                   } else {
                     productName = item.bundle?.name ?? "Product";
                     priceValue = item.bundle?.price ?? "0";

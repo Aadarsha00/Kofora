@@ -4,9 +4,29 @@ import {
   Product,
   PaginatedApiResponse,
   ProductApiResponse,
+  ApiEnvelope,
 } from "@/interface/Product";
 
 const DEFAULT_PARAMS = "is_active=true&is_published=true&ordering=-created_at";
+
+export type ProductVariantLookup = {
+  id: number;
+  product_id: number;
+  product_name: string;
+  product_slug: string;
+  sku: string;
+  title: string;
+  size: string;
+  color: string;
+  price: string;
+  compare_at_price: string | null;
+  available_quantity: number;
+  image_override: string | null;
+  image: string | null;
+  image_alt_text: string | null;
+};
+
+type ProductVariantLookupResponse = ApiEnvelope<ProductVariantLookup[]>;
 
 export const getProducts = async (): Promise<Product[]> => {
   try {
@@ -63,6 +83,20 @@ export const searchProducts = async (query: string): Promise<Product[]> => {
   }
 };
 
+export const getProductVariantsByIds = async (ids: number[]): Promise<ProductVariantLookup[]> => {
+  const uniqueIds = Array.from(new Set(ids.filter((id) => Number.isFinite(id) && id > 0)));
+  if (uniqueIds.length === 0) return [];
+
+  try {
+    const response = await api.get<ProductVariantLookupResponse>(
+      `/products/variants/lookup/?ids=${uniqueIds.join(",")}`
+    );
+    return response.data.data ?? [];
+  } catch (error: any) {
+    throw error?.response?.data;
+  }
+};
+
 export const getProductsByCategoryIds = async (
   categoryIds: number[]
 ): Promise<Product[]> => {
@@ -102,7 +136,7 @@ export const getProductsByCategory = async (
 export const getProductBySlug = async (slug: string): Promise<Product> => {
   try {
     const response = await api.get<PaginatedApiResponse>(
-      `/products/?slug=${slug}&is_active=true&is_published=true`
+      `/products/?slug=${encodeURIComponent(slug)}&is_active=true&is_published=true`
     );
     const product = response.data.data.results?.[0];
     if (!product) throw new Error("Product not found");
@@ -113,10 +147,7 @@ export const getProductBySlug = async (slug: string): Promise<Product> => {
 };
 
 export const getProductsByGender = async (
-  category: { id: number; slug: string; children: { id: number }[] },
-  params?: {
-    sort_by?: string;
-  }
+  category: { id: number; slug: string; children: { id: number }[] }
 ): Promise<Product[]> => {
   try {
     const ids = [category.id];
@@ -125,14 +156,6 @@ export const getProductsByGender = async (
       ids.map(async (id) => {
         const searchParams = new URLSearchParams(DEFAULT_PARAMS);
         searchParams.set("categories", String(id));
-
-        if (params?.sort_by === "price-asc") {
-          searchParams.set("ordering", "price");
-        }
-
-        if (params?.sort_by === "price-desc") {
-          searchParams.set("ordering", "-price");
-        }
 
         const response = await api.get<PaginatedApiResponse>(
           `/products/?${searchParams.toString()}`

@@ -2,12 +2,7 @@ import type { Metadata } from "next";
 import { DM_Sans, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import Provider from "@/provider/provider";
-import MainNavbar from "@/component/Navbar/Navbar";
-import Footer from "@/component/Footer/Footer";
-import DiscountPill from "@/ui/DiscountPill";
-import AnnouncementBar from "@/component/Navbar/Annoucement";
-import { CartDrawer } from "@/component/Cart/cartDrawer";
-import ProductModal from "@/component/Product/ProductModal";
+import StorefrontFrame from "@/component/Layout/StorefrontFrame";
 
 const dmSans = DM_Sans({
   variable: "--font-body",
@@ -36,13 +31,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <Provider>
-          <AnnouncementBar/>
-          <MainNavbar/>
-          <DiscountPill/> 
-          {children}
-          <Footer/>
-          <ProductModal/>
-          <CartDrawer/>
+          <StorefrontFrame>{children}</StorefrontFrame>
         </Provider>
         
       </body>

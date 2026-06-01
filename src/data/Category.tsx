@@ -38,10 +38,6 @@ export const categories: StaticCategory[] = [
 ];
  
 export function getCategoryBySlug(slug: string): StaticCategory | undefined {
-  console.log("[getCategoryBySlug] Looking for slug:", slug);
-  console.log("[getCategoryBySlug] Available slugs:", categories.map(c => c.slug));
-  const result = categories.find((c) => c.slug === slug);
-  console.log("[getCategoryBySlug] Result:", result);
-  return result;
+  return categories.find((c) => c.slug === slug);
 }
  

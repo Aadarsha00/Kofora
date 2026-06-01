@@ -26,12 +26,7 @@ interface GuestCartStore {
 export const useGuestCartStore = create<GuestCartStore>((set, get) => {
   // Load from localStorage on creation (safely check for client-side)
   const stored = typeof window !== "undefined" ? localStorage.getItem(GUEST_CART_KEY) : null;
-  console.log("[GuestCart] Initial load from localStorage, key:", GUEST_CART_KEY, "value:", stored);
-  
   const initialItems = stored ? JSON.parse(stored) : [];
-  console.log("[GuestCart] Initial items parsed:", initialItems);
-  console.log("[GuestCart] Initial items count:", initialItems.length);
-
 
   return {
     items: initialItems,
@@ -39,8 +34,6 @@ export const useGuestCartStore = create<GuestCartStore>((set, get) => {
 
     addItem: (variantId, productName, quantity, price = "0", maxAvailable) => {
       set((state) => {
-        console.log(`[GuestCart] Adding item - variantId: ${variantId}, productName: ${productName}, quantity: ${quantity}, price: ${price}`);
-        
         const existing = state.items.find((item) => item.variantId === variantId);
         const stockLimit = maxAvailable ?? existing?.maxAvailable;
         let newItems: GuestCartItem[];
@@ -68,8 +61,6 @@ export const useGuestCartStore = create<GuestCartStore>((set, get) => {
           ];
         }
 
-        // Save to localStorage
-        console.log("[GuestCart] Saving to localStorage:", newItems);
         localStorage.setItem(GUEST_CART_KEY, JSON.stringify(newItems));
 
         return { items: newItems };
@@ -78,8 +69,6 @@ export const useGuestCartStore = create<GuestCartStore>((set, get) => {
 
     updateItem: (variantId, quantity, maxAvailable) => {
       set((state) => {
-        console.log(`[GuestCart] Updating item - variantId: ${variantId}, new quantity: ${quantity}`);
-        
         const newItems = state.items
           .map((item) => {
             if (item.variantId !== variantId) return item;
@@ -92,7 +81,6 @@ export const useGuestCartStore = create<GuestCartStore>((set, get) => {
           })
           .filter((item) => item.quantity > 0);
 
-        console.log("[GuestCart] Items after update:", newItems);
         localStorage.setItem(GUEST_CART_KEY, JSON.stringify(newItems));
 
         return { items: newItems };
@@ -101,11 +89,7 @@ export const useGuestCartStore = create<GuestCartStore>((set, get) => {
 
     removeItem: (variantId) => {
       set((state) => {
-        console.log(`[GuestCart] Removing item - variantId: ${variantId}`);
-        
         const newItems = state.items.filter((item) => item.variantId !== variantId);
-        console.log("[GuestCart] Items after removal:", newItems);
-        
         localStorage.setItem(GUEST_CART_KEY, JSON.stringify(newItems));
 
         return { items: newItems };
@@ -113,26 +97,19 @@ export const useGuestCartStore = create<GuestCartStore>((set, get) => {
     },
 
     clearCart: () => {
-      console.log("[GuestCart] Clearing guest cart from localStorage");
       localStorage.removeItem(GUEST_CART_KEY);
       set({ items: [] });
     },
 
     loadFromStorage: () => {
       const stored = localStorage.getItem(GUEST_CART_KEY);
-      console.log("[GuestCart] Loading from storage, raw value:", stored);
-      
       const items = stored ? JSON.parse(stored) : [];
-      console.log("[GuestCart] Parsed items:", items);
-      
       set({ items });
     },
 
     getItemCount: () => {
       const state = get();
-      const count = state.items.reduce((total, item) => total + item.quantity, 0);
-      console.log("[GuestCart] Getting item count:", count);
-      return count;
+      return state.items.reduce((total, item) => total + item.quantity, 0);
     },
   };
 });

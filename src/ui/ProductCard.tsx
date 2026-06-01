@@ -20,6 +20,26 @@ type ColorOption = {
   variantIndex: number;
 };
 
+const COLOR_NAME_TO_CSS: Record<string, string> = {
+  black: "#000000",
+  white: "#ffffff",
+  red: "#dc2626",
+  blue: "#2563eb",
+  navy: "#1f2a44",
+  green: "#16a34a",
+  yellow: "#facc15",
+  pink: "#f9a8d4",
+  purple: "#9333ea",
+  brown: "#92400e",
+  orange: "#f97316",
+  gray: "#808080",
+  grey: "#808080",
+  tan: "#d2b48c",
+  khaki: "#c3b091",
+  cream: "#f5f0dc",
+  beige: "#d6c6a8",
+};
+
 export default function ProductCard({
   product,
   gender,
@@ -54,15 +74,22 @@ export default function ProductCard({
   const normalizeColor = useCallback((color?: string) => {
     if (!color) return "#000000";
 
-    let value = color.trim();
+    const value = color.trim();
+    const lowerValue = value.toLowerCase();
 
-    if (!value.startsWith("#")) {
-      value = `#${value}`;
+    if (COLOR_NAME_TO_CSS[lowerValue]) {
+      return COLOR_NAME_TO_CSS[lowerValue];
     }
 
-    return /^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(value)
-      ? value
-      : "#000000";
+    if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(value)) {
+      return value;
+    }
+
+    if (/^[0-9A-Fa-f]{3}$|^[0-9A-Fa-f]{6}$/.test(value)) {
+      return `#${value}`;
+    }
+
+    return "#000000";
   }, []);
 
   const isSameVariant = useCallback(

@@ -175,7 +175,6 @@ export default function OrdersPage() {
   const orders = ordersQuery.data ?? [];
   const confirmedOrders = orders.filter(isConfirmedOrder);
   const pendingAttempts = orders.filter((order) => !isConfirmedOrder(order));
-  console.log("Ritesh Geda",orders)
 
   return (
     <main className="min-h-screen bg-white px-4 py-8 md:px-8">

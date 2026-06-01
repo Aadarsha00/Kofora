@@ -85,9 +85,7 @@ export const applyCoupon = async (couponCode: string): Promise<Cart> => {
 
 export const removeCoupon = async (): Promise<Cart> => {
   try {
-    console.log("[removeCoupon] Calling remove coupon endpoint");
     const response = await api.post<CartApiResponse>("/cart/remove-coupon/");
-    console.log("[removeCoupon] Response:", response.data);
     return response.data.data;
   } catch (error: any) {
     console.error("[removeCoupon] Error response:", error?.response?.data);
@@ -108,8 +106,6 @@ export const setShippingMethod = async (shippingMethodId: number): Promise<Cart>
 
 export const mergeGuestCart = async (guestItems: any[]): Promise<Cart> => {
   try {
-    console.log("[mergeGuestCart] Raw guest items:", guestItems);
-    
     // Transform guest items to include only variantId and quantity
     const transformedItems = guestItems
       .filter((item) => item.variantId) // Filter out items without variantId
@@ -118,14 +114,8 @@ export const mergeGuestCart = async (guestItems: any[]): Promise<Cart> => {
         quantity: item.quantity || 1,
       }));
 
-    console.log("[mergeGuestCart] Transformed items:", transformedItems);
-    
     const payload = { guestItems: transformedItems };
-    console.log("[mergeGuestCart] Sending payload:", payload);
-    
     const response = await api.post<CartApiResponse>("/cart/merge-guest/", payload);
-    console.log("[mergeGuestCart] Response:", response.data);
-    
     return response.data.data;
   } catch (error: any) {
     console.error("[mergeGuestCart] Error:", error);

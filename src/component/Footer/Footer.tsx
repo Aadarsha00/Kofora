@@ -5,28 +5,28 @@ import { FacebookLogo, InstagramLogo, XLogo } from "@phosphor-icons/react";
 const moreInfoLinks = [
   { label: "About Us", href: "/about" },
   { label: "Size Guide", href: "/size-chart" },
-  { label: "Returns & Exchanges", href: "#" },
-  { label: "Track a Package", href: "#" },
-  { label: "Giving Back", href: "#" },
-  { label: "Careers", href: "#" },
-  { label: "Affilitates", href: "#" },
-  { label: "How to Style", href: "#" },
-  { label: "Accessibility Statement", href: "#" },
-  { label: "Sustainability", href: "#" },
-  { label: "Find a Store", href: "#" },
+  { label: "Returns & Exchanges", href: "/refund-policy" },
+  { label: "Track a Package", href: "/orders" },
+  { label: "Giving Back", href: "/about" },
+  { label: "Careers", href: "/contact" },
+  { label: "Affiliates", href: "/contact" },
+  { label: "How to Style", href: "/about" },
+  { label: "Accessibility Statement", href: "/contact" },
+  { label: "Sustainability", href: "/about" },
+  { label: "Find a Store", href: "/contact" },
 ];
 
 const shoppingLinks = [
   { label: "Women", href: "/collections/women" },
   { label: "Men", href: "/collections/men" },
   { label: "Kids", href: "/collections/kids" },
-  { label: "Formal", href: "/collections/formal" },
-  { label: "Crew", href: "/collections/crew" },
+  { label: "Formal", href: "/collections/formals" },
+  { label: "Crew", href: "/collections/crew-socks" },
   { label: "No Show", href: "/collections/no-show" },
-  { label: "Quarter", href: "/collections/quarter" },
-  { label: "Over the Calf", href: "/collections/over-the-calf" },
-  { label: "New Releases", href: "/collections/new-releases" },
-  { label: "Best Sellers", href: "/collections/best-sellers" },
+  { label: "Quarter", href: "/collections/socks?sub_category=quarter" },
+  { label: "Over the Calf", href: "/collections/socks?sub_category=half-calf" },
+  { label: "New Releases", href: "/collections/men?sort_by=best-selling" },
+  { label: "Best Sellers", href: "/collections/women?sort_by=best-selling" },
 ];
 
 export default function Footer() {
@@ -60,13 +60,13 @@ export default function Footer() {
         </p>
 
         <div className="mt-6 flex items-center justify-center gap-6 text-white">
-          <Link href="#" aria-label="Facebook" className="hover:text-gray-300 transition-colors">
+          <Link href="/contact" aria-label="Facebook" className="hover:text-gray-300 transition-colors">
             <FacebookLogo size={24} weight="fill" />
           </Link>
-          <Link href="#" aria-label="Instagram" className="hover:text-gray-300 transition-colors">
+          <Link href="/contact" aria-label="Instagram" className="hover:text-gray-300 transition-colors">
             <InstagramLogo size={24} weight="fill" />
           </Link>
-          <Link href="#" aria-label="X" className="hover:text-gray-300 transition-colors">
+          <Link href="/contact" aria-label="X" className="hover:text-gray-300 transition-colors">
             <XLogo size={24} weight="fill" />
           </Link>
         </div>
@@ -134,9 +134,14 @@ export default function Footer() {
 
         {/* Legal links */}
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-center gap-x-6 gap-y-3 px-5 py-5 md:px-8">
-          {["Terms & Conditions", "Privacy Policy", "Cookie Settings", "Refund Policy"].map((item) => (
-            <Link key={item} href="#" className="text-sm text-gray-700 hover:underline whitespace-nowrap">
-              {item}
+          {[
+            { label: "Terms & Conditions", href: "/terms" },
+            { label: "Privacy Policy", href: "/privacy" },
+            { label: "Cookie Settings", href: "/cookies" },
+            { label: "Refund Policy", href: "/refund-policy" },
+          ].map((item) => (
+            <Link key={item.label} href={item.href} className="text-sm text-gray-700 hover:underline whitespace-nowrap">
+              {item.label}
             </Link>
           ))}
         </div>
@@ -154,7 +159,7 @@ export default function Footer() {
     &ldquo;Geolocation data&rdquo; when you visit this website, and may use such
     information to draw inferences and for other operational and commercial
     purposes. For more information, please see our{" "}
-    <Link href="#" className="underline">
+    <Link href="/privacy" className="underline">
       Privacy Policy
     </Link>
     .

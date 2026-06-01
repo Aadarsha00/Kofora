@@ -35,7 +35,7 @@ function ProductRow({
             Shop All
           </Link>
           <Link
-            href={`/collections/${category.slug}?sort=best-sellers`}
+            href={`/collections/${category.slug}?sort_by=best-selling`}
             className="rounded-md bg-black px-4 py-2 text-center text-xs font-semibold text-white transition-colors hover:bg-gray-800"
           >
             Shop Best Sellers
@@ -55,7 +55,6 @@ function ProductRow({
 // ─── Product Row With Data ─────────────────────────────────────
 function ProductRowWithData({ category }: { category: Category }) {
   const { data: products, isLoading, isError } = useNewArrivalsByCategory(category);
-  console.log("products:", JSON.stringify(products, null, 2));
 
   if (isLoading) return <ProductRowSkeleton />;
   if (isError) return null;
@@ -71,13 +70,9 @@ const NEW_ARRIVALS_SLUGS = ["women", "men"];
 export default function NewArrivalsSection() {
   const { data: categories, isLoading, isError } = useCategories();
 
-  console.log("[NewArrivals] all categories:", categories);
-
   const newArrivalCategories = categories?.filter(c =>
     NEW_ARRIVALS_SLUGS.includes(c.slug)
   ) ?? [];
-
-  console.log("[NewArrivals] filtered categories:", newArrivalCategories);
 
   return (
     <section className="flex w-full flex-col gap-10 bg-[#F5F2EC] px-3 py-12 md:gap-14 md:px-14 md:py-16">

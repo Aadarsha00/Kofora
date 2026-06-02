@@ -1,19 +1,19 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react";
-import { useAdminProducts } from "@/hooks/useAdminProducts";
+import { useMemo, useState } from "react";
+import { ChevronLeft, ChevronRight, Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { useAdminProducts, useDeleteAdminProduct } from "@/hooks/useAdminProducts";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { AdminProductListParams } from "@/interface/admin";
 import { Product } from "@/interface/Product";
+import { getApiErrorMessage } from "@/lib/apiError";
+import { primaryProductImage } from "@/lib/productImages";
 
 const PAGE_SIZE = 20;
 
 function productThumb(product: Product): string | null {
-  const active = product.images.filter((image) => image.is_active);
-  const general = active.find((image) => image.variant_id === null) ?? active[0];
-  return general?.image ?? null;
+  return primaryProductImage(product)?.image ?? null;
 }
 
 function priceRange(product: Product): string {
@@ -21,13 +21,13 @@ function priceRange(product: Product): string {
     .filter((variant) => variant.is_active)
     .map((variant) => Number(variant.price))
     .filter((value) => !Number.isNaN(value));
-  if (prices.length === 0) return "—";
+  if (prices.length === 0) return "-";
   const min = Math.min(...prices);
   const max = Math.max(...prices);
   const currency = product.base_currency;
   return min === max
     ? `${currency} ${min.toFixed(2)}`
-    : `${currency} ${min.toFixed(2)}–${max.toFixed(2)}`;
+    : `${currency} ${min.toFixed(2)}-${max.toFixed(2)}`;
 }
 
 function totalStock(product: Product): number {
@@ -48,11 +48,8 @@ export default function AdminProductsPage() {
   const [published, setPublished] = useState("");
   const [active, setActive] = useState("");
   const [page, setPage] = useState(1);
+  const [actionError, setActionError] = useState("");
   const debouncedSearch = useDebouncedValue(search.trim(), 300);
-
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, published, active]);
 
   const params = useMemo<AdminProductListParams>(() => {
     const next: AdminProductListParams = { page, page_size: PAGE_SIZE, ordering: "-created_at" };
@@ -63,10 +60,19 @@ export default function AdminProductsPage() {
   }, [page, debouncedSearch, published, active]);
 
   const { data, isLoading, isFetching, isError } = useAdminProducts(params);
+  const deleteProduct = useDeleteAdminProduct();
 
   const products = data?.results ?? [];
   const total = data?.count ?? 0;
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const handleDelete = (product: Product) => {
+    if (!window.confirm(`Delete "${product.name}"? This cannot be undone.`)) return;
+    setActionError("");
+    deleteProduct.mutate(product.id, {
+      onError: (err) => setActionError(getApiErrorMessage(err, "Failed to delete product.")),
+    });
+  };
 
   return (
     <div className="mx-auto max-w-7xl">
@@ -91,14 +97,20 @@ export default function AdminProductsPage() {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
             placeholder="Search by name or brand"
             className="w-full border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm text-black outline-none focus:border-black"
           />
         </div>
         <select
           value={published}
-          onChange={(event) => setPublished(event.target.value)}
+          onChange={(event) => {
+            setPublished(event.target.value);
+            setPage(1);
+          }}
           className="border border-gray-300 bg-white px-3 py-2.5 text-sm text-black outline-none focus:border-black"
         >
           <option value="">All visibility</option>
@@ -107,7 +119,10 @@ export default function AdminProductsPage() {
         </select>
         <select
           value={active}
-          onChange={(event) => setActive(event.target.value)}
+          onChange={(event) => {
+            setActive(event.target.value);
+            setPage(1);
+          }}
           className="border border-gray-300 bg-white px-3 py-2.5 text-sm text-black outline-none focus:border-black"
         >
           <option value="">All states</option>
@@ -115,10 +130,11 @@ export default function AdminProductsPage() {
           <option value="false">Inactive</option>
         </select>
       </div>
+      {actionError && <p className="mb-4 text-sm font-semibold text-red-600">{actionError}</p>}
 
       <div className="overflow-hidden border border-gray-200 bg-white">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] text-sm">
+          <table className="w-full min-w-[880px] text-sm">
             <thead>
               <tr className="border-b border-gray-200 bg-gray-50 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
                 <th className="px-4 py-3">Product</th>
@@ -126,24 +142,25 @@ export default function AdminProductsPage() {
                 <th className="px-4 py-3">Variants</th>
                 <th className="px-4 py-3">Price</th>
                 <th className="px-4 py-3">Stock</th>
+                <th className="px-4 py-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
               {isLoading ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-gray-500">
+                  <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
                     Loading products...
                   </td>
                 </tr>
               ) : isError ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-red-600">
+                  <td colSpan={6} className="px-4 py-12 text-center text-red-600">
                     Failed to load products.
                   </td>
                 </tr>
               ) : products.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-12 text-center text-gray-500">
+                  <td colSpan={6} className="px-4 py-12 text-center text-gray-500">
                     No products found.
                   </td>
                 </tr>
@@ -153,7 +170,7 @@ export default function AdminProductsPage() {
                   return (
                     <tr key={product.id} className="border-b border-gray-100 last:border-0 hover:bg-gray-50">
                       <td className="px-4 py-3">
-                        <Link href={`/admin/products/${product.id}`} className="flex items-center gap-3">
+                        <div className="flex items-center gap-3">
                           <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden border border-gray-200 bg-gray-50">
                             {thumb ? (
                               // eslint-disable-next-line @next/next/no-img-element
@@ -163,10 +180,10 @@ export default function AdminProductsPage() {
                             )}
                           </span>
                           <span>
-                            <span className="block font-semibold text-black hover:underline">{product.name}</span>
+                            <span className="block font-semibold text-black">{product.name}</span>
                             <span className="block text-xs text-gray-500">{product.brand}</span>
                           </span>
-                        </Link>
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-1.5">
@@ -178,6 +195,26 @@ export default function AdminProductsPage() {
                       <td className="px-4 py-3 text-gray-600">{product.variants.length}</td>
                       <td className="px-4 py-3 font-semibold text-black">{priceRange(product)}</td>
                       <td className="px-4 py-3 text-gray-600">{totalStock(product)}</td>
+                      <td className="px-4 py-3">
+                        <div className="flex justify-end gap-2">
+                          <Link
+                            href={`/admin/products/${product.id}`}
+                            className="inline-flex items-center gap-1 border border-gray-300 px-2.5 py-1.5 text-xs font-semibold text-black hover:bg-gray-50"
+                          >
+                            <Pencil size={13} />
+                            Edit
+                          </Link>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(product)}
+                            disabled={deleteProduct.isPending}
+                            className="inline-flex items-center gap-1 border border-red-200 px-2.5 py-1.5 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:opacity-50"
+                          >
+                            <Trash2 size={13} />
+                            Delete
+                          </button>
+                        </div>
+                      </td>
                     </tr>
                   );
                 })

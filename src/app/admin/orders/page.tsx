@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Search } from "lucide-react";
 import { useAdminOrders } from "@/hooks/useAdminOrders";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
@@ -45,15 +46,12 @@ function StatusBadge({ status }: { status: string }) {
 }
 
 export default function AdminOrdersPage() {
-  const [search, setSearch] = useState("");
+  const searchParams = useSearchParams();
+  const initialSearch = searchParams.get("search") ?? "";
+  const [search, setSearch] = useState(initialSearch);
   const [status, setStatus] = useState("");
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebouncedValue(search.trim(), 300);
-
-  // Reset to first page whenever filters change.
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, status]);
 
   const params = useMemo<AdminOrderListParams>(() => {
     const next: AdminOrderListParams = { page, page_size: PAGE_SIZE };
@@ -84,14 +82,20 @@ export default function AdminOrdersPage() {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
             placeholder="Search by order number or customer"
             className="w-full border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm text-black outline-none focus:border-black"
           />
         </div>
         <select
           value={status}
-          onChange={(event) => setStatus(event.target.value)}
+          onChange={(event) => {
+            setStatus(event.target.value);
+            setPage(1);
+          }}
           className="border border-gray-300 bg-white px-3 py-2.5 text-sm text-black outline-none focus:border-black"
         >
           <option value="">All statuses</option>

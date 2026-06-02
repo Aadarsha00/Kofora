@@ -7,13 +7,32 @@ import { ArrowLeft, ExternalLink, Trash2 } from "lucide-react";
 import ProductForm from "@/component/admin/ProductForm";
 import VariantManager from "@/component/admin/VariantManager";
 import ImageManager from "@/component/admin/ImageManager";
+import { useCategories } from "@/hooks/useCategories";
 import {
   useAdminProduct,
   useDeleteAdminProduct,
   useUpdateAdminProduct,
 } from "@/hooks/useAdminProducts";
 import { AdminProductInput } from "@/interface/admin";
+import { Category } from "@/interface/Category";
 import { getApiErrorMessage } from "@/lib/apiError";
+
+const PRODUCT_DETAILS_FORM_ID = "admin-product-details-form";
+
+function storefrontCategorySlug(productCategoryIds: number[], categories: Category[] | undefined): string | null {
+  if (!categories?.length) return null;
+
+  const assigned = new Set(productCategoryIds);
+  const directCategory = categories.find((category) => assigned.has(category.id));
+  if (directCategory) return directCategory.slug;
+
+  const parentCategory = categories.find((category) =>
+    category.children.some((child) => assigned.has(child.id))
+  );
+  if (parentCategory) return parentCategory.slug;
+
+  return categories[0]?.slug ?? null;
+}
 
 export default function EditProductPage() {
   const params = useParams<{ id: string }>();
@@ -22,6 +41,7 @@ export default function EditProductPage() {
   const { data: product, isLoading, isError } = useAdminProduct(
     Number.isFinite(productId) ? productId : undefined
   );
+  const { data: categories } = useCategories();
   const updateProduct = useUpdateAdminProduct(productId);
   const deleteProduct = useDeleteAdminProduct();
   const [message, setMessage] = useState("");
@@ -75,6 +95,10 @@ export default function EditProductPage() {
     seo_description: product.seo_description,
     categories: product.categories,
   };
+  const storefrontCategory = storefrontCategorySlug(product.categories, categories);
+  const storefrontHref = storefrontCategory
+    ? `/collections/${storefrontCategory}/${product.slug}?id=${product.id}`
+    : null;
 
   return (
     <div className="mx-auto max-w-4xl">
@@ -110,18 +134,43 @@ export default function EditProductPage() {
           error={error}
           message={message}
           onSubmit={handleSubmit}
+          formId={PRODUCT_DETAILS_FORM_ID}
+          showActions={false}
         />
 
         <VariantManager productId={productId} variants={product.variants} />
         <ImageManager productId={productId} images={product.images} variants={product.variants} />
 
-        <Link
-          href={`/collections/${product.slug}`}
-          className="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-black"
-        >
-          <ExternalLink size={15} />
-          View on storefront
-        </Link>
+        <div className="border-t border-gray-200 bg-white px-5 py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            {storefrontHref ? (
+              <Link
+                href={storefrontHref}
+                className="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-black"
+              >
+                <ExternalLink size={15} />
+                View on storefront
+              </Link>
+            ) : (
+              <span className="inline-flex items-center gap-2 text-sm font-semibold text-gray-400">
+                <ExternalLink size={15} />
+                View on storefront
+              </span>
+            )}
+            <div className="flex flex-wrap items-center gap-3">
+              {message && <span className="text-sm font-semibold text-green-700">{message}</span>}
+              {error && <span className="text-sm font-semibold text-red-600">{error}</span>}
+              <button
+                type="submit"
+                form={PRODUCT_DETAILS_FORM_ID}
+                disabled={updateProduct.isPending}
+                className="bg-black px-6 py-3 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
+              >
+                {updateProduct.isPending ? "Saving..." : "Save product details"}
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

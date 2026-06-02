@@ -50,6 +50,8 @@ export default function ProductForm({
   message,
   onSubmit,
   children,
+  formId,
+  showActions = true,
 }: {
   mode: "create" | "edit";
   initial: AdminProductInput;
@@ -58,6 +60,8 @@ export default function ProductForm({
   message?: string;
   onSubmit: (values: AdminProductInput) => void;
   children?: ReactNode;
+  formId?: string;
+  showActions?: boolean;
 }) {
   const { data: categories } = useCategories();
   const [values, setValues] = useState<AdminProductInput>(initial);
@@ -98,7 +102,7 @@ export default function ProductForm({
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form id={formId} onSubmit={handleSubmit} className="space-y-6">
       <section className="border border-gray-200 bg-white p-5">
         <h2 className="mb-4 text-lg font-bold text-black">Details</h2>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -210,17 +214,19 @@ export default function ProductForm({
 
       {children}
 
-      <div className="flex items-center gap-3">
-        <button
-          type="submit"
-          disabled={submitting}
-          className="bg-black px-6 py-3 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
-        >
-          {submitting ? "Saving..." : mode === "create" ? "Create product" : "Save changes"}
-        </button>
-        {message && <span className="text-sm font-semibold text-green-700">{message}</span>}
-        {error && <span className="text-sm font-semibold text-red-600">{error}</span>}
-      </div>
+      {showActions && (
+        <div className="flex items-center gap-3">
+          <button
+            type="submit"
+            disabled={submitting}
+            className="bg-black px-6 py-3 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
+          >
+            {submitting ? "Saving..." : mode === "create" ? "Create product" : "Save changes"}
+          </button>
+          {message && <span className="text-sm font-semibold text-green-700">{message}</span>}
+          {error && <span className="text-sm font-semibold text-red-600">{error}</span>}
+        </div>
+      )}
     </form>
   );
 }

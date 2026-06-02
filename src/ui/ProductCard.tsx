@@ -3,13 +3,17 @@
 import { useState, useCallback, useMemo } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Product } from "@/interface/Product";
+import { ColorMixItem, Product } from "@/interface/Product";
+import { needsSwatchBorder, swatchBackground, variantSwatchColors } from "@/lib/colorMix";
 import { useProductModal } from "@/store/productModalStore";
 
 type ProductImageLike = {
   id?: number | string;
   image?: string;
   alt_text?: string;
+  sort_order?: number;
+  is_primary?: boolean;
+  is_active?: boolean;
   variant?: number | string | null;
   variant_id?: number | string | null;
 };
@@ -17,27 +21,8 @@ type ProductImageLike = {
 type ColorOption = {
   label: string;
   color: string;
+  swatchColors: ColorMixItem[];
   variantIndex: number;
-};
-
-const COLOR_NAME_TO_CSS: Record<string, string> = {
-  black: "#000000",
-  white: "#ffffff",
-  red: "#dc2626",
-  blue: "#2563eb",
-  navy: "#1f2a44",
-  green: "#16a34a",
-  yellow: "#facc15",
-  pink: "#f9a8d4",
-  purple: "#9333ea",
-  brown: "#92400e",
-  orange: "#f97316",
-  gray: "#808080",
-  grey: "#808080",
-  tan: "#d2b48c",
-  khaki: "#c3b091",
-  cream: "#f5f0dc",
-  beige: "#d6c6a8",
 };
 
 export default function ProductCard({
@@ -65,42 +50,23 @@ export default function ProductCard({
     [product.variants]
   );
   const images: ProductImageLike[] = useMemo(
-    () => (Array.isArray(product.images) ? product.images : []),
+    () => (Array.isArray(product.images) ? product.images.filter((image) => image.is_active !== false) : []),
     [product.images]
   );
 
   const activeVariant = variants[activeVariantIndex] ?? null;
 
-  const normalizeColor = useCallback((color?: string) => {
-    if (!color) return "#000000";
+  const imageVariantKey = useCallback((img: ProductImageLike) => img.variant_id ?? img.variant ?? null, []);
 
-    const value = color.trim();
-    const lowerValue = value.toLowerCase();
-
-    if (COLOR_NAME_TO_CSS[lowerValue]) {
-      return COLOR_NAME_TO_CSS[lowerValue];
-    }
-
-    if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(value)) {
-      return value;
-    }
-
-    if (/^[0-9A-Fa-f]{3}$|^[0-9A-Fa-f]{6}$/.test(value)) {
-      return `#${value}`;
-    }
-
-    return "#000000";
+  const sortImages = useCallback((items: ProductImageLike[]) => {
+    return [...items].sort((a, b) => {
+      if (Boolean(a.is_primary) !== Boolean(b.is_primary)) return a.is_primary ? -1 : 1;
+      const orderA = a.sort_order ?? 0;
+      const orderB = b.sort_order ?? 0;
+      if (orderA !== orderB) return orderA - orderB;
+      return Number(a.id ?? 0) - Number(b.id ?? 0);
+    });
   }, []);
-
-  const isSameVariant = useCallback(
-    (img: ProductImageLike, variantId: number | string) => {
-      return (
-        String(img.variant_id ?? "") === String(variantId) ||
-        String(img.variant ?? "") === String(variantId)
-      );
-    },
-    []
-  );
 
   const colorOptions: ColorOption[] = useMemo(() => {
     const map = new Map<string, ColorOption>();
@@ -115,6 +81,7 @@ export default function ProductCard({
         map.set(normalizedKey, {
           label: rawColor,
           color: rawColor,
+          swatchColors: variantSwatchColors(variant),
           variantIndex: index,
         });
       }
@@ -124,20 +91,25 @@ export default function ProductCard({
   }, [variants]);
 
   const generalImages = useMemo(() => {
-    return images.filter(
-      (img) =>
-        img.variant === null ||
-        img.variant === undefined ||
-        img.variant_id === null ||
-        img.variant_id === undefined
-    );
-  }, [images]);
+    return sortImages(images.filter((img) => imageVariantKey(img) === null));
+  }, [images, imageVariantKey, sortImages]);
 
   const variantImages = useMemo(() => {
     if (!activeVariant?.id) return [];
+    const activeColor = String(activeVariant.color ?? "").trim();
+    const colorVariantIds = new Set(
+      variants
+        .filter((variant) => String(variant.color ?? "").trim() === activeColor)
+        .map((variant) => String(variant.id))
+    );
 
-    return images.filter((img) => isSameVariant(img, activeVariant.id));
-  }, [images, activeVariant, isSameVariant]);
+    return sortImages(
+      images.filter((img) => {
+        const variantKey = imageVariantKey(img);
+        return variantKey != null && colorVariantIds.has(String(variantKey));
+      })
+    );
+  }, [images, activeVariant, variants, imageVariantKey, sortImages]);
 
   const variantOverrideImage = useMemo(() => {
     if (!activeVariant?.image_override) return null;
@@ -157,10 +129,10 @@ export default function ProductCard({
 
     if (generalImages.length > 0) return generalImages;
 
-    if (images.length > 0) return images;
+    if (images.length > 0) return sortImages(images);
 
     return [];
-  }, [variantImages, variantOverrideImage, generalImages, images]);
+  }, [variantImages, variantOverrideImage, generalImages, images, sortImages]);
 
   const handleVariantChange = useCallback((variantIndex: number) => {
     setActiveVariantIndex(variantIndex);
@@ -267,7 +239,7 @@ export default function ProductCard({
         )}
       </Link>
 
-      {colorOptions.length > 1 && (
+      {colorOptions.length > 0 && (
         <div className="flex items-center gap-2 px-0.5">
           {colorOptions.map((c) => (
             <button
@@ -275,7 +247,10 @@ export default function ProductCard({
               type="button"
               title={c.label}
               onClick={() => handleVariantChange(c.variantIndex)}
-              style={{ backgroundColor: normalizeColor(c.color) }}
+              style={{
+                background: swatchBackground(c.swatchColors),
+                border: needsSwatchBorder(c.swatchColors) ? "1px solid #c7c7c7" : "1px solid #d1d5db",
+              }}
               className={`w-5 h-5 rounded-full border border-gray-300 transition-all duration-200 ${
                 c.variantIndex === activeVariantIndex
                   ? "ring-2 ring-offset-2 ring-black scale-110"

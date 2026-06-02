@@ -8,6 +8,7 @@ import {
   getAdminProduct,
   getAdminProducts,
   reorderProductImages,
+  updateProductImage,
   updateAdminProduct,
   updateAdminVariant,
   uploadProductImage,
@@ -110,6 +111,23 @@ export const useReorderProductImages = (productId: number) => {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (orderedIds: number[]) => reorderProductImages(orderedIds),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-product", productId] });
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+    },
+  });
+};
+
+export const useUpdateProductImage = (productId: number) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: number;
+      payload: { sort_order?: number; is_primary?: boolean; is_active?: boolean; alt_text?: string; variant_id?: number | null };
+    }) => updateProductImage(id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-product", productId] });
       queryClient.invalidateQueries({ queryKey: ["admin-products"] });

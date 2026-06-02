@@ -1,3 +1,5 @@
+import { ColorMixItem } from "@/interface/Product";
+
 export interface ICartItem {
   id: string;
   name: string;
@@ -50,6 +52,7 @@ export interface ProductVariant {
   title: string;
   size: string;
   color: string;
+  color_mix: ColorMixItem[];
   price: string;
   stock_quantity: number;
   available_quantity?: number;

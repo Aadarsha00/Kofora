@@ -71,6 +71,7 @@ export const uploadProductImage = async (
     form.append("image", payload.image);
     if (payload.alt_text) form.append("alt_text", payload.alt_text);
     if (payload.sort_order != null) form.append("sort_order", String(payload.sort_order));
+    if (payload.is_primary != null) form.append("is_primary", String(payload.is_primary));
     if (payload.is_active != null) form.append("is_active", String(payload.is_active));
     if (payload.variant_id != null) form.append("variant_id", String(payload.variant_id));
     const response = await api.post<AdminUploadedImageResponse>("/products/images/upload/", form);
@@ -82,6 +83,7 @@ export const uploadProductImage = async (
     image_url: payload.image_url,
     alt_text: payload.alt_text,
     sort_order: payload.sort_order,
+    is_primary: payload.is_primary,
     is_active: payload.is_active,
     variant_id: payload.variant_id ?? null,
   });
@@ -90,7 +92,7 @@ export const uploadProductImage = async (
 
 export const updateProductImage = async (
   id: number,
-  payload: { sort_order?: number; is_active?: boolean; alt_text?: string }
+  payload: { sort_order?: number; is_primary?: boolean; is_active?: boolean; alt_text?: string; variant_id?: number | null }
 ): Promise<AdminUploadedImage> => {
   const response = await api.patch<AdminUploadedImageResponse>(`/products/images/${id}/`, payload);
   return response.data.data;

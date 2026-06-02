@@ -15,9 +15,9 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard, ready: true },
   { label: "Orders", href: "/admin/orders", icon: ShoppingBag, ready: true },
   { label: "Products", href: "/admin/products", icon: Package, ready: true },
-  { label: "Customers", href: "/admin/customers", icon: Users, ready: false },
+  { label: "Customers", href: "/admin/customers", icon: Users, ready: true },
   { label: "Discounts", href: "/admin/discounts", icon: Tag, ready: true },
-  { label: "Inventory", href: "/admin/inventory", icon: Boxes, ready: false },
+  { label: "Inventory", href: "/admin/inventory", icon: Boxes, ready: true },
 ];
 
 export default function AdminSidebar() {

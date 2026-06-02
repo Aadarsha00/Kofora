@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Plus, Search } from "lucide-react";
 import { useAdminDiscounts } from "@/hooks/useAdminDiscounts";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
@@ -39,10 +39,6 @@ export default function AdminDiscountsPage() {
   const [page, setPage] = useState(1);
   const debouncedSearch = useDebouncedValue(search.trim(), 300);
 
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, active, type]);
-
   const params = useMemo<AdminDiscountListParams>(() => {
     const next: AdminDiscountListParams = { page, page_size: PAGE_SIZE };
     if (debouncedSearch) next.search = debouncedSearch;
@@ -77,17 +73,34 @@ export default function AdminDiscountsPage() {
           <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
           <input
             value={search}
-            onChange={(event) => setSearch(event.target.value)}
+            onChange={(event) => {
+              setSearch(event.target.value);
+              setPage(1);
+            }}
             placeholder="Search by name"
             className="w-full border border-gray-300 bg-white py-2.5 pl-9 pr-3 text-sm text-black outline-none focus:border-black"
           />
         </div>
-        <select value={type} onChange={(event) => setType(event.target.value)} className="border border-gray-300 bg-white px-3 py-2.5 text-sm text-black outline-none focus:border-black">
+        <select
+          value={type}
+          onChange={(event) => {
+            setType(event.target.value);
+            setPage(1);
+          }}
+          className="border border-gray-300 bg-white px-3 py-2.5 text-sm text-black outline-none focus:border-black"
+        >
           <option value="">All types</option>
           <option value="flat">Flat</option>
           <option value="percent">Percent</option>
         </select>
-        <select value={active} onChange={(event) => setActive(event.target.value)} className="border border-gray-300 bg-white px-3 py-2.5 text-sm text-black outline-none focus:border-black">
+        <select
+          value={active}
+          onChange={(event) => {
+            setActive(event.target.value);
+            setPage(1);
+          }}
+          className="border border-gray-300 bg-white px-3 py-2.5 text-sm text-black outline-none focus:border-black"
+        >
           <option value="">All states</option>
           <option value="true">Active</option>
           <option value="false">Inactive</option>

@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import api from "@/axios/api.axios";
 import {
+  ColorMixItem,
   Product,
   PaginatedApiResponse,
   ProductApiResponse,
@@ -18,6 +19,7 @@ export type ProductVariantLookup = {
   title: string;
   size: string;
   color: string;
+  color_mix: ColorMixItem[];
   price: string;
   compare_at_price: string | null;
   available_quantity: number;

@@ -2,7 +2,14 @@
 
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
+import ColorMixEditor, {
+  ColorMixFormItem,
+  colorMixFromFormItems,
+  formItemsFromColorLabel,
+} from "@/component/admin/ColorMixEditor";
 import { StagedVariantInput } from "@/interface/admin";
+import { colorMixSummary, needsSwatchBorder, swatchBackground, variantSwatchColors } from "@/lib/colorMix";
+import { generateVariantSku } from "@/lib/sku";
 
 interface FormState {
   sku: string;
@@ -10,6 +17,8 @@ interface FormState {
   title: string;
   size: string;
   color: string;
+  color_mix: ColorMixFormItem[];
+  is_combo: boolean;
   price: string;
   compare_at_price: string;
   cost_price: string;
@@ -25,6 +34,8 @@ const EMPTY: FormState = {
   title: "",
   size: "",
   color: "",
+  color_mix: [],
+  is_combo: false,
   price: "",
   compare_at_price: "",
   cost_price: "",
@@ -75,27 +86,48 @@ export default function StagedVariantList({
 }) {
   const [form, setForm] = useState<FormState>(EMPTY);
   const [error, setError] = useState("");
+  const [skuTouched, setSkuTouched] = useState(false);
 
-  const set = (key: keyof FormState, fieldValue: string | boolean) =>
-    setForm((current) => ({ ...current, [key]: fieldValue }));
+  const existingSkus = value.map((variant) => variant.sku);
+
+  const nextSku = (current: FormState) =>
+    generateVariantSku({
+      color: current.color,
+      size: current.size,
+      existingSkus,
+    });
+
+  const set = (key: keyof FormState, fieldValue: string | boolean | ColorMixFormItem[]) =>
+    setForm((current) => {
+      const next = { ...current, [key]: fieldValue };
+      if ((key === "size" || key === "color") && !skuTouched) {
+        next.sku = nextSku(next);
+      }
+      if (key === "color" && current.is_combo && current.color_mix.length === 0 && typeof fieldValue === "string") {
+        next.color_mix = formItemsFromColorLabel(fieldValue);
+      }
+      return next;
+    });
 
   const handleAdd = () => {
     setError("");
-    if (!form.sku.trim() || !form.size.trim() || !form.color.trim() || !form.price.trim()) {
-      setError("SKU, size, color and price are required.");
+    const sku = form.sku.trim() || nextSku(form);
+    if (!form.size.trim() || !form.color.trim() || !form.price.trim()) {
+      setError("Size, color and price are required.");
       return;
     }
-    if (value.some((variant) => variant.sku === form.sku.trim())) {
+    if (value.some((variant) => variant.sku === sku)) {
       setError("That SKU is already in the list.");
       return;
     }
 
     const variant: StagedVariantInput = {
-      sku: form.sku.trim(),
+      sku,
       barcode: form.barcode.trim() || undefined,
       title: form.title.trim() || undefined,
       size: form.size.trim(),
       color: form.color.trim(),
+      color_mix: form.is_combo ? colorMixFromFormItems(form.color_mix) : [],
       price: form.price.trim(),
       compare_at_price: form.compare_at_price.trim() ? form.compare_at_price.trim() : null,
       cost_price: form.cost_price.trim() ? form.cost_price.trim() : null,
@@ -106,6 +138,7 @@ export default function StagedVariantList({
     };
     onChange([...value, variant]);
     setForm(EMPTY);
+    setSkuTouched(false);
   };
 
   const handleRemove = (index: number) => {
@@ -136,7 +169,17 @@ export default function StagedVariantList({
                 <tr key={`${variant.sku}-${index}`} className="border-b border-gray-100 last:border-0">
                   <td className="px-3 py-2 font-medium text-black">{variant.sku}</td>
                   <td className="px-3 py-2 text-gray-600">
-                    {variant.size} / {variant.color}
+                    <span className="inline-flex items-center gap-2">
+                      <span
+                        className="h-4 w-4 shrink-0 rounded-full"
+                        style={{
+                          background: swatchBackground(variantSwatchColors(variant)),
+                          border: needsSwatchBorder(variantSwatchColors(variant)) ? "1px solid #c7c7c7" : "1px solid transparent",
+                        }}
+                        title={colorMixSummary(variantSwatchColors(variant))}
+                      />
+                      {variant.size} / {variant.color}
+                    </span>
                   </td>
                   <td className="px-3 py-2 text-black">{variant.price}</td>
                   <td className="px-3 py-2 text-gray-600">{variant.stock_quantity}</td>
@@ -157,9 +200,37 @@ export default function StagedVariantList({
       )}
 
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <Cell label="SKU" required value={form.sku} onChange={(v) => set("sku", v)} />
+        <label className="grid gap-1 text-xs">
+          <span className="font-semibold text-gray-600">
+            SKU<span className="text-red-500"> *</span>
+          </span>
+          <div className="flex gap-2">
+            <input
+              value={form.sku}
+              placeholder="Auto-generated"
+              onChange={(event) => {
+                setSkuTouched(true);
+                set("sku", event.target.value);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") event.preventDefault();
+              }}
+              className="min-w-0 flex-1 border border-gray-300 px-2.5 py-2 text-sm text-black outline-none focus:border-black"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                setForm((current) => ({ ...current, sku: nextSku(current) }));
+                setSkuTouched(false);
+              }}
+              className="border border-gray-300 px-2.5 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+            >
+              Auto
+            </button>
+          </div>
+        </label>
         <Cell label="Size" required value={form.size} onChange={(v) => set("size", v)} placeholder="M" />
-        <Cell label="Color" required value={form.color} onChange={(v) => set("color", v)} placeholder="Black" />
+        <Cell label="Color / option" required value={form.color} onChange={(v) => set("color", v)} placeholder="Black" />
         <Cell label="Price" required value={form.price} onChange={(v) => set("price", v)} placeholder="19.99" />
         <Cell label="Compare-at price" value={form.compare_at_price} onChange={(v) => set("compare_at_price", v)} />
         <Cell label="Cost price" value={form.cost_price} onChange={(v) => set("cost_price", v)} />
@@ -172,6 +243,30 @@ export default function StagedVariantList({
           <input type="checkbox" checked={form.is_active} onChange={(event) => set("is_active", event.target.checked)} />
           Active
         </label>
+        <label className="flex items-end gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={form.is_combo}
+            onChange={(event) =>
+              setForm((current) => ({
+                ...current,
+                is_combo: event.target.checked,
+                color_mix:
+                  event.target.checked && current.color_mix.length === 0
+                    ? formItemsFromColorLabel(current.color)
+                    : current.color_mix,
+              }))
+            }
+          />
+          Mixed/combo pack
+        </label>
+        {form.is_combo && (
+          <ColorMixEditor
+            value={form.color_mix}
+            fallbackColorLabel={form.color}
+            onChange={(items) => set("color_mix", items)}
+          />
+        )}
       </div>
       <div className="mt-4 flex items-center gap-3">
         <button

@@ -1,8 +1,9 @@
 import Image from "next/image";
 import { Product } from "@/interface/Product";
+import { defaultDisplayImages } from "@/lib/productImages";
 
 export default function ProductFeatures({ product }: { product: Product }) {
-  const activeImages = product.images.filter((image) => image.is_active);
+  const activeImages = defaultDisplayImages(product);
   const featureImage = activeImages[1]?.image ?? activeImages[0]?.image;
   const highlights = [
     product.short_description

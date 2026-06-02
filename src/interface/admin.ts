@@ -1,6 +1,6 @@
 import { ApiEnvelope } from "@/interface/cart";
 import { OrderItem, OrderStatusHistory, PaginatedResponse } from "@/interface/checkout";
-import { Product, ProductVariant } from "@/interface/Product";
+import { ColorMixItem, Product, ProductVariant } from "@/interface/Product";
 
 export const FULFILLMENT_STATUSES = [
   "pending",
@@ -128,6 +128,7 @@ export interface AdminVariantInput {
   title?: string;
   size: string;
   color: string;
+  color_mix?: ColorMixItem[];
   price: string;
   compare_at_price?: string | null;
   cost_price?: string | null;
@@ -146,6 +147,7 @@ export interface StagedImage {
   alt_text: string;
   previewUrl: string;
   color?: string;
+  is_primary: boolean;
 }
 
 export interface AdminUploadedImage {
@@ -154,6 +156,7 @@ export interface AdminUploadedImage {
   image: string;
   alt_text: string;
   sort_order: number;
+  is_primary: boolean;
   is_active: boolean;
   variant_id: number | null;
 }
@@ -164,6 +167,7 @@ export interface AdminImageUploadInput {
   image_url?: string;
   alt_text?: string;
   sort_order?: number;
+  is_primary?: boolean;
   is_active?: boolean;
   variant_id?: number | null;
 }
@@ -184,6 +188,113 @@ export type AdminVariantResponse = ApiEnvelope<ProductVariant>;
 export type AdminUploadedImageResponse = ApiEnvelope<AdminUploadedImage>;
 
 // ─── Dashboard ────────────────────────────────────────────────
+export interface AdminInventoryVariant {
+  id: number;
+  product: number;
+  product_name: string;
+  product_slug: string;
+  sku: string;
+  barcode: string;
+  title: string;
+  size: string;
+  color: string;
+  color_mix: ColorMixItem[];
+  price: string;
+  compare_at_price: string | null;
+  cost_price: string | null;
+  stock_quantity: number;
+  reserved_quantity: number;
+  available_quantity: number;
+  low_stock_threshold: number;
+  is_active: boolean;
+  image_override: string | null;
+  weight_grams: number | null;
+}
+
+export interface AdminInventoryListParams {
+  page?: number;
+  page_size?: number;
+  search?: string;
+  stock_status?: string;
+  is_active?: string;
+  ordering?: string;
+}
+
+export interface AdminInventoryAdjustment {
+  id: number;
+  variant: number;
+  variant_sku: string;
+  variant_title: string;
+  variant_size: string;
+  variant_color: string;
+  product_id: number;
+  product_name: string;
+  quantity_delta: number;
+  reason: string;
+  reference: string;
+  notes: string;
+  adjusted_by: number | null;
+  adjusted_by_email: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminInventoryAdjustmentInput {
+  variant: number;
+  quantity_delta: number;
+  reason?: string;
+  reference?: string;
+  notes?: string;
+}
+
+export interface AdminInventoryAdjustmentListParams {
+  page?: number;
+  page_size?: number;
+  search?: string;
+  reason?: string;
+  variant?: number;
+  ordering?: string;
+}
+
+export type AdminInventoryListResponse = ApiEnvelope<PaginatedResponse<AdminInventoryVariant>>;
+export type AdminInventoryAdjustmentListResponse = ApiEnvelope<PaginatedResponse<AdminInventoryAdjustment>>;
+export type AdminInventoryAdjustmentResponse = ApiEnvelope<AdminInventoryAdjustment>;
+
+export interface AdminCustomer {
+  id: number;
+  email: string;
+  username: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  phone: string;
+  is_active: boolean;
+  is_email_verified: boolean;
+  marketing_opt_in: boolean;
+  order_count: number;
+  total_spend: string;
+  last_order_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AdminCustomerListParams {
+  page?: number;
+  page_size?: number;
+  search?: string;
+  is_active?: string;
+  is_email_verified?: string;
+  marketing_opt_in?: string;
+  ordering?: string;
+}
+
+export interface AdminCustomerStatusInput {
+  is_active: boolean;
+}
+
+export type AdminCustomerListResponse = ApiEnvelope<PaginatedResponse<AdminCustomer>>;
+export type AdminCustomerResponse = ApiEnvelope<AdminCustomer>;
+
 export interface DashboardRecentOrder {
   id: number;
   order_number: string;
@@ -206,24 +317,49 @@ export interface DashboardLowStock {
   low_stock_threshold: number;
 }
 
+export interface DashboardTrendPoint {
+  date: string;
+  revenue: number | string;
+  orders: number;
+}
+
+export interface DashboardStatusBreakdown {
+  status: string;
+  label: string;
+  count: number;
+}
+
+export interface DashboardInventoryHealth {
+  healthy: number;
+  low: number;
+  out: number;
+}
+
 export interface DashboardSummary {
   revenue: {
     total_revenue: number | string;
     paid_orders: number;
     average_order_value: number | string;
+    trend: DashboardTrendPoint[];
   };
   orders: {
     total: number;
     awaiting_fulfillment: number;
     by_status: Record<string, number>;
+    status_breakdown: DashboardStatusBreakdown[];
   };
   catalog: {
     product_count: number;
     published_count: number;
     low_stock_count: number;
+    inventory_health: DashboardInventoryHealth;
   };
   customers: {
     total: number;
+    active: number;
+    inactive: number;
+    verified: number;
+    marketing_opt_in: number;
   };
   recent_orders: DashboardRecentOrder[];
   low_stock: DashboardLowStock[];

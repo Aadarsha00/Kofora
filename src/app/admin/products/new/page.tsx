@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import ProductForm from "@/component/admin/ProductForm";
@@ -39,15 +39,6 @@ export default function NewProductPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
 
-  const variantColors = useMemo(() => {
-    const list: string[] = [];
-    for (const variant of variants) {
-      const value = variant.color?.trim();
-      if (value && !list.includes(value)) list.push(value);
-    }
-    return list;
-  }, [variants]);
-
   const handleCreate = async (values: AdminProductInput) => {
     setSubmitting(true);
     setError("");
@@ -56,7 +47,6 @@ export default function NewProductPage() {
       const product = await createAdminProduct(values);
       createdId = product.id;
 
-      // Track the first created variant of each colour so colour-tagged images attach to it.
       const representativeByColor = new Map<string, number>();
       for (const variant of variants) {
         const created = await createAdminVariant({ ...variant, product: product.id });
@@ -67,12 +57,16 @@ export default function NewProductPage() {
       for (let index = 0; index < images.length; index += 1) {
         const image = images[index];
         const variantId = image.color ? representativeByColor.get(image.color) ?? null : null;
+        const sortOrder = images
+          .slice(0, index)
+          .filter((item) => (item.color || "") === (image.color || "")).length;
         await uploadProductImage({
           product: product.id,
           image: image.file,
           image_url: image.image_url,
           alt_text: image.alt_text,
-          sort_order: index,
+          sort_order: sortOrder,
+          is_primary: image.is_primary,
           is_active: true,
           variant_id: variantId,
         });
@@ -116,7 +110,7 @@ export default function NewProductPage() {
         onSubmit={handleCreate}
       >
         <StagedVariantList value={variants} onChange={setVariants} />
-        <StagedImageList value={images} onChange={setImages} colors={variantColors} />
+        <StagedImageList value={images} onChange={setImages} variants={variants} />
       </ProductForm>
     </div>
   );

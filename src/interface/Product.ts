@@ -1,11 +1,18 @@
+export interface ColorMixItem {
+  name: string;
+  hex?: string;
+  quantity: number;
+}
+
 export interface ProductImage {
   id: number;
   image: string;
   alt_text: string;
   sort_order: number;
+  is_primary: boolean;
   is_active: boolean;
   variant: number | null;
-   variant_id: number | null;
+  variant_id: number | null;
 }
 
 export interface ProductVariant {
@@ -15,6 +22,7 @@ export interface ProductVariant {
   title: string;
   size: string;
   color: string;
+  color_mix: ColorMixItem[];
   price: string;
   compare_at_price: string;
   cost_price: string | null;

@@ -4,55 +4,29 @@ import Image from "next/image";
 import { useState, useCallback, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Plus, X, ArrowLeft, ArrowRight } from "@phosphor-icons/react";
-import { Product, ProductVariant } from "@/interface/Product";
+import { ColorMixItem, Product, ProductVariant } from "@/interface/Product";
 import ProductFeatures from "./ProductFeature";
 import { useProductById, useProductBySlug } from "@/hooks/useProducts";
 import { useAuth } from "@/context/AuthContext";
 import { useGuestCartStore } from "@/store/guestCartStore";
 import { useAddToCart } from "@/hooks/useCart";
 import { useCartSidebarStore } from "@/store/cartSidebarStore";
+import { colorImages, productImages } from "@/lib/productImages";
+import { needsSwatchBorder, swatchBackground, variantSwatchColors } from "@/lib/colorMix";
 
 interface ColorGroup {
   color: string;
   label: string;
+  swatchColors: ColorMixItem[];
   sizes: string[];
   variantIds: number[];
   images: string[];
 }
 
 const DEFAULT_COLOR = "#888888";
-const COLOR_NAME_TO_CSS: Record<string, string> = {
-  black: "#000000",
-  white: "#ffffff",
-  red: "#dc2626",
-  blue: "#2563eb",
-  navy: "#1f2a44",
-  green: "#16a34a",
-  yellow: "#facc15",
-  pink: "#f9a8d4",
-  purple: "#9333ea",
-  brown: "#92400e",
-  orange: "#f97316",
-  gray: "#808080",
-  grey: "#808080",
-  tan: "#d2b48c",
-  khaki: "#c3b091",
-  cream: "#f5f0dc",
-  beige: "#d6c6a8",
-};
 
 function hasText(value: string | null | undefined): value is string {
   return typeof value === "string" && value.trim().length > 0;
-}
-
-function colorToCss(color?: string) {
-  if (!color) return DEFAULT_COLOR;
-  const value = color.trim();
-  const lowerValue = value.toLowerCase();
-  if (COLOR_NAME_TO_CSS[lowerValue]) return COLOR_NAME_TO_CSS[lowerValue];
-  if (/^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$/.test(value)) return value;
-  if (/^[0-9A-Fa-f]{3}$|^[0-9A-Fa-f]{6}$/.test(value)) return `#${value}`;
-  return DEFAULT_COLOR;
 }
 
 function getErrorMessage(error: unknown): string {
@@ -60,9 +34,7 @@ function getErrorMessage(error: unknown): string {
 }
 
 function buildColorGroups(product: Product): ColorGroup[] {
-  const generalImages = product.images
-    .filter((i) => i.is_active && i.variant_id === null)
-    .map((i) => i.image);
+  const generalImages = productImages(product).map((image) => image.image);
 
   const activeVariants = product.variants?.filter((variant) => variant.is_active) ?? [];
 
@@ -71,6 +43,7 @@ function buildColorGroups(product: Product): ColorGroup[] {
       {
         color: DEFAULT_COLOR,
         label: "Default",
+        swatchColors: variantSwatchColors({ color: "Default", color_mix: [] }),
         sizes: [],
         variantIds: [],
         images: generalImages.length
@@ -96,16 +69,15 @@ function buildColorGroups(product: Product): ColorGroup[] {
         ? title.split("/")[0].trim()
         : variant.color?.trim();
 
-      const variantImages = product.images
-        .filter((img) => img.is_active && img.variant_id === variant.id)
-        .map((img) => img.image);
+      const scopedVariantImages = colorImages(product, color).map((img) => img.image);
 
       groups.push({
         color,
         label: hasText(colorLabel) ? colorLabel : "Default",
+        swatchColors: variantSwatchColors(variant),
         sizes: size ? [size] : [],
         variantIds: [variant.id],
-        images: variantImages.length ? variantImages : generalImages,
+        images: scopedVariantImages.length ? scopedVariantImages : generalImages,
       });
     }
   }
@@ -221,7 +193,14 @@ export default function ProductDetails({
 
     const group =
       activeGroup ??
-      { color: DEFAULT_COLOR, label: "Default", sizes: [], variantIds: [], images: [] };
+      {
+        color: DEFAULT_COLOR,
+        label: "Default",
+        swatchColors: variantSwatchColors({ color: "Default", color_mix: [] }),
+        sizes: [],
+        variantIds: [],
+        images: [],
+      };
     const variant = getSelectedVariant(product, group, selectedSize);
 
     if (group?.sizes.length && !selectedSize) {
@@ -296,9 +275,7 @@ export default function ProductDetails({
 
   let variantSpecificImages: string[] = [];
   if (selectedVariant) {
-    variantSpecificImages = product.images
-      .filter((img) => img.is_active && img.variant_id === selectedVariant.id)
-      .map((img) => img.image);
+    variantSpecificImages = colorImages(product, selectedVariant.color).map((img) => img.image);
   }
   const images = variantSpecificImages.length > 0 ? variantSpecificImages : (group?.images.length ? group.images : []);
   const total = images.length;
@@ -414,28 +391,22 @@ export default function ProductDetails({
                 <span className="font-normal text-gray-600">{group?.label}</span>
               </p>
               <div className="flex gap-2">
-                {colorGroups.map((g, i) => {
-                  const swatchColor = colorToCss(g.color);
-                  return (
-                    <button
-                      key={i}
-                      title={g.label}
-                      onClick={() => handleColorChange(i)}
-                      className={`w-9 h-9 rounded-full transition-all duration-200 ${
-                        i === activeColorIndex
-                          ? "ring-2 ring-offset-2 ring-black"
-                          : "hover:ring-1 hover:ring-gray-400 hover:ring-offset-1"
-                      }`}
-                      style={{
-                        backgroundColor: swatchColor,
-                        border:
-                          swatchColor === "#ffffff" || swatchColor === "#FFFFFF" || swatchColor === "#E8E4DC"
-                            ? "1px solid #ccc"
-                            : "none",
-                      }}
-                    />
-                  );
-                })}
+                {colorGroups.map((g, i) => (
+                  <button
+                    key={i}
+                    title={g.label}
+                    onClick={() => handleColorChange(i)}
+                    className={`w-9 h-9 rounded-full transition-all duration-200 ${
+                      i === activeColorIndex
+                        ? "ring-2 ring-offset-2 ring-black"
+                        : "hover:ring-1 hover:ring-gray-400 hover:ring-offset-1"
+                    }`}
+                    style={{
+                      background: swatchBackground(g.swatchColors),
+                      border: needsSwatchBorder(g.swatchColors) ? "1px solid #ccc" : "none",
+                    }}
+                  />
+                ))}
               </div>
             </div>
           )}

@@ -3,10 +3,71 @@ import CollectionView from "@/component/Gender/CollectionView";
 
 import { notFound } from "next/navigation";
 import { getCategories, getCategoryBySlug } from "@/api/category.api";
+import {
+  isSockHeightSlug,
+  isSockPurposeSlug,
+  normalizeTaxonomySlug,
+} from "@/lib/productTaxonomy";
+
+type CollectionSearchParams = {
+  sort_by?: string;
+  sub_category?: string | string[];
+  height?: string | string[];
+  purpose?: string | string[];
+  min_price?: string;
+  max_price?: string;
+};
+
+function appendTaxonomyParam(
+  searchParams: CollectionSearchParams,
+  key: "height" | "purpose",
+  slug: string
+): CollectionSearchParams {
+  const current = searchParams[key];
+  const values = Array.isArray(current) ? current : current ? [current] : [];
+
+  if (values.some((value) => normalizeTaxonomySlug(value) === slug)) {
+    return searchParams;
+  }
+
+  return {
+    ...searchParams,
+    [key]: [...values, slug],
+  };
+}
+
+function resolveCollectionRoute(
+  slug: string,
+  searchParams: CollectionSearchParams
+) {
+  const normalizedSlug = normalizeTaxonomySlug(slug);
+
+  if (isSockHeightSlug(normalizedSlug)) {
+    return {
+      collectionSlug: "socks",
+      searchParams: appendTaxonomyParam(searchParams, "height", normalizedSlug),
+    };
+  }
+
+  if (isSockPurposeSlug(normalizedSlug)) {
+    return {
+      collectionSlug: "socks",
+      searchParams: appendTaxonomyParam(searchParams, "purpose", normalizedSlug),
+    };
+  }
+
+  return {
+    collectionSlug: slug,
+    searchParams,
+  };
+}
 
 export async function generateStaticParams() {
   const categories = await getCategories();
-  return categories.map((category) => ({ gender: category.slug }));
+  return categories.flatMap((category) => [
+    { gender: category.slug },
+    ...category.children.map((child) => ({ gender: child.slug })),
+  ]);
 }
 
 export default async function CollectionPage({
@@ -14,22 +75,33 @@ export default async function CollectionPage({
   searchParams,
 }: {
   params: Promise<{ gender: string }>;
-  searchParams: Promise<{ sort_by?: string }>;
+  searchParams: Promise<CollectionSearchParams>;
 }) {
   const { gender } = await params;
   const resolvedSearchParams = await searchParams;
+  const route = resolveCollectionRoute(gender, resolvedSearchParams);
 
   let category;
   try {
-    category = await getCategoryBySlug(gender);
+    category = await getCategoryBySlug(route.collectionSlug);
   } catch {
     notFound();
   }
 
+  const heroCategory =
+    route.collectionSlug === gender
+      ? category
+      : await getCategoryBySlug(gender).catch(() => category);
+
   return (
     <main>
-      <HeroGender category={category!} />
-      <CollectionView categoryId={category!.id} gender={gender} searchParams={resolvedSearchParams} />
+      <HeroGender category={heroCategory} />
+      <CollectionView
+        categoryId={category.id}
+        gender={route.collectionSlug}
+        collectionLabel={heroCategory.name}
+        searchParams={route.searchParams}
+      />
     </main>
   );
 }

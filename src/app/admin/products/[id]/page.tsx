@@ -16,6 +16,7 @@ import {
 import { AdminProductInput } from "@/interface/admin";
 import { Category } from "@/interface/Category";
 import { getApiErrorMessage } from "@/lib/apiError";
+import { AUDIENCE_SLUGS } from "@/lib/productTaxonomy";
 
 const PRODUCT_DETAILS_FORM_ID = "admin-product-details-form";
 
@@ -23,13 +24,19 @@ function storefrontCategorySlug(productCategoryIds: number[], categories: Catego
   if (!categories?.length) return null;
 
   const assigned = new Set(productCategoryIds);
-  const directCategory = categories.find((category) => assigned.has(category.id));
-  if (directCategory) return directCategory.slug;
+  const audienceCategory = categories.find(
+    (category) => (AUDIENCE_SLUGS as readonly string[]).includes(category.slug) && assigned.has(category.id)
+  );
+  if (audienceCategory) return audienceCategory.slug;
 
   const parentCategory = categories.find((category) =>
+    (AUDIENCE_SLUGS as readonly string[]).includes(category.slug) &&
     category.children.some((child) => assigned.has(child.id))
   );
   if (parentCategory) return parentCategory.slug;
+
+  const directCategory = categories.find((category) => assigned.has(category.id));
+  if (directCategory) return directCategory.slug;
 
   return categories[0]?.slug ?? null;
 }

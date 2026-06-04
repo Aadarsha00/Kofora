@@ -12,7 +12,7 @@ export function getApiErrorMessage(error: unknown, fallback = "Something went wr
         const text = Array.isArray(value) ? value.join(" ") : String(value);
         parts.push(`${key}: ${text}`);
       }
-      if (parts.length) return parts.join(" · ");
+      if (parts.length) return parts.join("; ");
     }
     if (typeof data.message === "string" && data.message) return data.message;
   }

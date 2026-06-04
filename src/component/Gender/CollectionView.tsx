@@ -4,19 +4,29 @@
   import { getCategories, getCategoryBySlug } from "@/api/category.api";
   import SortSelect from "./SortSelect";
   import {
-    filterProductsBySubCategory,
     filterProductsByPrice,
-    getAvailableSubCategoriesFromProducts,
+    filterProductsByHeight,
+    filterProductsByPurpose,
+    getHeightCategories,
     getProductPriceRange,
+    getPurposeCategories,
   } from "@/lib/categoryFilters";
+  import {
+    isSockHeightSlug,
+    isSockPurposeSlug,
+    normalizeTaxonomySlugs,
+  } from "@/lib/productTaxonomy";
   import { Product } from "@/interface/Product";
 
   interface CollectionViewProps {
     categoryId: number;
     gender: string;
+    collectionLabel?: string;
     searchParams: {
       sort_by?: string;
       sub_category?: string | string[];
+      height?: string | string[];
+      purpose?: string | string[];
       min_price?: string;
       max_price?: string;
     };
@@ -24,6 +34,7 @@
 
   const SORT_OPTIONS = [
     { label: "Best selling", value: "best-selling" },
+    { label: "Newest", value: "newest" },
     { label: "Price, low to high", value: "price-asc" },
     { label: "Price, high to low", value: "price-desc" },
   ];
@@ -37,7 +48,23 @@
     return prices.length ? Math.min(...prices) : Number.POSITIVE_INFINITY;
   }
 
+  function getCreatedTime(product: Product): number {
+    return new Date(product.created_at).getTime();
+  }
+
   function sortProducts(products: Product[], sortBy: string): Product[] {
+    if (sortBy === "best-selling") {
+      return [...products].sort((a, b) => {
+        const salesDiff = (b.sales_count ?? 0) - (a.sales_count ?? 0);
+        if (salesDiff !== 0) return salesDiff;
+        return getCreatedTime(b) - getCreatedTime(a);
+      });
+    }
+
+    if (sortBy === "newest") {
+      return [...products].sort((a, b) => getCreatedTime(b) - getCreatedTime(a));
+    }
+
     if (sortBy === "price-asc") {
       return [...products].sort((a, b) => getLowestVariantPrice(a) - getLowestVariantPrice(b));
     }
@@ -49,17 +76,27 @@
     return products;
   }
 
+  function paramValues(value?: string | string[]) {
+    if (Array.isArray(value)) return value;
+    return value ? [value] : [];
+  }
+
   export default async function CollectionView({
     gender,
+    collectionLabel,
     searchParams,
   }: CollectionViewProps) {
     const sortBy = searchParams.sort_by || "best-selling";
 
-    const selectedSubCategories = Array.isArray(searchParams.sub_category)
-      ? searchParams.sub_category
-      : searchParams.sub_category
-      ? [searchParams.sub_category]
-      : [];
+    const legacySubCategories = paramValues(searchParams.sub_category);
+    const selectedHeights = normalizeTaxonomySlugs([
+      ...paramValues(searchParams.height),
+      ...legacySubCategories.filter(isSockHeightSlug),
+    ]);
+    const selectedPurposes = normalizeTaxonomySlugs([
+      ...paramValues(searchParams.purpose),
+      ...legacySubCategories.filter(isSockPurposeSlug),
+    ]);
     const selectedMinPrice =
       searchParams.min_price !== undefined
         ? Number(searchParams.min_price)
@@ -77,23 +114,25 @@
 
     const products = await getProductsByGender(category);
 
-    const availableSubCategories = getAvailableSubCategoriesFromProducts(
-      products,
-      categories,
-      gender
-    );
+    const availableHeights = getHeightCategories(categories);
+    const availablePurposes = getPurposeCategories(categories);
 
     const unfilteredPriceRange = getProductPriceRange(products);
 
-    const subCategoryFilteredProducts = filterProductsBySubCategory(
+    const heightFilteredProducts = filterProductsByHeight(
       products,
       categories,
-      selectedSubCategories,
-      gender
+      selectedHeights
+    );
+
+    const purposeFilteredProducts = filterProductsByPurpose(
+      heightFilteredProducts,
+      categories,
+      selectedPurposes
     );
 
     const fullyFilteredProducts = filterProductsByPrice(
-      subCategoryFilteredProducts,
+      purposeFilteredProducts,
       selectedMinPrice,
       selectedMaxPrice
     );
@@ -103,7 +142,8 @@
       <section className="w-full bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 md:px-6 md:py-10 lg:flex-row lg:gap-10 lg:items-start">
           <FilterSidebar
-            availableSubCategories={availableSubCategories}
+            availableHeights={availableHeights}
+            availablePurposes={availablePurposes}
             minPrice={unfilteredPriceRange.minPrice}
             maxPrice={unfilteredPriceRange.maxPrice}
           />
@@ -111,7 +151,7 @@
           <div className="min-w-0 flex-1">
             <div className="mb-6 md:mb-8">
               <h2 className="text-lg font-semibold capitalize text-black mb-1">
-                {gender}
+                {collectionLabel ?? gender}
               </h2>
 
               <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">

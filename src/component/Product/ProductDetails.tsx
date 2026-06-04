@@ -281,15 +281,8 @@ export default function ProductDetails({
   const total = images.length;
   const currentImageIndex = total > 0 ? Math.min(imageIndex, total - 1) : 0;
 
-  const CAROUSEL_HEIGHT = 650;
-  const GAP = 2;
-  const SLIDE_WIDTH = 560;
-  const CAROUSEL_LEFT = 120;
-  const CAROUSEL_TOP = 64;
-
   const prev = () => setImageIndex(currentImageIndex === 0 ? total - 1 : currentImageIndex - 1);
   const next = () => setImageIndex(currentImageIndex === total - 1 ? 0 : currentImageIndex + 1);
-  const mobileImage = images[currentImageIndex];
 
   const content = (
     <div
@@ -317,273 +310,228 @@ export default function ProductDetails({
         </button>
       )}
 
-      <div className={`flex shrink-0 flex-col lg:flex-row ${isModal ? "lg:h-[96vh]" : "min-h-screen"}`}>
-        <div className="relative order-1 w-full bg-[#f4f1ec] lg:hidden">
-          <div className="relative aspect-square w-full overflow-hidden">
-            {mobileImage ? (
-              <Image
-                src={mobileImage}
-                alt={`${product.name} view ${currentImageIndex + 1}`}
-                fill
-                priority={!isModal}
-                sizes="100vw"
-                className="object-cover"
-              />
-            ) : (
-              <div className="h-full w-full bg-[#E8E6E1]" />
-            )}
-          </div>
-
-          {total > 1 && (
-            <div className="absolute inset-x-4 bottom-4 flex items-center justify-between rounded bg-white/95 px-4 py-2 shadow-sm">
-              <button onClick={prev} className="text-black" aria-label="Previous image">
-                <ArrowLeft size={18} />
-              </button>
-              <span className="text-sm font-medium tabular-nums text-black">
-                {currentImageIndex + 1} / {total}
-              </span>
-              <button onClick={next} className="text-black" aria-label="Next image">
-                <ArrowRight size={18} />
-              </button>
-            </div>
-          )}
-        </div>
-        {/* ── Left panel ── */}
-        <div className="order-2 relative z-10 flex w-full shrink-0 flex-col overflow-y-auto px-5 py-6 lg:order-1 lg:w-137.5 lg:px-10 lg:py-8">
-          <p className="text-xs text-gray-400 mb-4 flex items-center gap-1">
-            <Link
-              href={`/collections/${gender}`}
-              className="hover:underline capitalize text-gray-400"
-            >
-              {gender}
-            </Link>
-            <span>/</span>
-            <Link
-              href={`/collections/${gender}/${slug}`}
-              className="hover:underline text-gray-400"
-            >
-              {slug}
-            </Link>
-          </p>
-
-          <h1 className="mb-3 text-3xl font-bold leading-tight text-black md:text-4xl">
-            {product.name}
-          </h1>
-
-          <div className="flex items-center gap-3 mb-1">
-            <p className="text-xl font-medium text-black">
-              {product.base_currency}{" "}
-              {displayPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-            </p>
-            {displayOriginal && displayOriginal > displayPrice && (
-              <p className="text-base text-gray-400 line-through">
-                {product.base_currency}{" "}
-                {displayOriginal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-              </p>
-            )}
-          </div>
-
-          {/* Color selector */}
-          {colorGroups.length > 0 && (
-            <div className="mb-4 mt-3">
-              <p className="text-sm font-medium mb-2 text-black">
-                Color:{" "}
-                <span className="font-normal text-gray-600">{group?.label}</span>
-              </p>
-              <div className="flex gap-2">
-                {colorGroups.map((g, i) => (
-                  <button
-                    key={i}
-                    title={g.label}
-                    onClick={() => handleColorChange(i)}
-                    className={`w-9 h-9 rounded-full transition-all duration-200 ${
-                      i === activeColorIndex
-                        ? "ring-2 ring-offset-2 ring-black"
-                        : "hover:ring-1 hover:ring-gray-400 hover:ring-offset-1"
-                    }`}
-                    style={{
-                      background: swatchBackground(g.swatchColors),
-                      border: needsSwatchBorder(g.swatchColors) ? "1px solid #ccc" : "none",
-                    }}
-                  />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Size selector */}
-          {group?.sizes.length > 0 && (
-            <div className="mb-4">
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-sm font-medium text-black">
-                  Size:{" "}
-                  <span className="font-normal text-gray-700">
-                    {selectedSize ?? ""}
-                  </span>
-                </p>
-                <Link href="/size-chart" className="text-sm underline text-gray-500 hover:text-black transition-colors">
-                  Size Guide
-                </Link>
-              </div>
-              <div className="grid grid-cols-3 gap-1.5 sm:grid-cols-4 lg:grid-cols-3">
-                {group.sizes.map((size) => {
-                  const sizeVariant = getSelectedVariant(product, group, size);
-                  const sizeAvailable = isVariantPurchasable(sizeVariant);
-
-                  return (
-                    <button
-                      key={size}
-                      onClick={() => {
-                        if (!sizeAvailable) return;
-                        setActiveSize(size);
-                        setImageIndex(0);
-                      }}
-                      disabled={!sizeAvailable}
-                      title={!sizeAvailable ? "Out of stock" : undefined}
-                      className={`py-3 text-sm rounded transition-all text-black ${
-                        selectedSize === size
-                          ? "border-2 border-black font-semibold bg-white"
-                          : "border border-gray-200 bg-gray-100 hover:border-gray-400 hover:bg-gray-50"
-                      } ${!sizeAvailable ? "opacity-40 line-through cursor-not-allowed hover:border-gray-200 hover:bg-gray-100" : ""}`}
-                    >
-                      {size}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          <button
-            onClick={handleAddToBag}
-            disabled={addToCartPending || !isPurchasable}
-            title={!isPurchasable ? "This product does not have a purchasable variant." : undefined}
-            className="w-full bg-[#253E38] text-white py-4 font-bold text-sm hover:bg-[#1e3530] transition-colors mb-3 rounded disabled:opacity-60"
-          >
-            {!isPurchasable ? "Unavailable" : addToCartPending ? "Adding..." : "Add to Bag"}
-          </button>
-
-          {!isPurchasable && (
-            <p className="text-xs text-red-600 mb-3">
-              This product is currently unavailable.
-            </p>
-          )}
-
-          {product.short_description && (
-            <div className="bg-gray-50 px-5 mb-1">
-              <button
-                className="w-full flex items-center justify-between py-3.5 text-sm font-semibold text-black"
-                onClick={() => setShippingOpen(!shippingOpen)}
-              >
-                <span>International Shipping + Free Returns Details</span>
-                <Plus size={16} />
-              </button>
-              {shippingOpen && (
+      <div className="w-full px-4 py-6 lg:py-10 lg:pl-16 lg:pr-0">
+        <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-12">
+          {/* ── PHOTO (right) — big image 1, image 2 peeks past the edge, ← N/total → pill at the bottom in the gap ── */}
+          <div className={`order-1 w-full lg:order-2 lg:flex-1 lg:min-w-0 ${isModal ? "" : "lg:translate-x-8"}`}>
+            <div className="relative w-full overflow-hidden [--slide:85%] lg:[--slide:min(72%,calc(100vh-10rem))]">
+              {total > 0 ? (
                 <>
-                  <p className="text-xs text-gray-500 pb-2">
-                    {product.short_description}
-                  </p>
-                  <p className="text-xs text-blue-500 underline pb-4 cursor-pointer">
-                    Shipping &amp; Return Details
-                  </p>
+                  <div
+                    className="flex transition-transform duration-300 ease-out"
+                    style={{
+                      transform: `translateX(calc(-${currentImageIndex} * var(--slide)))`,
+                    }}
+                  >
+                    {images.map((img, i) => (
+                      <div key={i} style={{ width: "var(--slide)" }} className="shrink-0 pr-1.5">
+                        <div className="relative aspect-square w-full overflow-hidden bg-[#f4f1ec] lg:aspect-[1.1/1]">
+                          <Image
+                            src={img}
+                            alt={`${product.name} view ${i + 1}`}
+                            fill
+                            priority={!isModal && i === 0}
+                            sizes="(min-width: 1024px) min(72vw, calc(100vh - 10rem)), 85vw"
+                            className="object-cover"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {total > 1 && (
+                    <div className="absolute bottom-0 left-[var(--slide)] flex -translate-x-1/2 items-center gap-3 rounded-full bg-white/90 px-3 py-1.5 shadow-sm backdrop-blur-sm">
+                      <button onClick={prev} aria-label="Previous image" className="text-black transition hover:opacity-60">
+                        <ArrowLeft size={16} />
+                      </button>
+                      <span className="text-sm font-medium tabular-nums text-black">
+                        {currentImageIndex + 1} / {total}
+                      </span>
+                      <button onClick={next} aria-label="Next image" className="text-black transition hover:opacity-60">
+                        <ArrowRight size={16} />
+                      </button>
+                    </div>
+                  )}
                 </>
+              ) : (
+                <div className="relative aspect-square w-[var(--slide)] overflow-hidden bg-[#E8E6E1] lg:aspect-[1.1/1]" />
               )}
             </div>
-          )}
+          </div>
 
-          {product.full_description && (
-            <div className="bg-gray-50 px-5">
-              <button
-                className="w-full flex items-center justify-between py-3.5 text-sm font-semibold text-black"
-                onClick={() => setDetailsOpen(!detailsOpen)}
+          {/* ── DETAIL (left on desktop, below photo on mobile) ── */}
+          <div className={`order-2 w-full lg:order-1 lg:w-105 lg:shrink-0 ${isModal ? "" : "lg:translate-x-8"}`}>
+            <p className="mb-4 flex items-center gap-1 text-xs text-gray-400">
+              <Link
+                href={`/collections/${gender}`}
+                className="capitalize text-gray-400 hover:underline"
               >
-                <span>Product &amp; Material Details</span>
-                <Plus size={16} />
-              </button>
-              {detailsOpen && (
-                <p className="text-xs text-gray-500 pb-4">
-                  {product.full_description}
+                {gender}
+              </Link>
+              <span>/</span>
+              <Link
+                href={`/collections/${gender}/${slug}`}
+                className="text-gray-400 hover:underline"
+              >
+                {slug}
+              </Link>
+            </p>
+
+            <h1 className="mb-4 text-3xl font-bold leading-tight text-black md:text-4xl">
+              {product.name}
+            </h1>
+
+            {/* Price */}
+            <div className="mb-5 flex items-center gap-3">
+              <p className="text-xl font-medium text-black">
+                {product.base_currency}{" "}
+                {displayPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+              </p>
+              {displayOriginal && displayOriginal > displayPrice && (
+                <p className="text-base text-gray-400 line-through">
+                  {product.base_currency}{" "}
+                  {displayOriginal.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </p>
               )}
             </div>
-          )}
-        </div>
 
-        {/* ── Right panel: carousel ── */}
-        <div className="relative hidden flex-1 overflow-hidden lg:block">
-          <div
-            style={{
-              position: "absolute",
-              left: `${CAROUSEL_LEFT}px`,
-              right: 0,
-              top: `${CAROUSEL_TOP}px`,
-              height: `${CAROUSEL_HEIGHT}px`,
-              overflow: "hidden",
-              borderTopLeftRadius: "16px",
-              borderBottomLeftRadius: "8px",
-            }}
-          >
-            <ul
-              style={{
-                display: "flex",
-                height: "100%",
-                listStyle: "none",
-                margin: 0,
-                padding: 0,
-                transition: "transform 300ms ease",
-                transform: `translateX(calc(-${currentImageIndex} * ${SLIDE_WIDTH + GAP}px))`,
-              }}
+            {/* Color selector */}
+            {colorGroups.length > 0 && (
+              <div className="mb-5">
+                <p className="mb-2 text-sm font-medium text-black">
+                  Color:{" "}
+                  <span className="font-normal text-gray-600">{group?.label}</span>
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {colorGroups.map((g, i) => (
+                    <button
+                      key={i}
+                      title={g.label}
+                      onClick={() => handleColorChange(i)}
+                      className={`h-9 w-9 rounded-full transition-all duration-200 ${
+                        i === activeColorIndex
+                          ? "ring-2 ring-black ring-offset-2"
+                          : "hover:ring-1 hover:ring-gray-400 hover:ring-offset-1"
+                      }`}
+                      style={{
+                        background: swatchBackground(g.swatchColors),
+                        border: needsSwatchBorder(g.swatchColors) ? "1px solid #ccc" : "none",
+                      }}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Size selector */}
+            {group?.sizes.length > 0 && (
+              <div className="mb-5">
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-sm font-medium text-black">
+                    Size:{" "}
+                    <span className="font-normal text-gray-700">{selectedSize ?? ""}</span>
+                  </p>
+                  <Link
+                    href="/size-chart"
+                    className="text-sm text-gray-500 underline transition-colors hover:text-black"
+                  >
+                    Size Guide
+                  </Link>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {group.sizes.map((size) => {
+                    const sizeVariant = getSelectedVariant(product, group, size);
+                    const sizeAvailable = isVariantPurchasable(sizeVariant);
+
+                    return (
+                      <button
+                        key={size}
+                        onClick={() => {
+                          if (!sizeAvailable) return;
+                          setActiveSize(size);
+                          setImageIndex(0);
+                        }}
+                        disabled={!sizeAvailable}
+                        title={!sizeAvailable ? "Out of stock" : undefined}
+                        className={`rounded-lg py-3 text-sm text-black transition-all ${
+                          selectedSize === size
+                            ? "border-2 border-black bg-white font-semibold"
+                            : "border border-gray-200 bg-gray-100 hover:border-gray-400 hover:bg-gray-50"
+                        } ${
+                          !sizeAvailable
+                            ? "cursor-not-allowed line-through opacity-40 hover:border-gray-200 hover:bg-gray-100"
+                            : ""
+                        }`}
+                      >
+                        {size}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Add to Bag */}
+            <button
+              onClick={handleAddToBag}
+              disabled={addToCartPending || !isPurchasable}
+              title={!isPurchasable ? "This product does not have a purchasable variant." : undefined}
+              className="mb-3 w-full rounded-lg bg-[#253E38] py-4 text-sm font-bold text-white transition-colors hover:bg-[#1e3530] disabled:opacity-60"
             >
-              {images.map((img, i) => (
-                <li
-                  key={i}
-                  style={{
-                    flexShrink: 0,
-                    width: `${SLIDE_WIDTH}px`,
-                    marginRight: `${GAP}px`,
-                    position: "relative",
-                    overflow: "hidden",
-                    borderRadius: i === currentImageIndex ? "16px 0 0 8px" : "0",
-                  }}
-                >
-                  <Image
-                    src={img}
-                    alt={`${product.name} view ${i + 1}`}
-                    fill
-                    className="object-cover"
-                  />
-                </li>
-              ))}
-            </ul>
+              {!isPurchasable ? "Unavailable" : addToCartPending ? "Adding..." : "Add to Bag"}
+            </button>
+
+            {!isPurchasable && (
+              <p className="mb-3 text-xs text-red-600">
+                This product is currently unavailable.
+              </p>
+            )}
+
+            {/* Accordions */}
+            {(product.short_description || product.full_description) && (
+              <div className="mt-2 border-t border-gray-200">
+                {product.short_description && (
+                  <div className="border-b border-gray-200">
+                    <button
+                      className="flex w-full items-center justify-between py-4 text-sm font-semibold text-black"
+                      onClick={() => setShippingOpen(!shippingOpen)}
+                    >
+                      <span>International Shipping + Free Returns Details</span>
+                      <Plus
+                        size={16}
+                        className={`transition-transform ${shippingOpen ? "rotate-45" : ""}`}
+                      />
+                    </button>
+                    {shippingOpen && (
+                      <p className="pb-4 text-xs text-gray-500">
+                        {product.short_description}
+                      </p>
+                    )}
+                  </div>
+                )}
+
+                {product.full_description && (
+                  <div className="border-b border-gray-200">
+                    <button
+                      className="flex w-full items-center justify-between py-4 text-sm font-semibold text-black"
+                      onClick={() => setDetailsOpen(!detailsOpen)}
+                    >
+                      <span>Product &amp; Material Details</span>
+                      <Plus
+                        size={16}
+                        className={`transition-transform ${detailsOpen ? "rotate-45" : ""}`}
+                      />
+                    </button>
+                    {detailsOpen && (
+                      <p className="pb-4 text-xs text-gray-500">
+                        {product.full_description}
+                      </p>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-
-          {total > 1 && (
-            <div
-              style={{
-                position: "absolute",
-                left: `${CAROUSEL_LEFT + SLIDE_WIDTH + GAP / 2}px`,
-                top: `${CAROUSEL_TOP + CAROUSEL_HEIGHT + 2}px`,
-                transform: "translate(-50%)",
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                backgroundColor: "white",
-                padding: "8px 16px",
-                borderRadius: "5px",
-                boxShadow: "0 1px 6px rgba(0,0,0,0.12)",
-              }}
-            >
-              <button onClick={prev} className="hover:opacity-60 transition text-black">
-                <ArrowLeft size={18} />
-              </button>
-              <span className="text-sm font-medium tabular-nums text-black">
-                {currentImageIndex + 1} / {total}
-              </span>
-              <button onClick={next} className="hover:opacity-60 transition text-black">
-                <ArrowRight size={18} />
-              </button>
-            </div>
-          )}
         </div>
       </div>
 

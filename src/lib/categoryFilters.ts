@@ -1,11 +1,15 @@
 import { Category } from "@/interface/Category";
 import { Product } from "@/interface/Product";
+import {
+  TaxonomyCategoryOption,
+  filterProductsByCategorySlugs,
+  getAvailableCategoryOptionsFromProducts,
+  getSockHeightOptions,
+  getSockPurposeOptions,
+} from "@/lib/productTaxonomy";
 
-export interface SubCategoryOption {
-  id: number;
-  label: string;
-  value: string;
-}
+export type SubCategoryOption = TaxonomyCategoryOption;
+export type CategoryFilterOption = TaxonomyCategoryOption;
 
 const GENDER_SLUGS = ["men", "women", "kids"] as const;
 
@@ -56,6 +60,36 @@ export function getSubCategories(categories: Category[], genderSlug?: string): S
   return subCategories;
 }
 
+export function getHeightCategories(categories: Category[]): CategoryFilterOption[] {
+  return getSockHeightOptions(categories);
+}
+
+export function getPurposeCategories(categories: Category[]): CategoryFilterOption[] {
+  return getSockPurposeOptions(categories);
+}
+
+export function getAvailableHeightCategoriesFromProducts(
+  products: Product[],
+  categories: Category[]
+): CategoryFilterOption[] {
+  return getAvailableCategoryOptionsFromProducts(
+    products,
+    categories,
+    getSockHeightOptions(categories).map((option) => option.value)
+  );
+}
+
+export function getAvailablePurposeCategoriesFromProducts(
+  products: Product[],
+  categories: Category[]
+): CategoryFilterOption[] {
+  return getAvailableCategoryOptionsFromProducts(
+    products,
+    categories,
+    getSockPurposeOptions(categories).map((option) => option.value)
+  );
+}
+
 export function getAvailableSubCategoriesFromProducts(
   products: Product[],
   categories: Category[],
@@ -100,6 +134,22 @@ export function filterProductsBySubCategory(
   });
 
   return filtered;
+}
+
+export function filterProductsByHeight(
+  products: Product[],
+  categories: Category[],
+  selectedHeights: string[]
+): Product[] {
+  return filterProductsByCategorySlugs(products, categories, selectedHeights);
+}
+
+export function filterProductsByPurpose(
+  products: Product[],
+  categories: Category[],
+  selectedPurposes: string[]
+): Product[] {
+  return filterProductsByCategorySlugs(products, categories, selectedPurposes);
 }
 
 export function filterProductsByPrice(

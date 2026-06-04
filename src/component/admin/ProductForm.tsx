@@ -3,6 +3,15 @@
 import { FormEvent, ReactNode, useMemo, useState } from "react";
 import { useCategories } from "@/hooks/useCategories";
 import { AdminProductInput, CURRENCY_OPTIONS } from "@/interface/admin";
+import {
+  TaxonomyCategoryOption,
+  getCategoryIdsBySlugs,
+  getAudienceOptions,
+  getProductFamilyOptions,
+  getSockHeightOptions,
+  getSockPurposeOptions,
+  getTaxonomyValidationMessage,
+} from "@/lib/productTaxonomy";
 
 export function slugify(value: string): string {
   return value
@@ -42,6 +51,67 @@ function Field({
   );
 }
 
+function CategoryOption({
+  option,
+  checked,
+  onChange,
+  type = "checkbox",
+}: {
+  option: TaxonomyCategoryOption;
+  checked: boolean;
+  onChange: () => void;
+  type?: "checkbox" | "radio";
+}) {
+  return (
+    <label className="flex items-center gap-2 text-sm text-gray-700">
+      <input type={type} checked={checked} onChange={onChange} />
+      {option.label}
+    </label>
+  );
+}
+
+function CategoryGroup({
+  title,
+  options,
+  selectedIds,
+  onToggle,
+  onSelect,
+  required = false,
+  single = false,
+}: {
+  title: string;
+  options: TaxonomyCategoryOption[];
+  selectedIds: number[];
+  onToggle?: (id: number) => void;
+  onSelect?: (id: number) => void;
+  required?: boolean;
+  single?: boolean;
+}) {
+  return (
+    <div className="space-y-2">
+      <h3 className="text-xs font-bold uppercase tracking-widest text-gray-500">
+        {title}
+        {required && <span className="text-red-500"> *</span>}
+      </h3>
+      {options.length === 0 ? (
+        <p className="text-sm text-gray-500">No options available.</p>
+      ) : (
+        <div className="grid gap-2 sm:grid-cols-2">
+          {options.map((option) => (
+            <CategoryOption
+              key={option.id}
+              option={option}
+              checked={selectedIds.includes(option.id)}
+              type={single ? "radio" : "checkbox"}
+              onChange={() => (single ? onSelect?.(option.id) : onToggle?.(option.id))}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ProductForm({
   mode,
   initial,
@@ -66,15 +136,45 @@ export default function ProductForm({
   const { data: categories } = useCategories();
   const [values, setValues] = useState<AdminProductInput>(initial);
   const [slugTouched, setSlugTouched] = useState(mode === "edit");
+  const [internalError, setInternalError] = useState("");
 
-  const categoryOptions = useMemo(() => {
-    const list: { id: number; label: string }[] = [];
-    (categories ?? []).forEach((parent) => {
-      list.push({ id: parent.id, label: parent.name });
-      parent.children.forEach((child) => list.push({ id: child.id, label: `${parent.name} › ${child.name}` }));
-    });
-    return list;
-  }, [categories]);
+  const productFamilyOptions = useMemo(
+    () => getProductFamilyOptions(categories),
+    [categories]
+  );
+  const audienceOptions = useMemo(
+    () => getAudienceOptions(categories),
+    [categories]
+  );
+  const heightOptions = useMemo(
+    () => getSockHeightOptions(categories),
+    [categories]
+  );
+  const purposeOptions = useMemo(
+    () => getSockPurposeOptions(categories),
+    [categories]
+  );
+  const productFamilyIds = useMemo(
+    () => productFamilyOptions.map((option) => option.id),
+    [productFamilyOptions]
+  );
+  const heightIds = useMemo(
+    () => heightOptions.map((option) => option.id),
+    [heightOptions]
+  );
+  const socksCategoryIds = useMemo(() => getCategoryIdsBySlugs(categories, ["socks"]), [categories]);
+  const selectedCategoryIds = useMemo(() => {
+    if (
+      mode === "create" &&
+      productFamilyOptions.length === 1 &&
+      !values.categories.some((id) => productFamilyIds.includes(id))
+    ) {
+      return [...values.categories, productFamilyOptions[0].id];
+    }
+
+    return values.categories;
+  }, [mode, productFamilyIds, productFamilyOptions, values.categories]);
+  const isSocksSelected = selectedCategoryIds.some((id) => socksCategoryIds.includes(id));
 
   const set = <K extends keyof AdminProductInput>(key: K, value: AdminProductInput[K]) =>
     setValues((current) => ({ ...current, [key]: value }));
@@ -88,6 +188,7 @@ export default function ProductForm({
   };
 
   const toggleCategory = (id: number) => {
+    setInternalError("");
     setValues((current) => ({
       ...current,
       categories: current.categories.includes(id)
@@ -96,10 +197,26 @@ export default function ProductForm({
     }));
   };
 
+  const selectCategoryFromGroup = (groupIds: number[], id: number) => {
+    setInternalError("");
+    setValues((current) => ({
+      ...current,
+      categories: [...current.categories.filter((value) => !groupIds.includes(value)), id],
+    }));
+  };
+
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
-    onSubmit({ ...values, slug: values.slug || slugify(values.name) });
+    const validationMessage = getTaxonomyValidationMessage(selectedCategoryIds, categories);
+    if (validationMessage) {
+      setInternalError(validationMessage);
+      return;
+    }
+
+    setInternalError("");
+    onSubmit({ ...values, categories: selectedCategoryIds, slug: values.slug || slugify(values.name) });
   };
+  const displayError = internalError || error;
 
   return (
     <form id={formId} onSubmit={handleSubmit} className="space-y-6">
@@ -176,23 +293,39 @@ export default function ProductForm({
       </section>
 
       <section className="border border-gray-200 bg-white p-5">
-        <h2 className="mb-4 text-lg font-bold text-black">Categories</h2>
-        {categoryOptions.length === 0 ? (
-          <p className="text-sm text-gray-500">No categories available.</p>
-        ) : (
-          <div className="grid max-h-56 gap-2 overflow-y-auto sm:grid-cols-2">
-            {categoryOptions.map((option) => (
-              <label key={option.id} className="flex items-center gap-2 text-sm text-gray-700">
-                <input
-                  type="checkbox"
-                  checked={values.categories.includes(option.id)}
-                  onChange={() => toggleCategory(option.id)}
-                />
-                {option.label}
-              </label>
-            ))}
-          </div>
-        )}
+        <h2 className="mb-4 text-lg font-bold text-black">Taxonomy</h2>
+        <div className="grid gap-5">
+          <CategoryGroup
+            title="Product family"
+            options={productFamilyOptions}
+            selectedIds={selectedCategoryIds}
+            onSelect={(id) => selectCategoryFromGroup(productFamilyIds, id)}
+            required
+            single
+          />
+          <CategoryGroup
+            title="Audience"
+            options={audienceOptions}
+            selectedIds={selectedCategoryIds}
+            onToggle={toggleCategory}
+            required
+          />
+          <CategoryGroup
+            title="Height"
+            options={heightOptions}
+            selectedIds={selectedCategoryIds}
+            onSelect={(id) => selectCategoryFromGroup(heightIds, id)}
+            required={isSocksSelected}
+            single
+          />
+          <CategoryGroup
+            title="Purpose"
+            options={purposeOptions}
+            selectedIds={selectedCategoryIds}
+            onToggle={toggleCategory}
+          />
+        </div>
+        {internalError && <p className="mt-4 text-sm font-semibold text-red-600">{internalError}</p>}
       </section>
 
       <section className="border border-gray-200 bg-white p-5">
@@ -224,7 +357,7 @@ export default function ProductForm({
             {submitting ? "Saving..." : mode === "create" ? "Create product" : "Save changes"}
           </button>
           {message && <span className="text-sm font-semibold text-green-700">{message}</span>}
-          {error && <span className="text-sm font-semibold text-red-600">{error}</span>}
+          {displayError && <span className="text-sm font-semibold text-red-600">{displayError}</span>}
         </div>
       )}
     </form>

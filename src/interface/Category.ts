@@ -2,15 +2,26 @@
 
 export interface CategoryChild {
   id: number;
+  parent: string | null;
   name: string;
   slug: string;
+  taxonomy_group: TaxonomyGroup | "";
+  description: string;
+  is_active: boolean;
+  sort_order: number;
+  seo_title: string;
+  seo_description: string;
+  children?: CategoryChild[];
 }
+
+export type TaxonomyGroup = "product_family" | "audience" | "height" | "purpose";
 
 export interface Category {
   id: number;
-  parent: number | null;
+  parent: string | null;
   name: string;
   slug: string;
+  taxonomy_group: TaxonomyGroup | "";
   description: string;
   is_active: boolean;
   sort_order: number;

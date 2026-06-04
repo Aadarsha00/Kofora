@@ -1,5 +1,6 @@
 import { Category } from "@/interface/Category";
 import { Product } from "@/interface/Product";
+import { AUDIENCE_SLUGS } from "@/lib/productTaxonomy";
 
 export function normalizeSearchText(value: string) {
   return value
@@ -63,13 +64,19 @@ export function getProductGender(product: Product, categories: Category[] | unde
 
   const productCategoryIds = new Set(product.categories);
   const rootCategories = categories.filter((category) => category.parent === null);
+  const audienceCategories = rootCategories.filter((category) =>
+    (AUDIENCE_SLUGS as readonly string[]).includes(category.slug)
+  );
 
-  const directRoot = rootCategories.find((category) => productCategoryIds.has(category.id));
-  if (directRoot) return directRoot.slug;
+  const directAudience = audienceCategories.find((category) => productCategoryIds.has(category.id));
+  if (directAudience) return directAudience.slug;
 
-  const childMatch = rootCategories.find((category) =>
+  const childMatch = audienceCategories.find((category) =>
     category.children.some((child) => productCategoryIds.has(child.id))
   );
 
-  return childMatch?.slug ?? "women";
+  if (childMatch) return childMatch.slug;
+
+  const directRoot = rootCategories.find((category) => productCategoryIds.has(category.id));
+  return directRoot?.slug ?? "women";
 }

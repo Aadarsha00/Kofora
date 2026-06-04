@@ -3,8 +3,8 @@ import FootBanner from "@/component/Home/FootBanner";
 import FootProductGrid from "@/component/Home/FootProductGrid";
 import Hero from "@/component/Home/Hero";
 import NewArrivalsSection from "@/component/Home/NewArrivalSection";
-import ProductGrid from "@/component/Home/ProductGrid";
 import SockLengthGuide from "@/component/Home/SockLength";
+import StyleBand from "@/component/Home/StyleBand";
 
 
 export default function Home() {
@@ -12,12 +12,12 @@ export default function Home() {
     <>
     <CategoryBanner/>
     <Hero/>
-    <ProductGrid/>
+    <StyleBand/>
     <NewArrivalsSection/>
     <SockLengthGuide/>
     <FootBanner/>
     <FootProductGrid/>
-    
+
     </>
   )
 };

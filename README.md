@@ -2,19 +2,27 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
-First, run the development server:
+From the repository root, start both local apps:
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```powershell
+.\dev.cmd
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+If you run the apps manually, start the backend first on port `8000`:
+
+```powershell
+cd E:\Kofora-main\backend
+python manage.py runserver 127.0.0.1:8000
+```
+
+Then start the frontend in another terminal:
+
+```powershell
+cd E:\Kofora-main\kofora
+npm run dev
+```
 
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 

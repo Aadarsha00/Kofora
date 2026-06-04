@@ -3,16 +3,20 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { Slider } from "./slider";
-import type { SubCategoryOption } from "@/lib/categoryFilters";
+import type { CategoryFilterOption } from "@/lib/categoryFilters";
+import { normalizeTaxonomySlug } from "@/lib/productTaxonomy";
 
 interface FilterSidebarProps {
-  availableSubCategories: SubCategoryOption[];
+  availableHeights: CategoryFilterOption[];
+  availablePurposes: CategoryFilterOption[];
   minPrice: number;
   maxPrice: number;
 }
 
 const PARAMS = {
   subCategory: "sub_category",
+  height: "height",
+  purpose: "purpose",
   minPrice: "min_price",
   maxPrice: "max_price",
 } as const;
@@ -89,14 +93,41 @@ function parsePriceParam(value: string | null, fallback: number, min: number, ma
 }
 
 export default function FilterSidebar({
-  availableSubCategories,
+  availableHeights,
+  availablePurposes,
   minPrice,
   maxPrice,
 }: FilterSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const activeSubCategories = searchParams.getAll(PARAMS.subCategory);
+  const legacySubCategories = searchParams.getAll(PARAMS.subCategory);
+  const heightValues = useMemo(() => new Set(availableHeights.map((item) => item.value)), [availableHeights]);
+  const purposeValues = useMemo(() => new Set(availablePurposes.map((item) => item.value)), [availablePurposes]);
+  const activeHeights = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...searchParams.getAll(PARAMS.height).map(normalizeTaxonomySlug),
+          ...legacySubCategories
+            .map(normalizeTaxonomySlug)
+            .filter((value) => heightValues.has(value)),
+        ])
+      ),
+    [heightValues, legacySubCategories, searchParams]
+  );
+  const activePurposes = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...searchParams.getAll(PARAMS.purpose).map(normalizeTaxonomySlug),
+          ...legacySubCategories
+            .map(normalizeTaxonomySlug)
+            .filter((value) => purposeValues.has(value)),
+        ])
+      ),
+    [legacySubCategories, purposeValues, searchParams]
+  );
   const rawMinPrice = parsePriceParam(searchParams.get(PARAMS.minPrice), minPrice, minPrice, maxPrice);
   const rawMaxPrice = parsePriceParam(searchParams.get(PARAMS.maxPrice), maxPrice, minPrice, maxPrice);
   const activeMinPrice = Math.min(rawMinPrice, rawMaxPrice);
@@ -104,7 +135,9 @@ export default function FilterSidebar({
   const [draftPrice, setDraftPrice] = useState<[number, number]>([activeMinPrice, activeMaxPrice]);
   const displayPrice = draftPrice;
   const hasFilters =
-    activeSubCategories.length > 0 ||
+    activeHeights.length > 0 ||
+    activePurposes.length > 0 ||
+    legacySubCategories.length > 0 ||
     activeMinPrice !== minPrice ||
     activeMaxPrice !== maxPrice;
 
@@ -131,6 +164,7 @@ export default function FilterSidebar({
         const currentValues = params.getAll(key);
         const alreadySelected = currentValues.includes(value);
 
+        params.delete(PARAMS.subCategory);
         params.delete(key);
         if (alreadySelected) {
           currentValues
@@ -149,15 +183,16 @@ export default function FilterSidebar({
   const clearAll = useCallback(() => {
     const params = new URLSearchParams(searchParams.toString());
     params.delete(PARAMS.subCategory);
+    params.delete(PARAMS.height);
+    params.delete(PARAMS.purpose);
     params.delete(PARAMS.minPrice);
     params.delete(PARAMS.maxPrice);
     const qs = params.toString();
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }, [pathname, router, searchParams]);
 
-  const sortedSubCategories = useMemo(() => {
-    return [...availableSubCategories].sort((a, b) => a.label.localeCompare(b.label));
-  }, [availableSubCategories]);
+  const sortedHeights = useMemo(() => [...availableHeights], [availableHeights]);
+  const sortedPurposes = useMemo(() => [...availablePurposes], [availablePurposes]);
 
   return (
     <aside className="w-full shrink-0 self-start border-b border-gray-200 pb-2 lg:sticky lg:top-24 lg:w-56 lg:border-b-0 lg:pb-0">
@@ -171,18 +206,33 @@ export default function FilterSidebar({
         </button>
       )}
 
-      <FilterSection title="Sub Category">
-        {sortedSubCategories.length > 0 ? (
-          sortedSubCategories.map((subCategory) => (
+      <FilterSection title="Height">
+        {sortedHeights.length > 0 ? (
+          sortedHeights.map((height) => (
             <CheckboxOption
-              key={subCategory.id}
-              label={subCategory.label}
-              checked={activeSubCategories.includes(subCategory.value)}
-              onChange={() => toggleMultiValueParam(PARAMS.subCategory, subCategory.value)}
+              key={height.id}
+              label={height.label}
+              checked={activeHeights.includes(height.value)}
+              onChange={() => toggleMultiValueParam(PARAMS.height, height.value)}
             />
           ))
         ) : (
-          <p className="text-xs text-gray-400">No sub categories available</p>
+          <p className="text-xs text-gray-400">No height filters available</p>
+        )}
+      </FilterSection>
+
+      <FilterSection title="Purpose">
+        {sortedPurposes.length > 0 ? (
+          sortedPurposes.map((purpose) => (
+            <CheckboxOption
+              key={purpose.id}
+              label={purpose.label}
+              checked={activePurposes.includes(purpose.value)}
+              onChange={() => toggleMultiValueParam(PARAMS.purpose, purpose.value)}
+            />
+          ))
+        ) : (
+          <p className="text-xs text-gray-400">No purpose filters available</p>
         )}
       </FilterSection>
 

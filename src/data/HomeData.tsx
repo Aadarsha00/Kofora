@@ -22,20 +22,13 @@ export const FOOT_BANNER_DATA = {
 
 export const FOOT_PRODUCT_GRID = [
   { id: 1, image: "/women3.webp", subtitle: "Comfort Beyond Socks", title: "SOCKS", href: "/collections/socks" },
-  { id: 2, image: "/women1.webp", subtitle: "Comfort Beyond Socks", title: "Best Seller", href: "/collections/women?sort_by=best-selling" },
-  { id: 3, image: "/women2.webp", subtitle: "Comfort Beyond Socks", title: "New Release", href: "/collections/men?sort_by=best-selling" },
-]
-
-export const PRODUCT_GRID_ITEMS = [
-  { id: 1, image: "/socks1.webp", name: "No Show Sock",   href: "/collections/women" },
-  { id: 2, image: "/socks2.webp", name: "Ankle Sock",     href: "/collections/women" },
-  { id: 3, image: "/socks3.webp", name: "Quarter Sock",   href: "/collections/men"   },
-  { id: 4, image: "/socks5.webp", name: "Half Calf Sock", href: "/collections/men"   },
+  { id: 2, image: "/women1.webp", subtitle: "Comfort Beyond Socks", title: "Best Seller", href: "/collections/socks?sort_by=best-selling" },
+  { id: 3, image: "/women2.webp", subtitle: "Comfort Beyond Socks", title: "New Release", href: "/collections/socks?sort_by=newest" },
 ]
 
 export const SOCK_LENGTHS = [
   { label: "No Show",   image: "/socks1.webp", slug: "no-show"   },
-  { label: "Ankle",     image: "/socks2.webp", slug: "ankel"     },
+  { label: "Ankle",     image: "/socks2.webp", slug: "ankle"     },
   { label: "Quarter",   image: "/socks3.webp", slug: "quarter"   },
   { label: "Half Calf", image: "/socks5.webp", slug: "half-calf" },
   { label: "Calf",      image: "/socks5.webp", slug: "calf"      },
@@ -44,7 +37,14 @@ export const SOCK_LENGTHS = [
 ]
 
 export const SOCK_CATEGORIES = [
-  { label: "Women", href: (slug: string) => `/collections/women?sub_category=${slug}` },
-  { label: "Men",   href: (slug: string) => `/collections/men?sub_category=${slug}`   },
-  { label: "All",   href: (slug: string) => `/collections/socks?sub_category=${slug}` },
+  { label: "Women", href: (slug: string) => `/collections/women?height=${slug}` },
+  { label: "Men",   href: (slug: string) => `/collections/men?height=${slug}`   },
+  { label: "All",   href: (slug: string) => `/collections/socks?height=${slug}` },
+]
+
+export const STYLE_CATEGORIES = [
+  { label: "Casual",      image: "/socks2.webp", href: "/collections/casual"      },
+  { label: "Compression", image: "/socks4.webp", href: "/collections/compression" },
+  { label: "Formal",      image: "/socks3.webp", href: "/collections/formal"      },
+  { label: "Sports",      image: "/socks1.webp", href: "/collections/sports"      },
 ]

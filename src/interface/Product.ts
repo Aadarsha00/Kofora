@@ -49,6 +49,7 @@ export interface Product {
   seo_title: string;
   seo_description: string;
   categories: number[];
+  sales_count: number;
   images: ProductImage[];
   variants: ProductVariant[];
   created_at: string;

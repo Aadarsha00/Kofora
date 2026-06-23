@@ -101,6 +101,7 @@ export default function EditProductPage() {
     seo_title: product.seo_title,
     seo_description: product.seo_description,
     categories: product.categories,
+    international_shipping: product.international_shipping,
   };
   const storefrontCategory = storefrontCategorySlug(product.categories, categories);
   const storefrontHref = storefrontCategory

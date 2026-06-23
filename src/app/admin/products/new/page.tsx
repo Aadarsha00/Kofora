@@ -29,6 +29,7 @@ const EMPTY_PRODUCT: AdminProductInput = {
   seo_title: "",
   seo_description: "",
   categories: [],
+  international_shipping: null,
 };
 
 export default function NewProductPage() {

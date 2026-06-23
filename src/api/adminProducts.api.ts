@@ -1,5 +1,5 @@
 import api from "@/axios/api.axios";
-import { Product, ProductVariant } from "@/interface/Product";
+import { InternationalShipping, Product, ProductVariant } from "@/interface/Product";
 import {
   AdminImageUploadInput,
   AdminProductInput,
@@ -11,7 +11,10 @@ import {
   AdminVariantInput,
   AdminVariantResponse,
 } from "@/interface/admin";
+import { ApiEnvelope } from "@/interface/cart";
 import { PaginatedResponse } from "@/interface/checkout";
+
+type InternationalShippingListResponse = ApiEnvelope<PaginatedResponse<InternationalShipping>>;
 
 // ─── Products ─────────────────────────────────────────────────
 export const getAdminProducts = async (
@@ -41,6 +44,13 @@ export const updateAdminProduct = async (
 
 export const deleteAdminProduct = async (id: number): Promise<void> => {
   await api.delete(`/products/${id}/`);
+};
+
+export const getInternationalShippingOptions = async (): Promise<InternationalShipping[]> => {
+  const response = await api.get<InternationalShippingListResponse>("/shipping/international/", {
+    params: { page_size: 100, ordering: "sort_order" },
+  });
+  return response.data.data.results ?? [];
 };
 
 // ─── Variants ─────────────────────────────────────────────────

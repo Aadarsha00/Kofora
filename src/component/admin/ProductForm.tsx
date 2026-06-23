@@ -2,6 +2,7 @@
 
 import { FormEvent, ReactNode, useMemo, useState } from "react";
 import { useCategories } from "@/hooks/useCategories";
+import { useInternationalShippingOptions } from "@/hooks/useAdminProducts";
 import { AdminProductInput, CURRENCY_OPTIONS } from "@/interface/admin";
 import {
   TaxonomyCategoryOption,
@@ -134,6 +135,7 @@ export default function ProductForm({
   showActions?: boolean;
 }) {
   const { data: categories } = useCategories();
+  const { data: internationalShippingOptions = [] } = useInternationalShippingOptions();
   const [values, setValues] = useState<AdminProductInput>(initial);
   const [slugTouched, setSlugTouched] = useState(mode === "edit");
   const [internalError, setInternalError] = useState("");
@@ -249,6 +251,23 @@ export default function ProductForm({
               {CURRENCY_OPTIONS.map((currency) => (
                 <option key={currency} value={currency}>
                   {currency}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="grid gap-1.5 text-sm sm:col-span-2">
+            <span className="font-semibold text-black">International shipping</span>
+            <select
+              value={values.international_shipping ?? ""}
+              onChange={(event) =>
+                set("international_shipping", event.target.value ? Number(event.target.value) : null)
+              }
+              className="border border-gray-300 px-3 py-2.5 text-sm text-black outline-none focus:border-black"
+            >
+              <option value="">No international shipping details</option>
+              {internationalShippingOptions.map((option) => (
+                <option key={option.id} value={option.id}>
+                  {option.title} - {option.destination_country}
                 </option>
               ))}
             </select>

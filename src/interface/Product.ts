@@ -35,6 +35,35 @@ export interface ProductVariant {
   weight_grams: number;
 }
 
+export interface InternationalShipping {
+  id: number;
+  title: string;
+  zone: number | null;
+  zone_name: string | null;
+  shipping_method: number | null;
+  shipping_method_name: string | null;
+  destination_country: string;
+  destination_country_code: string;
+  destination_region: string;
+  service_name: string;
+  carrier: string;
+  delivery_time: string;
+  handling_time: string;
+  base_rate: string;
+  additional_item_rate: string;
+  free_shipping_threshold: string | null;
+  currency: string;
+  duties_paid_by: "customer" | "merchant" | "included";
+  customs_notes: string;
+  return_policy: string;
+  restrictions: string;
+  notes: string;
+  sort_order: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Product {
   id: number;
   name: string;
@@ -49,6 +78,8 @@ export interface Product {
   seo_title: string;
   seo_description: string;
   categories: number[];
+  international_shipping: number | null;
+  international_shipping_details: InternationalShipping | null;
   sales_count: number;
   images: ProductImage[];
   variants: ProductVariant[];

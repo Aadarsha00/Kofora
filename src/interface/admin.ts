@@ -119,6 +119,7 @@ export interface AdminProductInput {
   seo_title: string;
   seo_description: string;
   categories: number[];
+  international_shipping: number | null;
 }
 
 export interface AdminVariantInput {

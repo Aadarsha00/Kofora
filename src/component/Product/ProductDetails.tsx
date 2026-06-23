@@ -115,6 +115,33 @@ function getFirstPurchasableSize(product: Product | undefined, group: ColorGroup
   return variant?.size?.trim() || null;
 }
 
+function buildInternationalShippingLines(product: Product): string[] {
+  const details = product.international_shipping_details;
+
+  if (!details) {
+    return hasText(product.short_description) ? [product.short_description] : [];
+  }
+
+  const rate = `${details.currency} ${details.base_rate}`;
+  return [
+    details.destination_country
+      ? `Destination: ${details.destination_country}${details.destination_region ? `, ${details.destination_region}` : ""}`
+      : "",
+    details.service_name ? `Service: ${details.service_name}` : "",
+    details.carrier ? `Carrier: ${details.carrier}` : "",
+    details.delivery_time ? `Delivery: ${details.delivery_time}` : "",
+    details.handling_time ? `Handling: ${details.handling_time}` : "",
+    `Rate: ${rate}`,
+    details.free_shipping_threshold
+      ? `Free shipping from ${details.currency} ${details.free_shipping_threshold}`
+      : "",
+    details.customs_notes,
+    details.return_policy,
+    details.restrictions,
+    details.notes,
+  ].filter(hasText);
+}
+
 export default function ProductDetails({
   isModal = false,
   onClose,
@@ -145,6 +172,10 @@ export default function ProductDetails({
 
   const colorGroups = useMemo(
     () => (product ? buildColorGroups(product) : []),
+    [product]
+  );
+  const internationalShippingLines = useMemo(
+    () => (product ? buildInternationalShippingLines(product) : []),
     [product]
   );
 
@@ -488,9 +519,9 @@ export default function ProductDetails({
             )}
 
             {/* Accordions */}
-            {(product.short_description || product.full_description) && (
+            {(internationalShippingLines.length > 0 || product.full_description) && (
               <div className="mt-2 border-t border-gray-200">
-                {product.short_description && (
+                {internationalShippingLines.length > 0 && (
                   <div className="border-b border-gray-200">
                     <button
                       className="flex w-full items-center justify-between py-4 text-sm font-semibold text-black"
@@ -503,9 +534,11 @@ export default function ProductDetails({
                       />
                     </button>
                     {shippingOpen && (
-                      <p className="pb-4 text-xs text-gray-500">
-                        {product.short_description}
-                      </p>
+                      <div className="grid gap-2 pb-4 text-xs text-gray-500">
+                        {internationalShippingLines.map((line, index) => (
+                          <p key={`${line}-${index}`}>{line}</p>
+                        ))}
+                      </div>
                     )}
                   </div>
                 )}

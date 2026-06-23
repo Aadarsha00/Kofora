@@ -7,6 +7,7 @@ import {
   deleteProductImage,
   getAdminProduct,
   getAdminProducts,
+  getInternationalShippingOptions,
   reorderProductImages,
   updateProductImage,
   updateAdminProduct,
@@ -32,6 +33,12 @@ export const useAdminProduct = (id: number | undefined) =>
     queryKey: ["admin-product", id],
     queryFn: () => getAdminProduct(id as number),
     enabled: Boolean(id),
+  });
+
+export const useInternationalShippingOptions = () =>
+  useQuery({
+    queryKey: ["international-shipping-options"],
+    queryFn: getInternationalShippingOptions,
   });
 
 export const useCreateAdminProduct = () => {

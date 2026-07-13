@@ -1,12 +1,13 @@
 import { FOOT_BANNER_DATA } from "@/data/HomeData"
+import { pickImage, SiteImageMap } from "@/lib/siteImages"
 import Image from "next/image"
 
 
-export default function FootBanner() {
+export default function FootBanner({ images }: { images?: SiteImageMap }) {
   return (
     <section className="relative w-full h-100 md:h-175 overflow-hidden">
       <Image
-        src={FOOT_BANNER_DATA.image}
+        src={pickImage(images, FOOT_BANNER_DATA.imageKey, FOOT_BANNER_DATA.image)}
         alt={FOOT_BANNER_DATA.title}
         fill
         className="object-cover object-center"

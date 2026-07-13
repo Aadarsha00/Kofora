@@ -1,8 +1,9 @@
 import { STYLE_CATEGORIES } from "@/data/HomeData";
+import { pickImage, SiteImageMap } from "@/lib/siteImages";
 import Image from "next/image";
 import Link from "next/link";
 
-export default function StyleBand() {
+export default function StyleBand({ images }: { images?: SiteImageMap }) {
   return (
     <section className="flex w-full flex-col gap-6 px-3 py-12 md:gap-8 md:px-14 md:py-16">
       <div className="flex flex-col gap-1 text-center">
@@ -22,7 +23,7 @@ export default function StyleBand() {
             className="group relative aspect-square overflow-hidden rounded-lg bg-[#f4f1ec]"
           >
             <Image
-              src={style.image}
+              src={pickImage(images, style.imageKey, style.image)}
               alt={style.label}
               fill
               className="object-cover transition-transform duration-500 group-hover:scale-105"

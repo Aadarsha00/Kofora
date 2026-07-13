@@ -61,3 +61,21 @@ export const updateCategory = async (
     throwApiError(error, "Failed to update category");
   }
 };
+
+export const updateCategoryImage = async (
+  slug: string,
+  image: File
+): Promise<Category> => {
+  try {
+    const formData = new FormData();
+    formData.append("image", image);
+    // Let the browser/axios set the multipart boundary automatically.
+    const response = await api.patch<{ success: boolean; data: Category }>(
+      `/categories/${slug}/`,
+      formData
+    );
+    return response.data.data;
+  } catch (error: unknown) {
+    throwApiError(error, "Failed to update category image");
+  }
+};

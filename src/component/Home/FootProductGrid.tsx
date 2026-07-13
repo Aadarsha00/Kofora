@@ -1,7 +1,8 @@
 import { FOOT_PRODUCT_GRID } from "@/data/HomeData"
+import { pickImage, SiteImageMap } from "@/lib/siteImages"
 import Image from "next/image"
 import Link from "next/link"
-export default function FootProductGrid() {
+export default function FootProductGrid({ images }: { images?: SiteImageMap }) {
   return (
     <section className="grid grid-cols-1 sm:grid-cols-3 w-full h-auto md:h-200">
       {FOOT_PRODUCT_GRID.map((cat) => (
@@ -11,7 +12,7 @@ export default function FootProductGrid() {
           className="relative overflow-hidden cursor-pointer group aspect-3/4 md:aspect-auto"
         >
           <Image
-            src={cat.image}
+            src={pickImage(images, cat.imageKey, cat.image)}
             alt={cat.title}
             fill
             className="object-cover object-center transition-transform duration-500 group-hover:scale-105"

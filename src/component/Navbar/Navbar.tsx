@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, User, LogOut, Menu, X } from "lucide-react";
+import { Search, User, LogOut, Menu, X, LayoutDashboard } from "lucide-react";
 import { HandbagIcon } from "@phosphor-icons/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -22,6 +22,7 @@ const NAV_ITEMS = [
   { label: "WOMEN", href: "/collections/women" },
   { label: "MEN", href: "/collections/men" },
   { label: "KIDS", href: "/collections/kids" },
+  { label: "CAPS", href: "/collections/caps" },
   { label: "SIZE CHART", href: "/size-chart" },
   { label: "ABOUT", href: "/about" },
   { label: "CONTACT", href: "/contact" },
@@ -53,6 +54,7 @@ export default function MainNavbar() {
   const fullName = [firstName, user?.last_name].filter(Boolean).join(" ").trim();
   const userDisplayName = firstName || user?.username || user?.email?.split("@")[0] || "Account";
   const userMenuTitle = fullName || user?.username || user?.email || "User";
+  const isAdmin = isAuthenticated && (user?.role === "admin" || user?.role === "staff");
 
   // ✅ Clears React Query cart cache so stale data doesn't show on next login
   const clearCartCache = useClearCartCache();
@@ -97,10 +99,10 @@ export default function MainNavbar() {
   return (
     <>
       <div className="sticky top-0 z-50 w-full bg-white shadow-sm">
-        <div className="hidden h-18 w-full items-center justify-center px-12.25 py-6 lg:flex">
+        <div className="hidden h-18 w-full items-center justify-center px-12.25 py-3 lg:flex">
           <div className="flex w-full max-w-[1440px] flex-row items-center justify-between gap-10">
-          <Link href="/" className="w-34.75 h-6 shrink-0">
-            <Image src="/logo.png" alt="Logo" className="w-full h-full object-contain" width={100} height={100} />
+          <Link href="/" className="h-12 w-48 shrink-0">
+            <Image src="/logo.jpeg" alt="Logo" className="w-full h-full object-contain" width={200} height={100} />
           </Link>
 
           <ul className="flex flex-row items-center gap-8 xl:gap-12 list-none m-0 p-0">
@@ -139,6 +141,16 @@ export default function MainNavbar() {
                       <p className="text-xs text-gray-500">{user.email}</p>
                     )}
                   </div>
+                  {isAdmin && (
+                    <Link
+                      href="/admin/dashboard"
+                      onClick={() => setUserMenuOpen(false)}
+                      className="flex items-center gap-2 border-b border-gray-100 px-4 py-2 text-sm font-semibold text-black hover:bg-gray-50 transition-colors"
+                    >
+                      <LayoutDashboard size={16} />
+                      Admin dashboard
+                    </Link>
+                  )}
                   <Link
                     href="/profile"
                     onClick={() => setUserMenuOpen(false)}
@@ -219,8 +231,8 @@ export default function MainNavbar() {
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
 
-          <Link href="/" onClick={() => setMobileMenuOpen(false)} className="h-6 w-32 shrink-0">
-            <Image src="/logo.png" alt="Logo" className="h-full w-full object-contain" width={140} height={32} />
+          <Link href="/" onClick={() => setMobileMenuOpen(false)} className="h-10 w-40 shrink-0">
+            <Image src="/logo.jpeg" alt="Logo" className="h-full w-full object-contain" width={160} height={40} />
           </Link>
 
           <div className="flex items-center gap-3">
@@ -266,6 +278,16 @@ export default function MainNavbar() {
             <div className="mt-6 grid grid-cols-2 gap-3">
               {hasMounted && isAuthenticated ? (
                 <>
+                  {isAdmin && (
+                    <Link
+                      href="/admin/dashboard"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="col-span-2 flex items-center justify-center gap-2 bg-black px-4 py-3 text-sm font-semibold text-white"
+                    >
+                      <LayoutDashboard size={16} />
+                      Admin dashboard
+                    </Link>
+                  )}
                   <Link
                     href="/profile"
                     onClick={() => setMobileMenuOpen(false)}
@@ -322,7 +344,7 @@ export default function MainNavbar() {
                 onChange={(event) => setSearchQuery(event.target.value)}
                 autoFocus={searchOpen}
                 type="search"
-                placeholder="Search socks"
+                placeholder="Search socks, caps & more"
                 className="min-w-0 flex-1 border border-gray-300 px-4 py-3 text-sm text-black outline-none focus:border-black"
               />
               <button type="submit" className="bg-black px-5 py-3 text-sm font-semibold text-white">

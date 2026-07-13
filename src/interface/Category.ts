@@ -11,10 +11,11 @@ export interface CategoryChild {
   sort_order: number;
   seo_title: string;
   seo_description: string;
+  image?: string | null;
   children?: CategoryChild[];
 }
 
-export type TaxonomyGroup = "product_family" | "audience" | "height" | "purpose";
+export type TaxonomyGroup = "product_family" | "audience" | "height" | "purpose" | "style";
 
 export interface Category {
   id: number;

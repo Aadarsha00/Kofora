@@ -4,6 +4,7 @@ import {
   TaxonomyCategoryOption,
   filterProductsByCategorySlugs,
   getAvailableCategoryOptionsFromProducts,
+  getCapStyleOptions,
   getSockHeightOptions,
   getSockPurposeOptions,
 } from "@/lib/productTaxonomy";
@@ -68,6 +69,10 @@ export function getPurposeCategories(categories: Category[]): CategoryFilterOpti
   return getSockPurposeOptions(categories);
 }
 
+export function getStyleCategories(categories: Category[]): CategoryFilterOption[] {
+  return getCapStyleOptions(categories);
+}
+
 export function getAvailableHeightCategoriesFromProducts(
   products: Product[],
   categories: Category[]
@@ -87,6 +92,17 @@ export function getAvailablePurposeCategoriesFromProducts(
     products,
     categories,
     getSockPurposeOptions(categories).map((option) => option.value)
+  );
+}
+
+export function getAvailableStyleCategoriesFromProducts(
+  products: Product[],
+  categories: Category[]
+): CategoryFilterOption[] {
+  return getAvailableCategoryOptionsFromProducts(
+    products,
+    categories,
+    getCapStyleOptions(categories).map((option) => option.value)
   );
 }
 
@@ -150,6 +166,14 @@ export function filterProductsByPurpose(
   selectedPurposes: string[]
 ): Product[] {
   return filterProductsByCategorySlugs(products, categories, selectedPurposes);
+}
+
+export function filterProductsByStyle(
+  products: Product[],
+  categories: Category[],
+  selectedStyles: string[]
+): Product[] {
+  return filterProductsByCategorySlugs(products, categories, selectedStyles);
 }
 
 export function filterProductsByPrice(

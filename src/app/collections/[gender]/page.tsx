@@ -4,6 +4,7 @@ import CollectionView from "@/component/Gender/CollectionView";
 import { notFound } from "next/navigation";
 import { getCategories, getCategoryBySlug } from "@/api/category.api";
 import {
+  isCapStyleSlug,
   isSockHeightSlug,
   isSockPurposeSlug,
   normalizeTaxonomySlug,
@@ -14,13 +15,14 @@ type CollectionSearchParams = {
   sub_category?: string | string[];
   height?: string | string[];
   purpose?: string | string[];
+  style?: string | string[];
   min_price?: string;
   max_price?: string;
 };
 
 function appendTaxonomyParam(
   searchParams: CollectionSearchParams,
-  key: "height" | "purpose",
+  key: "height" | "purpose" | "style",
   slug: string
 ): CollectionSearchParams {
   const current = searchParams[key];
@@ -53,6 +55,13 @@ function resolveCollectionRoute(
     return {
       collectionSlug: "socks",
       searchParams: appendTaxonomyParam(searchParams, "purpose", normalizedSlug),
+    };
+  }
+
+  if (isCapStyleSlug(normalizedSlug)) {
+    return {
+      collectionSlug: "caps",
+      searchParams: appendTaxonomyParam(searchParams, "style", normalizedSlug),
     };
   }
 

@@ -7,11 +7,14 @@
     filterProductsByPrice,
     filterProductsByHeight,
     filterProductsByPurpose,
-    getHeightCategories,
+    filterProductsByStyle,
+    getAvailableHeightCategoriesFromProducts,
+    getAvailablePurposeCategoriesFromProducts,
+    getAvailableStyleCategoriesFromProducts,
     getProductPriceRange,
-    getPurposeCategories,
   } from "@/lib/categoryFilters";
   import {
+    isCapStyleSlug,
     isSockHeightSlug,
     isSockPurposeSlug,
     normalizeTaxonomySlugs,
@@ -27,6 +30,7 @@
       sub_category?: string | string[];
       height?: string | string[];
       purpose?: string | string[];
+      style?: string | string[];
       min_price?: string;
       max_price?: string;
     };
@@ -97,6 +101,10 @@
       ...paramValues(searchParams.purpose),
       ...legacySubCategories.filter(isSockPurposeSlug),
     ]);
+    const selectedStyles = normalizeTaxonomySlugs([
+      ...paramValues(searchParams.style),
+      ...legacySubCategories.filter(isCapStyleSlug),
+    ]);
     const selectedMinPrice =
       searchParams.min_price !== undefined
         ? Number(searchParams.min_price)
@@ -114,8 +122,11 @@
 
     const products = await getProductsByGender(category);
 
-    const availableHeights = getHeightCategories(categories);
-    const availablePurposes = getPurposeCategories(categories);
+    // Only offer filters that match at least one product in this collection,
+    // so sock filters don't show on the caps page and vice versa.
+    const availableHeights = getAvailableHeightCategoriesFromProducts(products, categories);
+    const availablePurposes = getAvailablePurposeCategoriesFromProducts(products, categories);
+    const availableStyles = getAvailableStyleCategoriesFromProducts(products, categories);
 
     const unfilteredPriceRange = getProductPriceRange(products);
 
@@ -131,8 +142,14 @@
       selectedPurposes
     );
 
-    const fullyFilteredProducts = filterProductsByPrice(
+    const styleFilteredProducts = filterProductsByStyle(
       purposeFilteredProducts,
+      categories,
+      selectedStyles
+    );
+
+    const fullyFilteredProducts = filterProductsByPrice(
+      styleFilteredProducts,
       selectedMinPrice,
       selectedMaxPrice
     );
@@ -144,6 +161,7 @@
           <FilterSidebar
             availableHeights={availableHeights}
             availablePurposes={availablePurposes}
+            availableStyles={availableStyles}
             minPrice={unfilteredPriceRange.minPrice}
             maxPrice={unfilteredPriceRange.maxPrice}
           />

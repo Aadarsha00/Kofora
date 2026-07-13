@@ -9,6 +9,7 @@ import { normalizeTaxonomySlug } from "@/lib/productTaxonomy";
 interface FilterSidebarProps {
   availableHeights: CategoryFilterOption[];
   availablePurposes: CategoryFilterOption[];
+  availableStyles?: CategoryFilterOption[];
   minPrice: number;
   maxPrice: number;
 }
@@ -17,6 +18,7 @@ const PARAMS = {
   subCategory: "sub_category",
   height: "height",
   purpose: "purpose",
+  style: "style",
   minPrice: "min_price",
   maxPrice: "max_price",
 } as const;
@@ -95,6 +97,7 @@ function parsePriceParam(value: string | null, fallback: number, min: number, ma
 export default function FilterSidebar({
   availableHeights,
   availablePurposes,
+  availableStyles = [],
   minPrice,
   maxPrice,
 }: FilterSidebarProps) {
@@ -104,6 +107,7 @@ export default function FilterSidebar({
   const legacySubCategories = searchParams.getAll(PARAMS.subCategory);
   const heightValues = useMemo(() => new Set(availableHeights.map((item) => item.value)), [availableHeights]);
   const purposeValues = useMemo(() => new Set(availablePurposes.map((item) => item.value)), [availablePurposes]);
+  const styleValues = useMemo(() => new Set(availableStyles.map((item) => item.value)), [availableStyles]);
   const activeHeights = useMemo(
     () =>
       Array.from(
@@ -128,6 +132,18 @@ export default function FilterSidebar({
       ),
     [legacySubCategories, purposeValues, searchParams]
   );
+  const activeStyles = useMemo(
+    () =>
+      Array.from(
+        new Set([
+          ...searchParams.getAll(PARAMS.style).map(normalizeTaxonomySlug),
+          ...legacySubCategories
+            .map(normalizeTaxonomySlug)
+            .filter((value) => styleValues.has(value)),
+        ])
+      ),
+    [legacySubCategories, styleValues, searchParams]
+  );
   const rawMinPrice = parsePriceParam(searchParams.get(PARAMS.minPrice), minPrice, minPrice, maxPrice);
   const rawMaxPrice = parsePriceParam(searchParams.get(PARAMS.maxPrice), maxPrice, minPrice, maxPrice);
   const activeMinPrice = Math.min(rawMinPrice, rawMaxPrice);
@@ -137,6 +153,7 @@ export default function FilterSidebar({
   const hasFilters =
     activeHeights.length > 0 ||
     activePurposes.length > 0 ||
+    activeStyles.length > 0 ||
     legacySubCategories.length > 0 ||
     activeMinPrice !== minPrice ||
     activeMaxPrice !== maxPrice;
@@ -185,6 +202,7 @@ export default function FilterSidebar({
     params.delete(PARAMS.subCategory);
     params.delete(PARAMS.height);
     params.delete(PARAMS.purpose);
+    params.delete(PARAMS.style);
     params.delete(PARAMS.minPrice);
     params.delete(PARAMS.maxPrice);
     const qs = params.toString();
@@ -193,6 +211,7 @@ export default function FilterSidebar({
 
   const sortedHeights = useMemo(() => [...availableHeights], [availableHeights]);
   const sortedPurposes = useMemo(() => [...availablePurposes], [availablePurposes]);
+  const sortedStyles = useMemo(() => [...availableStyles], [availableStyles]);
 
   return (
     <aside className="w-full shrink-0 self-start border-b border-gray-200 pb-2 lg:sticky lg:top-24 lg:w-56 lg:border-b-0 lg:pb-0">
@@ -206,35 +225,44 @@ export default function FilterSidebar({
         </button>
       )}
 
-      <FilterSection title="Height">
-        {sortedHeights.length > 0 ? (
-          sortedHeights.map((height) => (
+      {sortedHeights.length > 0 && (
+        <FilterSection title="Height">
+          {sortedHeights.map((height) => (
             <CheckboxOption
               key={height.id}
               label={height.label}
               checked={activeHeights.includes(height.value)}
               onChange={() => toggleMultiValueParam(PARAMS.height, height.value)}
             />
-          ))
-        ) : (
-          <p className="text-xs text-gray-400">No height filters available</p>
-        )}
-      </FilterSection>
+          ))}
+        </FilterSection>
+      )}
 
-      <FilterSection title="Purpose">
-        {sortedPurposes.length > 0 ? (
-          sortedPurposes.map((purpose) => (
+      {sortedStyles.length > 0 && (
+        <FilterSection title="Style">
+          {sortedStyles.map((style) => (
+            <CheckboxOption
+              key={style.id}
+              label={style.label}
+              checked={activeStyles.includes(style.value)}
+              onChange={() => toggleMultiValueParam(PARAMS.style, style.value)}
+            />
+          ))}
+        </FilterSection>
+      )}
+
+      {sortedPurposes.length > 0 && (
+        <FilterSection title="Purpose">
+          {sortedPurposes.map((purpose) => (
             <CheckboxOption
               key={purpose.id}
               label={purpose.label}
               checked={activePurposes.includes(purpose.value)}
               onChange={() => toggleMultiValueParam(PARAMS.purpose, purpose.value)}
             />
-          ))
-        ) : (
-          <p className="text-xs text-gray-400">No purpose filters available</p>
-        )}
-      </FilterSection>
+          ))}
+        </FilterSection>
+      )}
 
       <FilterSection title="Price Range">
         <div className="mb-3 flex items-center justify-between text-xs text-gray-500">

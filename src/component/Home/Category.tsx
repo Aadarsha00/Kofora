@@ -1,9 +1,10 @@
 import { CATEGORY_BANNERS } from "@/data/HomeData"
+import { pickImage, SiteImageMap } from "@/lib/siteImages"
 import Image from "next/image"
 import Link from "next/link"
 
 
-export default function CategoryBanner() {
+export default function CategoryBanner({ images }: { images?: SiteImageMap }) {
   return (
     <section className="grid w-full grid-cols-2 gap-1 bg-white sm:grid-cols-3 sm:gap-0">
       {CATEGORY_BANNERS.map((cat, index) => (
@@ -15,7 +16,7 @@ export default function CategoryBanner() {
           } sm:aspect-auto sm:h-60`}
         >
           <Image
-            src={cat.image}
+            src={pickImage(images, cat.imageKey, cat.image)}
             alt={cat.label}
             fill
             className="object-cover transition-transform duration-500 group-hover:scale-105"

@@ -1,13 +1,14 @@
 import { HERO_DATA } from "@/data/HomeData"
+import { pickImage, SiteImageMap } from "@/lib/siteImages"
 import Image from "next/image"
 import Link from "next/link"
 
 
-export default function Hero() {
+export default function Hero({ images }: { images?: SiteImageMap }) {
   return (
     <section className="relative h-[520px] w-full overflow-hidden md:h-140">
       <Image
-        src={HERO_DATA.image}
+        src={pickImage(images, HERO_DATA.imageKey, HERO_DATA.image)}
         alt="Hero"
         fill
         className="object-cover"

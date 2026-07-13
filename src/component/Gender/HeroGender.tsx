@@ -6,10 +6,21 @@ interface CategoryHeroProps {
   category: Category;
 }
 
+// Fallback hero images bundled with the frontend, used only when the category
+// has no image uploaded from the backend admin.
+export const LOCAL_HERO_IMAGES: Record<string, string> = {
+  socks: "/socks-hero.webp",
+  men: "/men-hero.webp",
+  women: "/women-hero.jpg",
+  kids: "/kids-hero.webp",
+  caps: "/caps-hero.jpg",
+};
+
 export default function HeroGender({ category }: CategoryHeroProps) {
   const backgroundImage =
-    category.image ||
-    "https://images.unsplash.com/photo-1542291026-7eec264c27ff?auto=format&fit=crop&w=1400&q=80";
+    category.image || // Image uploaded from the backend admin (source of truth)
+    LOCAL_HERO_IMAGES[category.slug] || // Bundled fallback per slug
+    "/socks-hero.webp"; // Final fallback if nothing else is available
 
   return (
     <div className="relative w-full h-110 md:h-130 overflow-hidden group">

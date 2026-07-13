@@ -42,7 +42,15 @@ const EMPTY_ADDRESS: AddressInput = {
 };
 
 function getErrorMessage(error: unknown, fallback: string): string {
-  if (error instanceof Error) return error.message;
+  // Prefer the backend's explanation (api_error puts the reason in response.data.message)
+  if (typeof error === "object" && error !== null) {
+    const response = (error as { response?: { data?: { message?: unknown } } }).response;
+    const backendMessage = response?.data?.message;
+    if (typeof backendMessage === "string" && backendMessage.trim()) {
+      return backendMessage;
+    }
+  }
+  if (error instanceof Error && error.message) return error.message;
   if (typeof error === "object" && error !== null && "message" in error) {
     const message = (error as { message?: unknown }).message;
     if (typeof message === "string") return message;

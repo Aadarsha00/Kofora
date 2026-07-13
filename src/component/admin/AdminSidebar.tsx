@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Boxes, LayoutDashboard, ListTree, Package, ShoppingBag, Tag, Users } from "lucide-react";
+import { Boxes, Image as ImageIcon, LayoutDashboard, ListTree, Package, ShoppingBag, Tag, Users } from "lucide-react";
 
 type NavItem = {
   label: string;
@@ -16,6 +16,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Orders", href: "/admin/orders", icon: ShoppingBag, ready: true },
   { label: "Products", href: "/admin/products", icon: Package, ready: true },
   { label: "Taxonomy", href: "/admin/taxonomy", icon: ListTree, ready: true },
+  { label: "Images", href: "/admin/images", icon: ImageIcon, ready: true },
   { label: "Customers", href: "/admin/customers", icon: Users, ready: true },
   { label: "Discounts", href: "/admin/discounts", icon: Tag, ready: true },
   { label: "Inventory", href: "/admin/inventory", icon: Boxes, ready: true },

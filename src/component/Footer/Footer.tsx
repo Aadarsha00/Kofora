@@ -6,25 +6,19 @@ const moreInfoLinks = [
   { label: "About Us", href: "/about" },
   { label: "Size Guide", href: "/size-chart" },
   { label: "Returns & Exchanges", href: "/refund-policy" },
-  { label: "Track a Package", href: "/orders" },
-  { label: "Giving Back", href: "/about" },
-  { label: "Careers", href: "/contact" },
-  { label: "Affiliates", href: "/contact" },
-  { label: "How to Style", href: "/about" },
-  { label: "Accessibility Statement", href: "/contact" },
-  { label: "Sustainability", href: "/about" },
-  { label: "Find a Store", href: "/contact" },
+  { label: "Track a Package", href: "/orders" },  
 ];
 
 const shoppingLinks = [
   { label: "Women", href: "/collections/women" },
   { label: "Men", href: "/collections/men" },
   { label: "Kids", href: "/collections/kids" },
+  { label: "Caps", href: "/collections/caps" },
   { label: "Formal", href: "/collections/formal" },
   { label: "Crew", href: "/collections/crew-socks" },
   { label: "No Show", href: "/collections/no-show" },
   { label: "Quarter", href: "/collections/socks?height=quarter" },
-  { label: "Over the Calf", href: "/collections/socks?height=half-calf" },
+  { label: "Over the Calf", href: "/collections/socks?height=over-the-calf" },
   { label: "New Releases", href: "/collections/men?sort_by=best-selling" },
   { label: "Best Sellers", href: "/collections/women?sort_by=best-selling" },
 ];

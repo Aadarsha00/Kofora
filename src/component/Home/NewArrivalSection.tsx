@@ -64,7 +64,10 @@ function ProductRowWithData({ category }: { category: Category }) {
 }
 
 // ─── ADD OR REMOVE SLUGS HERE TO CONTROL WHICH CATEGORIES SHOW ─
-const NEW_ARRIVALS_SLUGS = ["women", "men"];
+// Product-family slugs keep the rows cleanly separated: the Socks row only
+// shows socks and the Caps row only shows caps, even though both share
+// audience categories (men/women/kids).
+const NEW_ARRIVALS_SLUGS = ["socks", "caps"];
 
 // ─── Main Section ──────────────────────────────────────────────
 export default function NewArrivalsSection() {

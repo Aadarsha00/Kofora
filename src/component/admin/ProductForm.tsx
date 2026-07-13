@@ -8,6 +8,7 @@ import {
   TaxonomyCategoryOption,
   getCategoryIdsBySlugs,
   getAudienceOptions,
+  getCapStyleOptions,
   getProductFamilyOptions,
   getSockHeightOptions,
   getSockPurposeOptions,
@@ -156,6 +157,10 @@ export default function ProductForm({
     () => getSockPurposeOptions(categories),
     [categories]
   );
+  const styleOptions = useMemo(
+    () => getCapStyleOptions(categories),
+    [categories]
+  );
   const productFamilyIds = useMemo(
     () => productFamilyOptions.map((option) => option.id),
     [productFamilyOptions]
@@ -164,7 +169,12 @@ export default function ProductForm({
     () => heightOptions.map((option) => option.id),
     [heightOptions]
   );
+  const styleIds = useMemo(
+    () => styleOptions.map((option) => option.id),
+    [styleOptions]
+  );
   const socksCategoryIds = useMemo(() => getCategoryIdsBySlugs(categories, ["socks"]), [categories]);
+  const capsCategoryIds = useMemo(() => getCategoryIdsBySlugs(categories, ["caps"]), [categories]);
   const selectedCategoryIds = useMemo(() => {
     if (
       mode === "create" &&
@@ -177,6 +187,7 @@ export default function ProductForm({
     return values.categories;
   }, [mode, productFamilyIds, productFamilyOptions, values.categories]);
   const isSocksSelected = selectedCategoryIds.some((id) => socksCategoryIds.includes(id));
+  const isCapsSelected = selectedCategoryIds.some((id) => capsCategoryIds.includes(id));
 
   const set = <K extends keyof AdminProductInput>(key: K, value: AdminProductInput[K]) =>
     setValues((current) => ({ ...current, [key]: value }));
@@ -204,6 +215,17 @@ export default function ProductForm({
     setValues((current) => ({
       ...current,
       categories: [...current.categories.filter((value) => !groupIds.includes(value)), id],
+    }));
+  };
+
+  // Changing family also drops family-specific selections (heights, styles, purposes)
+  // so a cap can't stay tagged with a sock height and vice versa.
+  const selectProductFamily = (id: number) => {
+    const familySpecificIds = [...productFamilyIds, ...heightIds, ...styleIds, ...purposeOptions.map((option) => option.id)];
+    setInternalError("");
+    setValues((current) => ({
+      ...current,
+      categories: [...current.categories.filter((value) => !familySpecificIds.includes(value)), id],
     }));
   };
 
@@ -318,7 +340,7 @@ export default function ProductForm({
             title="Product family"
             options={productFamilyOptions}
             selectedIds={selectedCategoryIds}
-            onSelect={(id) => selectCategoryFromGroup(productFamilyIds, id)}
+            onSelect={selectProductFamily}
             required
             single
           />
@@ -329,20 +351,34 @@ export default function ProductForm({
             onToggle={toggleCategory}
             required
           />
-          <CategoryGroup
-            title="Height"
-            options={heightOptions}
-            selectedIds={selectedCategoryIds}
-            onSelect={(id) => selectCategoryFromGroup(heightIds, id)}
-            required={isSocksSelected}
-            single
-          />
-          <CategoryGroup
-            title="Purpose"
-            options={purposeOptions}
-            selectedIds={selectedCategoryIds}
-            onToggle={toggleCategory}
-          />
+          {isSocksSelected && (
+            <CategoryGroup
+              title="Height"
+              options={heightOptions}
+              selectedIds={selectedCategoryIds}
+              onSelect={(id) => selectCategoryFromGroup(heightIds, id)}
+              required
+              single
+            />
+          )}
+          {isCapsSelected && (
+            <CategoryGroup
+              title="Cap style"
+              options={styleOptions}
+              selectedIds={selectedCategoryIds}
+              onSelect={(id) => selectCategoryFromGroup(styleIds, id)}
+              required
+              single
+            />
+          )}
+          {isSocksSelected && (
+            <CategoryGroup
+              title="Purpose"
+              options={purposeOptions}
+              selectedIds={selectedCategoryIds}
+              onToggle={toggleCategory}
+            />
+          )}
         </div>
         {internalError && <p className="mt-4 text-sm font-semibold text-red-600">{internalError}</p>}
       </section>

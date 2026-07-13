@@ -9,6 +9,7 @@ import { TaxonomyGroup } from "@/interface/Category";
 import { getApiErrorMessage } from "@/lib/apiError";
 import {
   getAudienceOptions,
+  getCapStyleOptions,
   getProductFamilyOptions,
   getSockHeightOptions,
   getSockPurposeOptions,
@@ -19,6 +20,7 @@ const GROUPS: { value: TaxonomyGroup; label: string; parentSlug: string | null }
   { value: "audience", label: "Audience", parentSlug: null },
   { value: "height", label: "Height", parentSlug: "socks" },
   { value: "purpose", label: "Purpose", parentSlug: "socks" },
+  { value: "style", label: "Cap Style", parentSlug: "caps" },
 ];
 
 function slugify(value: string): string {
@@ -46,11 +48,15 @@ export default function AdminTaxonomyPage() {
       audience: getAudienceOptions(categories),
       height: getSockHeightOptions(categories),
       purpose: getSockPurposeOptions(categories),
+      style: getCapStyleOptions(categories),
     }),
     [categories]
   );
   const selectedGroup = GROUPS.find((item) => item.value === group) ?? GROUPS[1];
-  const socksExists = Boolean(categories?.some((category) => category.slug === "socks"));
+  const parentFamilyExists = Boolean(
+    !selectedGroup.parentSlug ||
+      categories?.some((category) => category.slug === selectedGroup.parentSlug)
+  );
   const nextSortOrder = useMemo(() => {
     const current = groupOptions[group] ?? [];
     const maxSort = current.reduce((max, option) => Math.max(max, option.sortOrder ?? 0), 0);
@@ -89,8 +95,10 @@ export default function AdminTaxonomyPage() {
       setError("Name and slug are required.");
       return;
     }
-    if (selectedGroup.parentSlug === "socks" && !socksExists) {
-      setError("Create the Socks product family before adding sock taxonomy.");
+    if (!parentFamilyExists) {
+      setError(
+        `Create the ${selectedGroup.parentSlug} product family before adding ${selectedGroup.label.toLowerCase()} taxonomy.`
+      );
       return;
     }
 

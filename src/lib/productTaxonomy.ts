@@ -1,7 +1,7 @@
 import { Category, TaxonomyGroup } from "@/interface/Category";
 import { Product } from "@/interface/Product";
 
-export const PRODUCT_FAMILY_SLUGS = ["socks"] as const;
+export const PRODUCT_FAMILY_SLUGS = ["socks", "caps"] as const;
 export const AUDIENCE_SLUGS = ["men", "women", "kids", "unisex"] as const;
 export const SOCK_HEIGHT_SLUGS = [
   "no-show",
@@ -10,9 +10,18 @@ export const SOCK_HEIGHT_SLUGS = [
   "crew-socks",
   "half-calf",
   "calf",
+  "over-the-calf",
   "knee-high",
 ] as const;
 export const SOCK_PURPOSE_SLUGS = ["casual", "formal", "sports", "compression"] as const;
+export const CAP_STYLE_SLUGS = [
+  "baseball",
+  "snapback",
+  "trucker",
+  "dad-cap",
+  "beanie",
+  "bucket-hat",
+] as const;
 
 const TAXONOMY_SLUG_ALIASES: Record<string, string> = {
   ankel: "ankle",
@@ -28,6 +37,7 @@ export interface TaxonomyCategoryOption {
   isActive?: boolean;
   taxonomyGroup?: TaxonomyGroup | "";
   sortOrder?: number;
+  image?: string | null;
 }
 
 export function normalizeTaxonomySlug(slug: string) {
@@ -47,6 +57,10 @@ export function isSockPurposeSlug(slug: string) {
   return (SOCK_PURPOSE_SLUGS as readonly string[]).includes(normalizeTaxonomySlug(slug));
 }
 
+export function isCapStyleSlug(slug: string) {
+  return (CAP_STYLE_SLUGS as readonly string[]).includes(normalizeTaxonomySlug(slug));
+}
+
 export function flattenCategories(categories: Category[] | undefined): TaxonomyCategoryOption[] {
   if (!categories?.length) return [];
 
@@ -58,6 +72,7 @@ export function flattenCategories(categories: Category[] | undefined): TaxonomyC
       taxonomyGroup: category.taxonomy_group,
       isActive: category.is_active,
       sortOrder: category.sort_order,
+      image: category.image,
     },
     ...category.children.map((child) => ({
       id: child.id,
@@ -67,6 +82,7 @@ export function flattenCategories(categories: Category[] | undefined): TaxonomyC
       taxonomyGroup: child.taxonomy_group,
       isActive: child.is_active,
       sortOrder: child.sort_order,
+      image: child.image,
     })),
   ]);
 }
@@ -102,6 +118,10 @@ export function getSockHeightOptions(categories: Category[] | undefined) {
 
 export function getSockPurposeOptions(categories: Category[] | undefined) {
   return getCategoryOptionsByGroup(categories, "purpose", SOCK_PURPOSE_SLUGS);
+}
+
+export function getCapStyleOptions(categories: Category[] | undefined) {
+  return getCategoryOptionsByGroup(categories, "style", CAP_STYLE_SLUGS);
 }
 
 export function getCategoryOptionsBySlugs(
@@ -183,6 +203,14 @@ export function getTaxonomyValidationMessage(
     ![...SOCK_HEIGHT_SLUGS].some((slug) => selectedSlugs.has(slug))
   ) {
     return "Choose a sock height.";
+  }
+
+  if (
+    selectedSlugs.has("caps") &&
+    !selectedGroups.has("style") &&
+    ![...CAP_STYLE_SLUGS].some((slug) => selectedSlugs.has(slug))
+  ) {
+    return "Choose a cap style.";
   }
 
   return "";

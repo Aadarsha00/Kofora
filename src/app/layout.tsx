@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { DM_Sans, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import Provider from "@/provider/provider";
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({
-  children, 
+  children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
@@ -31,9 +32,10 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <Provider>
-          <StorefrontFrame>{children}</StorefrontFrame>
+          <Suspense fallback={<>{children}</>}>
+            <StorefrontFrame>{children}</StorefrontFrame>
+          </Suspense>
         </Provider>
-        
       </body>
     </html>
   );

@@ -6,20 +6,21 @@ import NewArrivalsSection from "@/component/Home/NewArrivalSection";
 import StyleBand from "@/component/Home/StyleBand";
 import { fetchSiteImageMap } from "@/lib/siteImages";
 
-// Re-fetch admin-uploaded images at most every 5 minutes in production.
+export const dynamic = "force-dynamic";
 export const revalidate = 300;
 
 export default async function Home() {
   const images = await fetchSiteImageMap();
 
-  return(
+  return (
     <>
-    <CategoryBanner images={images}/>
-    <Hero images={images}/>
-    <StyleBand images={images}/>
-    <NewArrivalsSection/>
-    <FootBanner images={images}/>
-    <FootProductGrid images={images}/>
+      <CategoryBanner images={images} />
+      <Hero images={images} />
+      <StyleBand images={images} />
+      <NewArrivalsSection />
+      <FootBanner images={images} />
+      <FootProductGrid images={images} />
     </>
-  )
-};
+  );
+}
+

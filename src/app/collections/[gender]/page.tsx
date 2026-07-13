@@ -1,7 +1,12 @@
 import HeroGender from "@/component/Gender/HeroGender";
 import CollectionView from "@/component/Gender/CollectionView";
 import { notFound } from "next/navigation";
-import { getCategories, getCategoryBySlug } from "@/api/category.api";
+import {
+  getCategoriesServer,
+  getCategoryBySlugServer,
+} from "@/lib/categories.server";
+export const dynamic = "force-dynamic";
+
 import {
   isCapStyleSlug,
   isSockHeightSlug,
@@ -66,7 +71,7 @@ function resolveCollectionRoute(
 
 export async function generateStaticParams() {
   try {
-    const categories = await getCategories();
+    const categories = await getCategoriesServer();
     return categories.flatMap((category) => [
       { gender: category.slug },
       ...category.children.map((child) => ({ gender: child.slug })),
@@ -90,14 +95,14 @@ export default async function CollectionPage({
   const route = resolveCollectionRoute(gender, resolvedSearchParams);
   let category;
   try {
-    category = await getCategoryBySlug(route.collectionSlug);
+    category = await getCategoryBySlugServer(route.collectionSlug);
   } catch {
     notFound();
   }
   const heroCategory =
     route.collectionSlug === gender
       ? category
-      : await getCategoryBySlug(gender).catch(() => category);
+      : await getCategoryBySlugServer(gender).catch(() => category);
   return (
     <main>
       <HeroGender category={heroCategory} />

@@ -9,7 +9,7 @@ import StyleBand from "@/component/Home/StyleBand";
 import { getHomepageTiles } from "@/api/homepageTile.api";
 import { fetchSiteImageMap } from "@/lib/siteImages";
 
-// Re-fetch admin-uploaded images at most every 5 minutes in production.
+export const dynamic = "force-dynamic";
 export const revalidate = 300;
 
 export default async function Home() {
@@ -18,16 +18,16 @@ export default async function Home() {
     getHomepageTiles().catch(() => null),
   ]);
 
-  return(
+  return (
     <>
-    <CategoryBanner tiles={homepageTiles}/>
-    <Hero images={images}/>
-    <StyleBand images={images}/>
-    <PromiseBand />
-    <NewArrivalsSection/>
-    <HeightBand images={images}/>
-    <FootBanner images={images}/>
-    <FootProductGrid images={images}/>
+      <CategoryBanner tiles={homepageTiles} />
+      <Hero images={images} />
+      <StyleBand images={images} />
+      <PromiseBand />
+      <NewArrivalsSection />
+      <HeightBand images={images} />
+      <FootBanner images={images} />
+      <FootProductGrid images={images} />
     </>
-  )
-};
+  );
+}

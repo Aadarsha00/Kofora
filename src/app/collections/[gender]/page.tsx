@@ -1,8 +1,12 @@
 import HeroGender from "@/component/Gender/HeroGender";
 import CollectionView from "@/component/Gender/CollectionView";
-
 import { notFound } from "next/navigation";
-import { getCategories, getCategoryBySlug } from "@/api/category.api";
+import {
+  getCategoriesServer,
+  getCategoryBySlugServer,
+} from "@/lib/categories.server";
+export const dynamic = "force-dynamic";
+
 import {
   isCapStyleSlug,
   isSockHeightSlug,
@@ -28,11 +32,9 @@ function appendTaxonomyParam(
 ): CollectionSearchParams {
   const current = searchParams[key];
   const values = Array.isArray(current) ? current : current ? [current] : [];
-
   if (values.some((value) => normalizeTaxonomySlug(value) === slug)) {
     return searchParams;
   }
-
   return {
     ...searchParams,
     [key]: [...values, slug],
@@ -44,28 +46,24 @@ function resolveCollectionRoute(
   searchParams: CollectionSearchParams
 ) {
   const normalizedSlug = normalizeTaxonomySlug(slug);
-
   if (isSockHeightSlug(normalizedSlug)) {
     return {
       collectionSlug: "socks",
       searchParams: appendTaxonomyParam(searchParams, "height", normalizedSlug),
     };
   }
-
   if (isSockPurposeSlug(normalizedSlug)) {
     return {
       collectionSlug: "socks",
       searchParams: appendTaxonomyParam(searchParams, "purpose", normalizedSlug),
     };
   }
-
   if (isCapStyleSlug(normalizedSlug)) {
     return {
       collectionSlug: "caps",
       searchParams: appendTaxonomyParam(searchParams, "style", normalizedSlug),
     };
   }
-
   return {
     collectionSlug: slug,
     searchParams,
@@ -73,11 +71,17 @@ function resolveCollectionRoute(
 }
 
 export async function generateStaticParams() {
-  const categories = await getCategories();
-  return categories.flatMap((category) => [
-    { gender: category.slug },
-    ...category.children.map((child) => ({ gender: child.slug })),
-  ]);
+  try {
+    const categories = await getCategoriesServer();
+    return categories.flatMap((category) => [
+      { gender: category.slug },
+      ...category.children.map((child) => ({ gender: child.slug })),
+    ]);
+  } catch {
+    // API unreachable at build time (e.g. Docker build stage) —
+    // fall back to on-demand rendering for these routes instead of failing the build.
+    return [];
+  }
 }
 
 export default async function CollectionPage({
@@ -90,19 +94,16 @@ export default async function CollectionPage({
   const { gender } = await params;
   const resolvedSearchParams = await searchParams;
   const route = resolveCollectionRoute(gender, resolvedSearchParams);
-
   let category;
   try {
-    category = await getCategoryBySlug(route.collectionSlug);
+    category = await getCategoryBySlugServer(route.collectionSlug);
   } catch {
     notFound();
   }
-
   const heroCategory =
     route.collectionSlug === gender
       ? category
-      : await getCategoryBySlug(gender).catch(() => category);
-
+      : await getCategoryBySlugServer(gender).catch(() => category);
   return (
     <main>
       <HeroGender category={heroCategory} />

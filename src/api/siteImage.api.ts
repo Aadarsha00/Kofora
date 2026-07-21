@@ -8,15 +8,22 @@ function throwApiError(error: unknown, fallback: string): never {
 }
 
 export const getSiteImages = async (): Promise<SiteImage[]> => {
-  try {
-    // Unpaginated endpoint: `data` is the plain array.
-    const response = await api.get<{ success: boolean; data: SiteImage[] }>("/site-images/");
-    return response.data.data;
-  } catch (error: unknown) {
-    throwApiError(error, "Failed to load site images");
-  }
-};
+  const response = await fetch(
+    `${process.env.NEXT_PUBLIC_API_BASE_URL}/site-images/`,
+    {
+      next: { revalidate: 300 },
+    }
+  );
 
+  if (!response.ok) {
+    throw new Error("Failed to load site images");
+  }
+
+  const result: { success: boolean; data: SiteImage[] } =
+    await response.json();
+
+  return result.data;
+};
 /**
  * Upload an image for a slot. Slots are defined by the frontend, so the row
  * may not exist yet: try PATCH first, create on 404.

@@ -157,24 +157,15 @@ export const getProductsByGender = async (
   category: { id: number; slug: string; children: { id: number }[] }
 ): Promise<Product[]> => {
   try {
-    const ids = [category.id, ...category.children.map((child) => child.id)];
+    const searchParams = new URLSearchParams(DEFAULT_PARAMS);
+    searchParams.set("categories", String(category.id));
+    searchParams.set("page_size", "100");
 
-    const results = await Promise.all(
-      ids.map(async (id) => {
-        const searchParams = new URLSearchParams(DEFAULT_PARAMS);
-        searchParams.set("categories", String(id));
-
-        const response = await api.get<PaginatedApiResponse>(
-          `/products/?${searchParams.toString()}`
-        );
-
-        return response.data.data.results ?? [];
-      })
+    const response = await api.get<PaginatedApiResponse>(
+      `/products/?${searchParams.toString()}`
     );
 
-    return Array.from(
-      new Map(results.flat().map((product) => [product.id, product])).values()
-    );
+    return response.data.data.results ?? [];
   } catch (error: unknown) {
     throwApiError(error);
   }

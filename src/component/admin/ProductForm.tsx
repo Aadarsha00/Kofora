@@ -218,10 +218,9 @@ export default function ProductForm({
     }));
   };
 
-  // Changing family also drops family-specific selections (heights, styles, purposes)
-  // so a cap can't stay tagged with a sock height and vice versa.
+  // Height and style are family-specific. Collections apply to both families.
   const selectProductFamily = (id: number) => {
-    const familySpecificIds = [...productFamilyIds, ...heightIds, ...styleIds, ...purposeOptions.map((option) => option.id)];
+    const familySpecificIds = [...productFamilyIds, ...heightIds, ...styleIds];
     setInternalError("");
     setValues((current) => ({
       ...current,
@@ -371,9 +370,9 @@ export default function ProductForm({
               single
             />
           )}
-          {isSocksSelected && (
+          {(isSocksSelected || isCapsSelected) && (
             <CategoryGroup
-              title="Purpose"
+              title="Collection"
               options={purposeOptions}
               selectedIds={selectedCategoryIds}
               onToggle={toggleCategory}

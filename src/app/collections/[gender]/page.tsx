@@ -13,6 +13,7 @@ import {
 type CollectionSearchParams = {
   sort_by?: string;
   sub_category?: string | string[];
+  family?: string | string[];
   height?: string | string[];
   purpose?: string | string[];
   style?: string | string[];

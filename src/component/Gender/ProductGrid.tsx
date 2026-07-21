@@ -11,7 +11,7 @@ export default function ProductGrid({
   if (products.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
-        <p className="text-gray-400 text-lg font-medium">No products found</p>
+        <p className="text-gray-400 text-lg font-medium">No products available</p>
         <p className="text-gray-300 text-sm mt-1">Try removing some filters</p>
       </div>
     );

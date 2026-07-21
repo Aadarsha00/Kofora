@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useMemo, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { ColorMixItem, Product } from "@/interface/Product";
@@ -37,6 +37,8 @@ export default function ProductCard({
   const [activeVariantIndex, setActiveVariantIndex] = useState(0);
   const [imageIndex, setImageIndex] = useState(0);
   const [hovered, setHovered] = useState(false);
+  const [hoverPreviewActive, setHoverPreviewActive] = useState(false);
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   const variants = useMemo(
     () => {
@@ -137,19 +139,49 @@ export default function ProductCard({
   const handleVariantChange = useCallback((variantIndex: number) => {
     setActiveVariantIndex(variantIndex);
     setImageIndex(0);
+    setHoverPreviewActive(false);
+    carouselRef.current?.scrollTo({ left: 0 });
   }, []);
+
+  const scrollToImage = useCallback((index: number) => {
+    const carousel = carouselRef.current;
+    if (!carousel) return;
+
+    setHoverPreviewActive(false);
+    carousel.scrollTo({
+      left: carousel.clientWidth * index,
+      behavior: "smooth",
+    });
+    setImageIndex(index);
+  }, []);
+
+  const handleCarouselScroll = useCallback(() => {
+    const carousel = carouselRef.current;
+    if (!carousel || carousel.clientWidth === 0) return;
+
+    const nextIndex = Math.round(carousel.scrollLeft / carousel.clientWidth);
+    setHoverPreviewActive(false);
+    setImageIndex(Math.min(Math.max(nextIndex, 0), finalDisplayImages.length - 1));
+  }, [finalDisplayImages.length]);
+
+  const handleMouseEnter = useCallback(() => {
+    setHovered(true);
+    setHoverPreviewActive(finalDisplayImages.length > 1 && imageIndex === 0);
+  }, [finalDisplayImages.length, imageIndex]);
 
   const handleMouseLeave = useCallback(() => {
     setHovered(false);
-    setImageIndex(0);
-  }, []);
+    setHoverPreviewActive(false);
 
-  const displayIndex =
-    hovered && finalDisplayImages.length > 1
-      ? (imageIndex + 1) % finalDisplayImages.length
-      : imageIndex;
+    const carousel = carouselRef.current;
+    if (carousel && imageIndex !== 0) {
+      carousel.scrollTo({ left: 0 });
+      setImageIndex(0);
+    }
+  }, [imageIndex]);
 
-  const currentImage = finalDisplayImages[displayIndex]?.image ?? null;
+  const visibleImageIndex = hoverPreviewActive ? 1 : imageIndex;
+  const hoverPreviewImage = finalDisplayImages[1];
 
   const price = activeVariant?.price ? parseFloat(activeVariant.price) : 0;
   const compareAtPrice = activeVariant?.compare_at_price
@@ -165,79 +197,96 @@ export default function ProductCard({
           ? "md:bg-white md:shadow-[0_4px_24px_rgba(0,0,0,0.10)] md:p-3 md:-m-3"
           : "bg-transparent p-0 m-0"
       }`}
-      onMouseEnter={() => setHovered(true)}
+      onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
-      <Link
-        href={href}
+      <div
         className="relative block w-full overflow-hidden rounded-lg bg-[#EFEFEF] md:rounded-xl"
         style={{ aspectRatio: "1 / 1" }}
       >
-        {currentImage ? (
-          <Image
-            src={currentImage}
-            alt={finalDisplayImages[displayIndex]?.alt_text || product.name}
-            fill
-            loading="eager"
-            sizes="(max-width: 768px) 50vw, 25vw"
-            className="object-cover transition-opacity duration-500"
-          />
+        {finalDisplayImages.length > 0 ? (
+          <div
+            ref={carouselRef}
+            role="group"
+            aria-label={`${product.name} images`}
+            onScroll={handleCarouselScroll}
+            className="flex h-full w-full snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          >
+            {finalDisplayImages.map((productImage, index) => (
+              <Link
+                key={String(productImage.id ?? index)}
+                href={href}
+                aria-label={`${product.name}, image ${index + 1} of ${finalDisplayImages.length}`}
+                className="relative h-full min-w-full snap-start snap-always"
+              >
+                {productImage.image ? (
+                  <Image
+                    src={productImage.image}
+                    alt={productImage.alt_text || product.name}
+                    fill
+                    loading={index === 0 ? "eager" : "lazy"}
+                    sizes="(max-width: 768px) 50vw, 25vw"
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="h-full w-full bg-[#E8E6E1]" />
+                )}
+              </Link>
+            ))}
+          </div>
         ) : (
-          <div className="w-full h-full bg-[#E8E6E1]" />
+          <div className="h-full w-full bg-[#E8E6E1]" />
+        )}
+
+        {hoverPreviewImage?.image && (
+          <div
+            className={`pointer-events-none absolute inset-0 hidden transition-opacity duration-300 ease-out md:block ${
+              hoverPreviewActive ? "opacity-100" : "opacity-0"
+            }`}
+            aria-hidden="true"
+          >
+            <Image
+              src={hoverPreviewImage.image}
+              alt=""
+              fill
+              loading="lazy"
+              sizes="25vw"
+              className="object-cover"
+            />
+          </div>
         )}
 
         {finalDisplayImages.length > 1 && (
           <div
-            className={`absolute inset-x-0 bottom-3 flex items-center justify-between px-3 transition-opacity duration-300 ${
-              hovered ? "opacity-100" : "opacity-0"
+            className={`absolute inset-x-0 bottom-2 flex items-center justify-center transition-opacity duration-200 md:bottom-3 ${
+              hovered ? "opacity-100" : "opacity-100 md:opacity-0"
             }`}
           >
-            <button
-              type="button"
-              className="text-white drop-shadow text-lg font-light leading-none"
-              onClick={(e) => {
-                e.preventDefault();
-                setImageIndex((i) =>
-                  i === 0 ? finalDisplayImages.length - 1 : i - 1
-                );
-              }}
-            >
-              ←
-            </button>
-
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center justify-center">
               {finalDisplayImages.map((img, i) => (
                 <button
                   key={String(img.id ?? i)}
                   type="button"
+                  aria-label={`Show image ${i + 1} of ${finalDisplayImages.length}`}
+                  aria-current={visibleImageIndex === i ? "true" : undefined}
                   onClick={(e) => {
                     e.preventDefault();
-                    setImageIndex(i);
+                    e.stopPropagation();
+                    scrollToImage(i);
                   }}
-                  className={`rounded-full transition-all duration-300 ${
-                    displayIndex === i
-                      ? "w-6 h-1.5 bg-white"
-                      : "w-1.5 h-1.5 bg-white/50"
-                  }`}
-                />
+                  className="box-content p-1"
+                >
+                  <span
+                    className={`block h-1.5 rounded-full bg-white shadow-sm transition-[width,opacity] duration-200 ${
+                      visibleImageIndex === i ? "w-6 opacity-100" : "w-1.5 opacity-80"
+                    }`}
+                  />
+                </button>
               ))}
             </div>
-
-            <button
-              type="button"
-              className="text-white drop-shadow text-lg font-light leading-none"
-              onClick={(e) => {
-                e.preventDefault();
-                setImageIndex((i) =>
-                  i === finalDisplayImages.length - 1 ? 0 : i + 1
-                );
-              }}
-            >
-              →
-            </button>
           </div>
         )}
-      </Link>
+      </div>
 
       {colorOptions.length > 0 && (
         <div className="flex items-center gap-2 px-0.5">

@@ -1,7 +1,7 @@
 "use client";
 import { useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useId, useMemo } from "react";
 import Link from "next/link";
 import { Plus, X, ArrowLeft, ArrowRight } from "@phosphor-icons/react";
 import { ColorMixItem, Product, ProductVariant } from "@/interface/Product";
@@ -118,11 +118,15 @@ function getFirstPurchasableSize(product: Product | undefined, group: ColorGroup
 function buildInternationalShippingLines(product: Product): string[] {
   const details = product.international_shipping_details;
 
-  if (!details) {
-    return hasText(product.short_description) ? [product.short_description] : [];
-  }
+  if (!details) return [];
 
   const rate = `${details.currency} ${details.base_rate}`;
+  const duties = {
+    customer: "Duties and taxes are paid by the customer",
+    merchant: "Duties and taxes are paid by Kofora",
+    included: "Duties and taxes are included",
+  }[details.duties_paid_by];
+
   return [
     details.destination_country
       ? `Destination: ${details.destination_country}${details.destination_region ? `, ${details.destination_region}` : ""}`
@@ -132,11 +136,14 @@ function buildInternationalShippingLines(product: Product): string[] {
     details.delivery_time ? `Delivery: ${details.delivery_time}` : "",
     details.handling_time ? `Handling: ${details.handling_time}` : "",
     `Rate: ${rate}`,
+    Number(details.additional_item_rate) > 0
+      ? `Each additional item: ${details.currency} ${details.additional_item_rate}`
+      : "",
     details.free_shipping_threshold
       ? `Free shipping from ${details.currency} ${details.free_shipping_threshold}`
       : "",
+    duties,
     details.customs_notes,
-    details.return_policy,
     details.restrictions,
     details.notes,
   ].filter(hasText);
@@ -185,6 +192,8 @@ export default function ProductDetails({
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
   const [visible, setVisible] = useState(false);
+  const shippingReturnsId = useId();
+  const productDetailsId = useId();
 
   const activeColorIndex = colorGroups[activeColor] ? activeColor : 0;
   const activeGroup = colorGroups[activeColorIndex] ?? colorGroups[0];
@@ -303,6 +312,17 @@ export default function ProductDetails({
   const displayOriginal = selectedVariant?.compare_at_price
     ? parseFloat(selectedVariant.compare_at_price)
     : null;
+  const shippingDetails = product.international_shipping_details;
+  const purchaseReassurance = [
+    shippingDetails?.free_shipping_threshold
+      ? `Free shipping over ${shippingDetails.currency} ${shippingDetails.free_shipping_threshold}`
+      : shippingDetails
+        ? "International shipping available"
+        : "",
+    "30-day returns",
+  ]
+    .filter(hasText)
+    .join(" + ");
 
   let variantSpecificImages: string[] = [];
   if (selectedVariant) {
@@ -507,63 +527,128 @@ export default function ProductDetails({
               onClick={handleAddToBag}
               disabled={addToCartPending || !isPurchasable}
               title={!isPurchasable ? "This product does not have a purchasable variant." : undefined}
-              className="mb-3 w-full rounded-lg bg-[#253E38] py-4 text-sm font-bold text-white transition-colors hover:bg-[#1e3530] disabled:opacity-60"
+              className="w-full rounded-lg bg-[#253E38] py-4 text-sm font-bold text-white transition-colors hover:bg-[#1e3530] disabled:opacity-60"
             >
               {!isPurchasable ? "Unavailable" : addToCartPending ? "Adding..." : "Add to Bag"}
             </button>
 
             {!isPurchasable && (
-              <p className="mb-3 text-xs text-red-600">
+              <p className="mt-2 text-xs text-red-600">
                 This product is currently unavailable.
               </p>
             )}
 
-            {/* Accordions */}
-            {(internationalShippingLines.length > 0 || product.full_description) && (
-              <div className="mt-2 border-t border-gray-200">
-                {internationalShippingLines.length > 0 && (
-                  <div className="border-b border-gray-200">
-                    <button
-                      className="flex w-full items-center justify-between py-4 text-sm font-semibold text-black"
-                      onClick={() => setShippingOpen(!shippingOpen)}
-                    >
-                      <span>International Shipping + Free Returns Details</span>
-                      <Plus
-                        size={16}
-                        className={`transition-transform ${shippingOpen ? "rotate-45" : ""}`}
-                      />
-                    </button>
-                    {shippingOpen && (
-                      <div className="grid gap-2 pb-4 text-xs text-gray-500">
-                        {internationalShippingLines.map((line, index) => (
-                          <p key={`${line}-${index}`}>{line}</p>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
+            {/* Purchase reassurance and detail accordions */}
+            <p className="px-3 py-3 text-center text-[11px] font-semibold tracking-[0.02em] text-[#253E38]">
+              {purchaseReassurance}
+            </p>
 
-                {product.full_description && (
-                  <div className="border-b border-gray-200">
-                    <button
-                      className="flex w-full items-center justify-between py-4 text-sm font-semibold text-black"
-                      onClick={() => setDetailsOpen(!detailsOpen)}
-                    >
-                      <span>Product &amp; Material Details</span>
-                      <Plus
-                        size={16}
-                        className={`transition-transform ${detailsOpen ? "rotate-45" : ""}`}
-                      />
-                    </button>
-                    {detailsOpen && (
-                      <p className="pb-4 text-xs text-gray-500">
-                        {product.full_description}
-                      </p>
-                    )}
+            <div className="border-t border-gray-300">
+              <div className="border-b border-gray-300">
+                <button
+                  type="button"
+                  className="group flex w-full items-center justify-between gap-4 py-4 text-left text-[13px] font-semibold text-black transition-colors hover:text-[#253E38]"
+                  onClick={() => setShippingOpen(!shippingOpen)}
+                  aria-expanded={shippingOpen}
+                  aria-controls={shippingReturnsId}
+                >
+                  <span>Shipping &amp; Return Details</span>
+                  <Plus
+                    size={18}
+                    aria-hidden="true"
+                    className={`shrink-0 transition-transform duration-200 ${shippingOpen ? "rotate-45" : ""}`}
+                  />
+                </button>
+                {shippingOpen && (
+                  <div
+                    id={shippingReturnsId}
+                    className="grid gap-6 pb-6 text-[12px] leading-5 text-gray-600"
+                  >
+                    <section aria-labelledby={`${shippingReturnsId}-shipping`}>
+                      <h2
+                        id={`${shippingReturnsId}-shipping`}
+                        className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-black"
+                      >
+                        International shipping
+                      </h2>
+                      {internationalShippingLines.length > 0 ? (
+                        <ul className="grid gap-1">
+                          {internationalShippingLines.map((line, index) => (
+                            <li key={`${line}-${index}`}>{line}</li>
+                          ))}
+                        </ul>
+                      ) : (
+                        <p>
+                          International shipping details are not available for this item.
+                          Contact us before ordering to confirm delivery options for your destination.
+                        </p>
+                      )}
+                    </section>
+
+                    <section aria-labelledby={`${shippingReturnsId}-returns`}>
+                      <h2
+                        id={`${shippingReturnsId}-returns`}
+                        className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-black"
+                      >
+                        Returns
+                      </h2>
+                      <ul className="grid list-disc gap-1 pl-4">
+                        <li>Request a return within 30 days of delivery.</li>
+                        <li>Items must be unused, unworn, in original condition, and in original packaging.</li>
+                        <li>
+                          Customers pay return shipping. Kofora covers it only when the item is defective or incorrect.
+                        </li>
+                        <li>Original shipping charges are non-refundable unless the return is due to our error.</li>
+                      </ul>
+                      {hasText(product.international_shipping_details?.return_policy) && (
+                        <p className="mt-3 border-l-2 border-[#253E38] pl-3">
+                          <span className="font-semibold text-black">Additional return note: </span>
+                          {product.international_shipping_details.return_policy}
+                        </p>
+                      )}
+                      <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
+                        <Link
+                          href="/refund-policy"
+                          className="font-semibold text-black underline decoration-1 underline-offset-4 transition-colors hover:text-[#253E38]"
+                        >
+                          Read the full policy
+                        </Link>
+                        <Link
+                          href="/contact?topic=returns"
+                          className="font-semibold text-black underline decoration-1 underline-offset-4 transition-colors hover:text-[#253E38]"
+                        >
+                          Start a return request
+                        </Link>
+                      </div>
+                    </section>
                   </div>
                 )}
               </div>
-            )}
+
+              {product.full_description && (
+                <div className="border-b border-gray-300">
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between gap-4 py-4 text-left text-[13px] font-semibold text-black transition-colors hover:text-[#253E38]"
+                    onClick={() => setDetailsOpen(!detailsOpen)}
+                    aria-expanded={detailsOpen}
+                    aria-controls={productDetailsId}
+                  >
+                    <span>Product &amp; Material Details</span>
+                    <Plus
+                      size={18}
+                      aria-hidden="true"
+                      className={`shrink-0 transition-transform duration-200 ${detailsOpen ? "rotate-45" : ""}`}
+                    />
+                  </button>
+                  {detailsOpen && (
+                    <p id={productDetailsId} className="pb-6 text-[12px] leading-5 text-gray-600">
+                      {product.full_description}
+                    </p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>

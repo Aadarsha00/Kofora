@@ -19,7 +19,7 @@ const GROUPS: { value: TaxonomyGroup; label: string; parentSlug: string | null }
   { value: "product_family", label: "Product Family", parentSlug: null },
   { value: "audience", label: "Audience", parentSlug: null },
   { value: "height", label: "Height", parentSlug: "socks" },
-  { value: "purpose", label: "Purpose", parentSlug: "socks" },
+  { value: "purpose", label: "Collection", parentSlug: "socks" },
   { value: "style", label: "Cap Style", parentSlug: "caps" },
 ];
 

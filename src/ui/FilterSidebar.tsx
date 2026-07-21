@@ -7,6 +7,7 @@ import type { CategoryFilterOption } from "@/lib/categoryFilters";
 import { normalizeTaxonomySlug } from "@/lib/productTaxonomy";
 
 interface FilterSidebarProps {
+  availableFamilies: CategoryFilterOption[];
   availableHeights: CategoryFilterOption[];
   availablePurposes: CategoryFilterOption[];
   availableStyles?: CategoryFilterOption[];
@@ -16,6 +17,7 @@ interface FilterSidebarProps {
 
 const PARAMS = {
   subCategory: "sub_category",
+  family: "family",
   height: "height",
   purpose: "purpose",
   style: "style",
@@ -66,21 +68,38 @@ function FilterSection({
 const CheckboxOption = memo(function CheckboxOption({
   label,
   checked,
+  disabled,
   onChange,
 }: {
   label: string;
   checked: boolean;
+  disabled?: boolean;
   onChange: () => void;
 }) {
   return (
-    <label className="group mb-2 flex cursor-pointer items-center gap-2.5">
+    <label
+      className={`mb-2 flex items-center gap-2.5 ${
+        disabled ? "cursor-not-allowed" : "group cursor-pointer"
+      }`}
+    >
       <input
         type="checkbox"
         checked={checked}
+        disabled={disabled}
         onChange={onChange}
-        className="h-4 w-4 cursor-pointer border-gray-300 accent-black"
+        className={`h-4 w-4 shrink-0 border-gray-300 accent-black ${
+          disabled ? "cursor-not-allowed" : "cursor-pointer"
+        }`}
       />
-      <span className={`text-sm transition-colors ${checked ? "font-medium text-black" : "text-gray-500 group-hover:text-black"}`}>
+      <span
+        className={`text-sm transition-colors ${
+          disabled
+            ? "text-gray-300"
+            : checked
+              ? "font-medium text-black"
+              : "text-gray-500 group-hover:text-black"
+        }`}
+      >
         {label}
       </span>
     </label>
@@ -95,6 +114,7 @@ function parsePriceParam(value: string | null, fallback: number, min: number, ma
 }
 
 export default function FilterSidebar({
+  availableFamilies,
   availableHeights,
   availablePurposes,
   availableStyles = [],
@@ -105,9 +125,17 @@ export default function FilterSidebar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const legacySubCategories = searchParams.getAll(PARAMS.subCategory);
+  const familyValues = useMemo(() => new Set(availableFamilies.map((item) => item.value)), [availableFamilies]);
   const heightValues = useMemo(() => new Set(availableHeights.map((item) => item.value)), [availableHeights]);
   const purposeValues = useMemo(() => new Set(availablePurposes.map((item) => item.value)), [availablePurposes]);
   const styleValues = useMemo(() => new Set(availableStyles.map((item) => item.value)), [availableStyles]);
+  const activeFamilies = useMemo(
+    () =>
+      Array.from(
+        new Set(searchParams.getAll(PARAMS.family).map(normalizeTaxonomySlug).filter((value) => familyValues.has(value)))
+      ),
+    [familyValues, searchParams]
+  );
   const activeHeights = useMemo(
     () =>
       Array.from(
@@ -151,6 +179,7 @@ export default function FilterSidebar({
   const [draftPrice, setDraftPrice] = useState<[number, number]>([activeMinPrice, activeMaxPrice]);
   const displayPrice = draftPrice;
   const hasFilters =
+    activeFamilies.length > 0 ||
     activeHeights.length > 0 ||
     activePurposes.length > 0 ||
     activeStyles.length > 0 ||
@@ -200,6 +229,7 @@ export default function FilterSidebar({
   const clearAll = useCallback(() => {
     const params = new URLSearchParams(searchParams.toString());
     params.delete(PARAMS.subCategory);
+    params.delete(PARAMS.family);
     params.delete(PARAMS.height);
     params.delete(PARAMS.purpose);
     params.delete(PARAMS.style);
@@ -209,6 +239,7 @@ export default function FilterSidebar({
     router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
   }, [pathname, router, searchParams]);
 
+  const sortedFamilies = useMemo(() => [...availableFamilies], [availableFamilies]);
   const sortedHeights = useMemo(() => [...availableHeights], [availableHeights]);
   const sortedPurposes = useMemo(() => [...availablePurposes], [availablePurposes]);
   const sortedStyles = useMemo(() => [...availableStyles], [availableStyles]);
@@ -225,6 +256,20 @@ export default function FilterSidebar({
         </button>
       )}
 
+      {sortedFamilies.length > 0 && (
+        <FilterSection title="Category">
+          {sortedFamilies.map((family) => (
+            <CheckboxOption
+              key={family.id}
+              label={family.label}
+              checked={activeFamilies.includes(family.value)}
+              disabled={family.disabled}
+              onChange={() => toggleMultiValueParam(PARAMS.family, family.value)}
+            />
+          ))}
+        </FilterSection>
+      )}
+
       {sortedHeights.length > 0 && (
         <FilterSection title="Height">
           {sortedHeights.map((height) => (
@@ -232,6 +277,7 @@ export default function FilterSidebar({
               key={height.id}
               label={height.label}
               checked={activeHeights.includes(height.value)}
+              disabled={height.disabled}
               onChange={() => toggleMultiValueParam(PARAMS.height, height.value)}
             />
           ))}
@@ -245,6 +291,7 @@ export default function FilterSidebar({
               key={style.id}
               label={style.label}
               checked={activeStyles.includes(style.value)}
+              disabled={style.disabled}
               onChange={() => toggleMultiValueParam(PARAMS.style, style.value)}
             />
           ))}
@@ -252,12 +299,13 @@ export default function FilterSidebar({
       )}
 
       {sortedPurposes.length > 0 && (
-        <FilterSection title="Purpose">
+        <FilterSection title="Collection">
           {sortedPurposes.map((purpose) => (
             <CheckboxOption
               key={purpose.id}
               label={purpose.label}
               checked={activePurposes.includes(purpose.value)}
+              disabled={purpose.disabled}
               onChange={() => toggleMultiValueParam(PARAMS.purpose, purpose.value)}
             />
           ))}

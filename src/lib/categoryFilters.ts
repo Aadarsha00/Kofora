@@ -5,12 +5,13 @@ import {
   filterProductsByCategorySlugs,
   getAvailableCategoryOptionsFromProducts,
   getCapStyleOptions,
+  getProductFamilyOptions,
   getSockHeightOptions,
   getSockPurposeOptions,
 } from "@/lib/productTaxonomy";
 
 export type SubCategoryOption = TaxonomyCategoryOption;
-export type CategoryFilterOption = TaxonomyCategoryOption;
+export type CategoryFilterOption = TaxonomyCategoryOption & { disabled?: boolean };
 
 const GENDER_SLUGS = ["men", "women", "kids"] as const;
 
@@ -65,6 +66,10 @@ export function getHeightCategories(categories: Category[]): CategoryFilterOptio
   return getSockHeightOptions(categories);
 }
 
+export function getFamilyCategories(categories: Category[]): CategoryFilterOption[] {
+  return getProductFamilyOptions(categories);
+}
+
 export function getPurposeCategories(categories: Category[]): CategoryFilterOption[] {
   return getSockPurposeOptions(categories);
 }
@@ -81,6 +86,17 @@ export function getAvailableHeightCategoriesFromProducts(
     products,
     categories,
     getSockHeightOptions(categories).map((option) => option.value)
+  );
+}
+
+export function getAvailableFamilyCategoriesFromProducts(
+  products: Product[],
+  categories: Category[]
+): CategoryFilterOption[] {
+  return getAvailableCategoryOptionsFromProducts(
+    products,
+    categories,
+    getProductFamilyOptions(categories).map((option) => option.value)
   );
 }
 
@@ -158,6 +174,14 @@ export function filterProductsByHeight(
   selectedHeights: string[]
 ): Product[] {
   return filterProductsByCategorySlugs(products, categories, selectedHeights);
+}
+
+export function filterProductsByFamily(
+  products: Product[],
+  categories: Category[],
+  selectedFamilies: string[]
+): Product[] {
+  return filterProductsByCategorySlugs(products, categories, selectedFamilies);
 }
 
 export function filterProductsByPurpose(

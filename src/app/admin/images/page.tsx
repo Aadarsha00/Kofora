@@ -15,23 +15,27 @@ import { HOME_IMAGE_SECTIONS } from "@/data/HomeData";
 import { LOCAL_HERO_IMAGES } from "@/component/Gender/HeroGender";
 import HeroImageCard from "@/component/admin/HeroImageCard";
 import SiteImageCard from "@/component/admin/SiteImageCard";
+import HomepageTileManager from "@/component/admin/HomepageTileManager";
 
-type Tab = "landing" | "collections";
+type Tab = "homepage-tiles" | "landing" | "collections";
 
 export default function AdminImagesPage() {
-  const [tab, setTab] = useState<Tab>("landing");
+  const [tab, setTab] = useState<Tab>("homepage-tiles");
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div className="border-b border-gray-200 pb-6">
         <h1 className="text-2xl font-bold text-black">Images</h1>
         <p className="mt-1 text-sm text-gray-500">
-          All the pictures shown across the storefront, organized by where they
-          appear. Upload to replace one; Reset brings the default back.
+          Manage homepage tiles and the other pictures shown across the storefront,
+          organized by where they appear.
         </p>
         <div className="mt-4 flex gap-2">
+          <TabButton active={tab === "homepage-tiles"} onClick={() => setTab("homepage-tiles")}>
+            Homepage Tiles
+          </TabButton>
           <TabButton active={tab === "landing"} onClick={() => setTab("landing")}>
-            Landing Page
+            Other Landing Images
           </TabButton>
           <TabButton active={tab === "collections"} onClick={() => setTab("collections")}>
             Collection Banners
@@ -39,7 +43,13 @@ export default function AdminImagesPage() {
         </div>
       </div>
 
-      {tab === "landing" ? <LandingImagesTab /> : <CollectionImagesTab />}
+      {tab === "homepage-tiles" ? (
+        <HomepageTileManager />
+      ) : tab === "landing" ? (
+        <LandingImagesTab />
+      ) : (
+        <CollectionImagesTab />
+      )}
     </div>
   );
 }

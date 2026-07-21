@@ -5,21 +5,29 @@
   import SortSelect from "./SortSelect";
   import {
     filterProductsByPrice,
+    filterProductsByFamily,
     filterProductsByHeight,
     filterProductsByPurpose,
     filterProductsByStyle,
+    getAvailableFamilyCategoriesFromProducts,
     getAvailableHeightCategoriesFromProducts,
     getAvailablePurposeCategoriesFromProducts,
     getAvailableStyleCategoriesFromProducts,
+    getFamilyCategories,
+    getHeightCategories,
     getProductPriceRange,
+    getPurposeCategories,
+    getStyleCategories,
   } from "@/lib/categoryFilters";
   import {
+    getCategoryIdsBySlugs,
     isCapStyleSlug,
     isSockHeightSlug,
     isSockPurposeSlug,
     normalizeTaxonomySlugs,
   } from "@/lib/productTaxonomy";
   import { Product } from "@/interface/Product";
+  import type { CategoryFilterOption } from "@/lib/categoryFilters";
 
   interface CollectionViewProps {
     categoryId: number;
@@ -28,6 +36,7 @@
     searchParams: {
       sort_by?: string;
       sub_category?: string | string[];
+      family?: string | string[];
       height?: string | string[];
       purpose?: string | string[];
       style?: string | string[];
@@ -85,6 +94,20 @@
     return value ? [value] : [];
   }
 
+  function markUnavailableOptions(
+    options: CategoryFilterOption[],
+    availableOptions: CategoryFilterOption[],
+    selectedValues: string[]
+  ) {
+    const availableValues = new Set(availableOptions.map((option) => option.value));
+    const selected = new Set(selectedValues);
+
+    return options.map((option) => ({
+      ...option,
+      disabled: !availableValues.has(option.value) && !selected.has(option.value),
+    }));
+  }
+
   export default async function CollectionView({
     gender,
     collectionLabel,
@@ -93,6 +116,7 @@
     const sortBy = searchParams.sort_by || "best-selling";
 
     const legacySubCategories = paramValues(searchParams.sub_category);
+    const selectedFamilies = normalizeTaxonomySlugs(paramValues(searchParams.family));
     const selectedHeights = normalizeTaxonomySlugs([
       ...paramValues(searchParams.height),
       ...legacySubCategories.filter(isSockHeightSlug),
@@ -122,16 +146,16 @@
 
     const products = await getProductsByGender(category);
 
-    // Only offer filters that match at least one product in this collection,
-    // so sock filters don't show on the caps page and vice versa.
-    const availableHeights = getAvailableHeightCategoriesFromProducts(products, categories);
-    const availablePurposes = getAvailablePurposeCategoriesFromProducts(products, categories);
-    const availableStyles = getAvailableStyleCategoriesFromProducts(products, categories);
-
     const unfilteredPriceRange = getProductPriceRange(products);
 
-    const heightFilteredProducts = filterProductsByHeight(
+    const familyFilteredProducts = filterProductsByFamily(
       products,
+      categories,
+      selectedFamilies
+    );
+
+    const heightFilteredProducts = filterProductsByHeight(
+      familyFilteredProducts,
       categories,
       selectedHeights
     );
@@ -148,6 +172,71 @@
       selectedStyles
     );
 
+    // Other active filters determine availability, while the backend taxonomy
+    // remains visible as a stable list of enabled and disabled options.
+    const familyFacetProducts = filterProductsByStyle(
+      filterProductsByPurpose(
+        filterProductsByHeight(products, categories, selectedHeights),
+        categories,
+        selectedPurposes
+      ),
+      categories,
+      selectedStyles
+    );
+    const heightFacetProducts = filterProductsByStyle(
+      filterProductsByPurpose(familyFilteredProducts, categories, selectedPurposes),
+      categories,
+      selectedStyles
+    );
+    const collectionFacetProducts = filterProductsByStyle(
+      heightFilteredProducts,
+      categories,
+      selectedStyles
+    );
+    const enabledFamilies = getAvailableFamilyCategoriesFromProducts(
+      familyFacetProducts,
+      categories
+    );
+    const enabledHeights = getAvailableHeightCategoriesFromProducts(
+      heightFacetProducts,
+      categories
+    );
+    const enabledPurposes = getAvailablePurposeCategoriesFromProducts(
+      collectionFacetProducts,
+      categories
+    );
+    const enabledStyles = getAvailableStyleCategoriesFromProducts(
+      purposeFilteredProducts,
+      categories
+    );
+    const socksCategoryIds = new Set(getCategoryIdsBySlugs(categories, ["socks"]));
+    const capsCategoryIds = new Set(getCategoryIdsBySlugs(categories, ["caps"]));
+    const hasSockProducts = products.some((product) =>
+      product.categories.some((categoryId) => socksCategoryIds.has(categoryId))
+    );
+    const hasCapProducts = products.some((product) =>
+      product.categories.some((categoryId) => capsCategoryIds.has(categoryId))
+    );
+    const isAudienceCollection = category.taxonomy_group === "audience";
+    const familyOptions = markUnavailableOptions(
+      getFamilyCategories(categories),
+      enabledFamilies,
+      selectedFamilies
+    );
+    const heightOptions =
+      isAudienceCollection || category.slug === "socks" || hasSockProducts
+        ? markUnavailableOptions(getHeightCategories(categories), enabledHeights, selectedHeights)
+        : [];
+    const collectionOptions = markUnavailableOptions(
+      getPurposeCategories(categories),
+      enabledPurposes,
+      selectedPurposes
+    );
+    const styleOptions =
+      isAudienceCollection || category.slug === "caps" || hasCapProducts
+        ? markUnavailableOptions(getStyleCategories(categories), enabledStyles, selectedStyles)
+        : [];
+
     const fullyFilteredProducts = filterProductsByPrice(
       styleFilteredProducts,
       selectedMinPrice,
@@ -159,9 +248,10 @@
       <section className="w-full bg-white">
         <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-8 md:px-6 md:py-10 lg:flex-row lg:gap-10 lg:items-start">
           <FilterSidebar
-            availableHeights={availableHeights}
-            availablePurposes={availablePurposes}
-            availableStyles={availableStyles}
+            availableFamilies={familyOptions}
+            availableHeights={heightOptions}
+            availablePurposes={collectionOptions}
+            availableStyles={styleOptions}
             minPrice={unfilteredPriceRange.minPrice}
             maxPrice={unfilteredPriceRange.maxPrice}
           />

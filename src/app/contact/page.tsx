@@ -8,7 +8,14 @@ export const metadata: Metadata = {
   description: "Contact KOFORA customer service.",
 };
 
-export default function ContactPage() {
+export default async function ContactPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ topic?: string | string[] }>;
+}) {
+  const { topic } = await searchParams;
+  const defaultTopic = topic === "returns" ? "returns" : "general";
+
   return (
     <main className="bg-white text-black">
       <section className="mx-auto max-w-6xl px-5 py-16 md:px-8 md:py-20">
@@ -20,7 +27,7 @@ export default function ContactPage() {
         </p>
 
         <div className="mt-12 grid gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
-          <ContactForm />
+          <ContactForm defaultTopic={defaultTopic} />
 
           <div className="grid gap-6">
           <section className="border border-gray-200 p-6">

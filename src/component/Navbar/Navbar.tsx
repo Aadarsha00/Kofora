@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Search, User, LogOut, Menu, X, LayoutDashboard } from "lucide-react";
+import { Search, User, LogOut, Menu, X, LayoutDashboard, ChevronDown } from "lucide-react";
 import { HandbagIcon } from "@phosphor-icons/react";
 import Image from "next/image";
 import Link from "next/link";
@@ -14,15 +14,19 @@ import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useSearchPageProducts } from "@/hooks/useProducts";
 import { useCartSidebarStore } from "@/store/cartSidebarStore";
 import CartSidebar from "../Cart/CartSidebar";
+import { MegaMenuPanel, MobileMegaMenuSections, getMegaMenuSections } from "./MegaMenu";
 import { useAuth } from "@/context/AuthContext";
 import { useLogout } from "@/hooks/useAuthMutations";
 import { getMatchedCategories, getMatchedCategoryIds, getProductGender } from "@/lib/searchHelpers";
 
-const NAV_ITEMS = [
-  { label: "WOMEN", href: "/collections/women" },
-  { label: "MEN", href: "/collections/men" },
-  { label: "KIDS", href: "/collections/kids" },
-  { label: "CAPS", href: "/collections/caps" },
+type NavItem =
+  | { label: string; href: string; gender: string; genderName: string }
+  | { label: string; href: string; gender?: undefined; genderName?: undefined };
+
+const NAV_ITEMS: NavItem[] = [
+  { label: "WOMEN", href: "/collections/women", gender: "women", genderName: "Women" },
+  { label: "MEN", href: "/collections/men", gender: "men", genderName: "Men" },
+  { label: "KIDS", href: "/collections/kids", gender: "kids", genderName: "Kids" },
   { label: "SIZE CHART", href: "/size-chart" },
   { label: "ABOUT", href: "/about" },
   { label: "CONTACT", href: "/contact" },
@@ -33,6 +37,8 @@ export default function MainNavbar() {
   const [signupOpen, setSignupOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [openMegaMenu, setOpenMegaMenu] = useState<string | null>(null);
+  const [mobileExpandedGender, setMobileExpandedGender] = useState<string | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [hasMounted, setHasMounted] = useState(false);
@@ -96,20 +102,36 @@ export default function MainNavbar() {
     setSearchQuery("");
   };
 
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
+    setMobileExpandedGender(null);
+  };
+
+  const activeMegaItem = openMegaMenu
+    ? NAV_ITEMS.find((item) => item.gender === openMegaMenu)
+    : undefined;
+
   return (
     <>
-      <div className="sticky top-0 z-50 w-full bg-white shadow-sm">
+      <div
+        className="sticky top-0 z-50 w-full bg-white"
+        onMouseLeave={() => setOpenMegaMenu(null)}
+      >
         <div className="hidden h-18 w-full items-center justify-center px-12.25 py-3 lg:flex">
           <div className="flex w-full max-w-[1440px] flex-row items-center justify-between gap-10">
-          <Link href="/" className="h-12 w-48 shrink-0">
+          <Link href="/" className="h-12 w-48 shrink-0" onMouseEnter={() => setOpenMegaMenu(null)}>
             <Image src="/logo.jpeg" alt="Logo" className="w-full h-full object-contain" width={200} height={100} />
           </Link>
 
           <ul className="flex flex-row items-center gap-8 xl:gap-12 list-none m-0 p-0">
             {NAV_ITEMS.map((item) => (
-              <li key={item.label}>
+              <li key={item.label} onMouseEnter={() => setOpenMegaMenu(item.gender ?? null)}>
                 <Link
                   href={item.href}
+                  onClick={() => setOpenMegaMenu(null)}
+                  onFocus={() => setOpenMegaMenu(item.gender ?? null)}
+                  aria-haspopup={item.gender ? "true" : undefined}
+                  aria-expanded={item.gender ? openMegaMenu === item.gender : undefined}
                   className="font-['Inter'] font-semibold text-base leading-4.75 text-black no-underline hover:opacity-60 transition-opacity whitespace-nowrap"
                 >
                   {item.label}
@@ -118,7 +140,7 @@ export default function MainNavbar() {
             ))}
           </ul>
 
-          <div className="flex flex-row items-center gap-5">
+          <div className="flex flex-row items-center gap-5" onMouseEnter={() => setOpenMegaMenu(null)}>
             <div className="relative">
               <button
                 aria-label={hasMounted && isAuthenticated ? userDisplayName : "User account"}
@@ -221,6 +243,20 @@ export default function MainNavbar() {
           </div>
         </div>
         </div>
+
+        {activeMegaItem?.gender && (
+          <div className="hidden lg:block">
+            <MegaMenuPanel
+              sections={getMegaMenuSections(
+                categories,
+                activeMegaItem.gender,
+                activeMegaItem.genderName
+              )}
+              onNavigate={() => setOpenMegaMenu(null)}
+            />
+          </div>
+        )}
+
         <div className="flex h-16 items-center justify-between px-4 lg:hidden">
           <button
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
@@ -231,7 +267,7 @@ export default function MainNavbar() {
             {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
 
-          <Link href="/" onClick={() => setMobileMenuOpen(false)} className="h-10 w-40 shrink-0">
+          <Link href="/" onClick={closeMobileMenu} className="h-10 w-40 shrink-0">
             <Image src="/logo.jpeg" alt="Logo" className="h-full w-full object-contain" width={160} height={40} />
           </Link>
 
@@ -264,16 +300,45 @@ export default function MainNavbar() {
           }`}
         >
           <nav className="flex max-h-[calc(100vh-4rem)] flex-col overflow-y-auto px-5 py-4">
-            {NAV_ITEMS.map((item) => (
-              <Link
-                key={item.label}
-                href={item.href}
-                onClick={() => setMobileMenuOpen(false)}
-                className="border-b border-gray-100 py-4 text-[15px] font-bold uppercase tracking-[0.12em] text-black"
-              >
-                {item.label}
-              </Link>
-            ))}
+            {NAV_ITEMS.map((item) =>
+              item.gender ? (
+                <div key={item.label} className="border-b border-gray-100">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setMobileExpandedGender((prev) =>
+                        prev === item.gender ? null : item.gender
+                      )
+                    }
+                    aria-expanded={mobileExpandedGender === item.gender}
+                    className="flex w-full items-center justify-between py-4 text-left text-[15px] font-bold uppercase tracking-[0.12em] text-black"
+                  >
+                    {item.label}
+                    <ChevronDown
+                      size={18}
+                      className={`transition-transform duration-200 ${
+                        mobileExpandedGender === item.gender ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  {mobileExpandedGender === item.gender && (
+                    <MobileMegaMenuSections
+                      sections={getMegaMenuSections(categories, item.gender, item.genderName)}
+                      onNavigate={closeMobileMenu}
+                    />
+                  )}
+                </div>
+              ) : (
+                <Link
+                  key={item.label}
+                  href={item.href}
+                  onClick={closeMobileMenu}
+                  className="border-b border-gray-100 py-4 text-[15px] font-bold uppercase tracking-[0.12em] text-black"
+                >
+                  {item.label}
+                </Link>
+              )
+            )}
 
             <div className="mt-6 grid grid-cols-2 gap-3">
               {hasMounted && isAuthenticated ? (
@@ -281,7 +346,7 @@ export default function MainNavbar() {
                   {isAdmin && (
                     <Link
                       href="/admin/dashboard"
-                      onClick={() => setMobileMenuOpen(false)}
+                      onClick={closeMobileMenu}
                       className="col-span-2 flex items-center justify-center gap-2 bg-black px-4 py-3 text-sm font-semibold text-white"
                     >
                       <LayoutDashboard size={16} />
@@ -290,7 +355,7 @@ export default function MainNavbar() {
                   )}
                   <Link
                     href="/profile"
-                    onClick={() => setMobileMenuOpen(false)}
+                    onClick={closeMobileMenu}
                     className="border border-black px-4 py-3 text-center text-sm font-semibold text-black"
                   >
                     Profile
@@ -298,7 +363,7 @@ export default function MainNavbar() {
                   <button
                     onClick={() => {
                       handleLogout();
-                      setMobileMenuOpen(false);
+                      closeMobileMenu();
                     }}
                     className="bg-black px-4 py-3 text-sm font-semibold text-white"
                   >
@@ -310,7 +375,7 @@ export default function MainNavbar() {
                   <button
                     onClick={() => {
                       setLoginOpen(true);
-                      setMobileMenuOpen(false);
+                      closeMobileMenu();
                     }}
                     className="border border-black px-4 py-3 text-sm font-semibold text-black"
                   >
@@ -319,7 +384,7 @@ export default function MainNavbar() {
                   <button
                     onClick={() => {
                       setSignupOpen(true);
-                      setMobileMenuOpen(false);
+                      closeMobileMenu();
                     }}
                     className="bg-black px-4 py-3 text-sm font-semibold text-white"
                   >

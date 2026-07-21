@@ -25,13 +25,13 @@ function getErrorMessage(error: unknown) {
   return "Could not send your message. Please try again.";
 }
 
-export default function ContactForm() {
+export default function ContactForm({ defaultTopic = "general" }: { defaultTopic?: ContactTopic }) {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
   const [orderNumber, setOrderNumber] = useState("");
-  const [topic, setTopic] = useState<ContactTopic>("general");
+  const [topic, setTopic] = useState<ContactTopic>(defaultTopic);
   const [message, setMessage] = useState("");
   const [status, setStatus] = useState<"idle" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState("");
@@ -60,7 +60,7 @@ export default function ContactForm() {
       setEmail("");
       setPhone("");
       setOrderNumber("");
-      setTopic("general");
+      setTopic(defaultTopic);
       setMessage("");
     } catch (error) {
       setStatus("error");

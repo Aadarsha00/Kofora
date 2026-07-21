@@ -144,10 +144,10 @@ export default function RefundPolicyPage() {
         </section>
 
         <Link
-          href="/contact"
+          href="/contact?topic=returns"
           className="mt-10 inline-block bg-black px-5 py-3 text-sm font-semibold text-white"
         >
-          Start a request
+          Start a return request
         </Link>
       </div>
     </main>

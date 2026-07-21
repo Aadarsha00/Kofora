@@ -7,26 +7,42 @@ export const SOCK_HEIGHT_SLUGS = [
   "no-show",
   "ankle",
   "quarter",
-  "crew-socks",
   "half-calf",
   "calf",
-  "over-the-calf",
   "knee-high",
 ] as const;
-export const SOCK_PURPOSE_SLUGS = ["casual", "formal", "sports", "compression"] as const;
+export const COLLECTION_SLUGS = ["casual", "sport", "compression", "grippers", "dressy", "cozy"] as const;
+export const SOCK_PURPOSE_SLUGS = COLLECTION_SLUGS;
 export const CAP_STYLE_SLUGS = [
   "baseball",
-  "snapback",
-  "trucker",
   "dad-cap",
-  "beanie",
+  "trucker",
+  "snapback",
+  "five-panel",
   "bucket-hat",
+  "visors",
+  "performance-caps",
+  "beanie",
 ] as const;
 
 const TAXONOMY_SLUG_ALIASES: Record<string, string> = {
   ankel: "ankle",
-  crew: "crew-socks",
-  formals: "formal",
+  crew: "calf",
+  "crew-socks": "calf",
+  "mid-calf": "calf",
+  "over-the-calf": "knee-high",
+  "socks-everyday": "casual",
+  "socks-casual": "casual",
+  sports: "sport",
+  "socks-athletic": "sport",
+  "socks-running": "sport",
+  "socks-performance": "sport",
+  formal: "dressy",
+  formals: "dressy",
+  "socks-dress": "dressy",
+  "socks-compression": "compression",
+  "socks-outdoor": "cozy",
+  "socks-merino-wool": "cozy",
 };
 
 export interface TaxonomyCategoryOption {
@@ -38,6 +54,7 @@ export interface TaxonomyCategoryOption {
   taxonomyGroup?: TaxonomyGroup | "";
   sortOrder?: number;
   image?: string | null;
+  availableAudiences?: string[];
 }
 
 export function normalizeTaxonomySlug(slug: string) {
@@ -73,6 +90,7 @@ export function flattenCategories(categories: Category[] | undefined): TaxonomyC
       isActive: category.is_active,
       sortOrder: category.sort_order,
       image: category.image,
+      availableAudiences: category.available_audiences,
     },
     ...category.children.map((child) => ({
       id: child.id,
@@ -83,6 +101,7 @@ export function flattenCategories(categories: Category[] | undefined): TaxonomyC
       isActive: child.is_active,
       sortOrder: child.sort_order,
       image: child.image,
+      availableAudiences: child.available_audiences,
     })),
   ]);
 }
@@ -112,16 +131,30 @@ export function getAudienceOptions(categories: Category[] | undefined) {
   return getCategoryOptionsByGroup(categories, "audience", AUDIENCE_SLUGS);
 }
 
+// Socks and caps both use the "purpose" group for their collections, so
+// group-based options must be narrowed to the right product family.
+function scopeOptionsToParent(options: TaxonomyCategoryOption[], parentSlug: string) {
+  const scoped = options.filter((option) => option.parentSlug === parentSlug);
+  return scoped.length > 0 ? scoped : options;
+}
+
 export function getSockHeightOptions(categories: Category[] | undefined) {
-  return getCategoryOptionsByGroup(categories, "height", SOCK_HEIGHT_SLUGS);
+  return scopeOptionsToParent(getCategoryOptionsByGroup(categories, "height", SOCK_HEIGHT_SLUGS), "socks");
 }
 
 export function getSockPurposeOptions(categories: Category[] | undefined) {
-  return getCategoryOptionsByGroup(categories, "purpose", SOCK_PURPOSE_SLUGS);
+  return scopeOptionsToParent(getCategoryOptionsByGroup(categories, "purpose", SOCK_PURPOSE_SLUGS), "socks");
 }
 
 export function getCapStyleOptions(categories: Category[] | undefined) {
-  return getCategoryOptionsByGroup(categories, "style", CAP_STYLE_SLUGS);
+  return scopeOptionsToParent(getCategoryOptionsByGroup(categories, "style", CAP_STYLE_SLUGS), "caps");
+}
+
+export function getCapCollectionOptions(categories: Category[] | undefined) {
+  return flattenCategories(categories).filter(
+    (option) =>
+      option.isActive !== false && option.taxonomyGroup === "purpose" && option.parentSlug === "caps"
+  );
 }
 
 export function getCategoryOptionsBySlugs(

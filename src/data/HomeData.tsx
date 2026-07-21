@@ -1,17 +1,18 @@
-// Every image on the landing page has a stable `imageKey`. The path stored in
-// `image` is the bundled fallback; uploading an image for that key in
-// Admin → Images overrides it (see src/lib/siteImages.ts).
-
-export const CATEGORY_BANNERS = [
-  { label: "WOMEN'S", image: "/women-home.webp", href: "/collections/women", imageKey: "home-tile-women" },
-  { label: "MEN'S",   image: "/men-home.jpg",   href: "/collections/men",   imageKey: "home-tile-men" },
-  { label: "KID'S",   image: "/kids-home.webp",   href: "/collections/kids",  imageKey: "home-tile-kids" },
+// Backend-managed homepage tiles use these images only until an admin uploads
+// a replacement for the seeded Women, Men, or Kids record.
+export const DEFAULT_HOMEPAGE_TILES = [
+  { key: "women", title: "Women", href: "/collections/women", image: "/women-hero.jpg" },
+  { key: "men", title: "Men", href: "/collections/men", image: "/men-hero.webp" },
+  { key: "kids", title: "Kids", href: "/collections/kids", image: "/kids-hero.webp" },
 ]
 
+// Fixed landing-page sections use stable image keys. Admin image uploads
+// override the bundled fallback paths through src/lib/siteImages.ts.
 export const HERO_DATA = {
-  title: "BETTER FEEL EVERY STEPS",
-  subtitle: "Premium Comfort guaranteed for life",
-  image: "/banner-home.jpg",
+  title: "BETTER FEEL. EVERY STEP.",
+  titleLines: ["BETTER FEEL.", "EVERY STEP."],
+  subtitle: "Premium comfort, guaranteed for life.",
+  image: "/home-hero-family.jpg",
   imageKey: "home-hero",
   ctas: [
     { label: "SHOP MEN",   href: "/collections/men"   },
@@ -24,19 +25,31 @@ export const FOOT_BANNER_DATA = {
   imageKey: "home-bottom-banner",
   title: "Their New Favorites",
   subtitle: "Vibrant colors and quirky patterns that turn socks into their new favorite toys.",
+  cta: { label: "Shop Kids", href: "/collections/kids" },
 }
 
 export const FOOT_PRODUCT_GRID = [
   { id: 1, image: "/women3.webp", subtitle: "Comfort Beyond Socks", title: "SOCKS", href: "/collections/socks", imageKey: "home-grid-socks" },
-  { id: 2, image: "/women1.webp", subtitle: "Comfort Beyond Socks", title: "Best Seller", href: "/collections/socks?sort_by=best-selling", imageKey: "home-grid-best-seller" },
-  { id: 3, image: "/women2.webp", subtitle: "Comfort Beyond Socks", title: "New Release", href: "/collections/socks?sort_by=newest", imageKey: "home-grid-new-release" },
+  { id: 2, image: "/caps-hero.jpg", subtitle: "Finish The Look", title: "CAPS", href: "/collections/caps", imageKey: "home-grid-caps" },
+  { id: 3, image: "/women2.webp", subtitle: "The Pairs People Love", title: "BEST SELLERS", href: "/collections/socks?sort_by=best-selling", imageKey: "home-grid-best-seller" },
 ]
 
-export const STYLE_CATEGORIES = [
-  { label: "No Show",      image: "/no-show-home.webp", href: "/collections/no-show",      imageKey: "home-style-no-show" },
-  { label: "Crew", image: "/crew-home.webp", href: "/collections/crew", imageKey: "home-style-crew" },
-  { label: "Quarter",      image: "/quarter-home.webp", href: "/collections/quarter",      imageKey: "home-style-quarter" },
-  { label: "Over the Calf",      image: "/over-the-calf-home.webp", href: "/collections/over-the-calf",      imageKey: "home-style-over-the-calf" },
+export const COLLECTION_CATEGORIES = [
+  { slug: "casual", label: "Casual", image: "/women-home.webp", imageKey: "home-collection-casual" },
+  { slug: "sport", label: "Sport", image: "/quarter.webp", imageKey: "home-collection-sport" },
+  { slug: "compression", label: "Compression", image: "/women2.webp", imageKey: "home-collection-compression" },
+  { slug: "grippers", label: "Grippers", image: "/kids-home.webp", imageKey: "home-collection-grippers" },
+  { slug: "dressy", label: "Dressy", image: "/men-home.jpg", imageKey: "home-collection-dressy" },
+  { slug: "cozy", label: "Cozy", image: "/crew-home.webp", imageKey: "home-collection-cozy" },
+]
+
+export const HEIGHT_CATEGORIES = [
+  { slug: "no-show", label: "No Show", image: "/no-show-home.webp", imageKey: "home-height-no-show" },
+  { slug: "ankle", label: "Ankle", image: "/women-home.webp", imageKey: "home-height-ankle" },
+  { slug: "quarter", label: "Quarter", image: "/quarter-home.webp", imageKey: "home-height-quarter" },
+  { slug: "half-calf", label: "Half Calf", image: "/men-home.jpg", imageKey: "home-height-half-calf" },
+  { slug: "calf", label: "Calf", image: "/crew-home.webp", imageKey: "home-height-calf" },
+  { slug: "knee-high", label: "Knee High", image: "/over-the-calf-home.webp", imageKey: "home-height-knee-high" },
 ]
 
 // ---------------------------------------------------------------------------
@@ -59,26 +72,26 @@ export interface HomeImageSection {
 
 export const HOME_IMAGE_SECTIONS: HomeImageSection[] = [
   {
-    title: "Top Category Tiles",
-    description: "The three Women / Men / Kids tiles at the very top of the homepage.",
-    slots: CATEGORY_BANNERS.map((banner) => ({
-      key: banner.imageKey,
-      label: banner.label,
-      fallback: banner.image,
-    })),
-  },
-  {
     title: "Main Hero Banner",
     description: "The full-width banner below the tiles, with the headline and shop buttons.",
     slots: [{ key: HERO_DATA.imageKey, label: "Hero Banner", fallback: HERO_DATA.image }],
   },
   {
-    title: "Shop by Style",
-    description: "The four square style tiles in the middle of the homepage.",
-    slots: STYLE_CATEGORIES.map((style) => ({
-      key: style.imageKey,
-      label: style.label,
-      fallback: style.image,
+    title: "Shop by Collection",
+    description: "The collection rail below the main campaign banner.",
+    slots: COLLECTION_CATEGORIES.map((collection) => ({
+      key: collection.imageKey,
+      label: collection.label,
+      fallback: collection.image,
+    })),
+  },
+  {
+    title: "Shop by Height",
+    description: "The sock-height rail below the product rows.",
+    slots: HEIGHT_CATEGORIES.map((height) => ({
+      key: height.imageKey,
+      label: height.label,
+      fallback: height.image,
     })),
   },
   {

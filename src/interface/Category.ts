@@ -12,6 +12,7 @@ export interface CategoryChild {
   seo_title: string;
   seo_description: string;
   image?: string | null;
+  available_audiences?: string[];
   children?: CategoryChild[];
 }
 
@@ -30,6 +31,7 @@ export interface Category {
   seo_description: string;
   children: CategoryChild[];
   image?: string | null;
+  available_audiences?: string[];
 }
 
 export interface PaginatedCategoryResponse {

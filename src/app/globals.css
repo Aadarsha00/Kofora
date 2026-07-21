@@ -1,6 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@source "../app";
+@source "../component";
+@source "../ui";
 
 /* Apply heading font to all heading elements */
 h1, h2, h3, h4, h5, h6 {

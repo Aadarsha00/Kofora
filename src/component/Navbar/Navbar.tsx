@@ -5,13 +5,13 @@ import { Search, User, LogOut, Menu, X, LayoutDashboard, ChevronDown } from "luc
 import { HandbagIcon } from "@phosphor-icons/react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import LoginModal from "@/component/Auth/LoginModal";
 import SignupModal from "@/component/Auth/SignupModal";
 import { useTotalCartItemCount, useClearCartCache } from "@/hooks/useCart";
 import { useCategories } from "@/hooks/useCategories";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { useSearchPageProducts } from "@/hooks/useProducts";
+import { useNewArrivalsByCategory, useSearchPageProducts } from "@/hooks/useProducts";
 import { useCartSidebarStore } from "@/store/cartSidebarStore";
 import CartSidebar from "../Cart/CartSidebar";
 import { MegaMenuPanel, MobileMegaMenuSections, getMegaMenuSections } from "./MegaMenu";
@@ -43,12 +43,26 @@ export default function MainNavbar() {
   const [searchQuery, setSearchQuery] = useState("");
   const [hasMounted, setHasMounted] = useState(false);
   const router = useRouter();
+  const pathname = usePathname();
   const { isOpen: cartOpen, openCart, closeCart } = useCartSidebarStore();
   const { isAuthenticated, user, logout: contextLogout } = useAuth();
   const { mutate: logout } = useLogout();
   const itemCount = useTotalCartItemCount();
   const debouncedSearchQuery = useDebouncedValue(searchQuery.trim(), 250);
   const { data: categories } = useCategories();
+  const activeMegaItem = openMegaMenu
+    ? NAV_ITEMS.find((item) => item.gender === openMegaMenu)
+    : undefined;
+  const activeMegaCategory = categories?.find(
+    (category) => category.slug === activeMegaItem?.gender
+  );
+  const {
+    data: newestMenuProducts,
+    isLoading: newestMenuProductLoading,
+  } = useNewArrivalsByCategory(activeMegaCategory);
+  const newestMenuProduct = [...(newestMenuProducts ?? [])].sort(
+    (a, b) => Date.parse(b.created_at) - Date.parse(a.created_at)
+  )[0];
   const matchedCategoryIds = getMatchedCategoryIds(categories, debouncedSearchQuery);
   const matchedCategories = getMatchedCategories(categories, debouncedSearchQuery).slice(0, 3);
   const { data: searchProducts, isFetching: suggestionsLoading } = useSearchPageProducts(
@@ -107,14 +121,10 @@ export default function MainNavbar() {
     setMobileExpandedGender(null);
   };
 
-  const activeMegaItem = openMegaMenu
-    ? NAV_ITEMS.find((item) => item.gender === openMegaMenu)
-    : undefined;
-
   return (
     <>
       <div
-        className="sticky top-0 z-50 w-full bg-white"
+        className="sticky top-0 z-50 w-full border-b border-black/5 bg-white shadow-[0_8px_24px_-22px_rgba(0,0,0,0.45)]"
         onMouseLeave={() => setOpenMegaMenu(null)}
       >
         <div className="hidden h-18 w-full items-center justify-center px-12.25 py-3 lg:flex">
@@ -124,20 +134,31 @@ export default function MainNavbar() {
           </Link>
 
           <ul className="flex flex-row items-center gap-8 xl:gap-12 list-none m-0 p-0">
-            {NAV_ITEMS.map((item) => (
-              <li key={item.label} onMouseEnter={() => setOpenMegaMenu(item.gender ?? null)}>
-                <Link
-                  href={item.href}
-                  onClick={() => setOpenMegaMenu(null)}
-                  onFocus={() => setOpenMegaMenu(item.gender ?? null)}
-                  aria-haspopup={item.gender ? "true" : undefined}
-                  aria-expanded={item.gender ? openMegaMenu === item.gender : undefined}
-                  className="font-['Inter'] font-semibold text-base leading-4.75 text-black no-underline hover:opacity-60 transition-opacity whitespace-nowrap"
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
+            {NAV_ITEMS.map((item) => {
+              const isActive =
+                pathname === item.href ||
+                Boolean(item.gender && pathname?.startsWith(`/collections/${item.gender}`));
+
+              return (
+                <li key={item.label} onMouseEnter={() => setOpenMegaMenu(item.gender ?? null)}>
+                  <Link
+                    href={item.href}
+                    onClick={() => setOpenMegaMenu(null)}
+                    onFocus={() => setOpenMegaMenu(item.gender ?? null)}
+                    aria-current={isActive ? "page" : undefined}
+                    aria-haspopup={item.gender ? "true" : undefined}
+                    aria-expanded={item.gender ? openMegaMenu === item.gender : undefined}
+                    className={`relative inline-flex py-2 font-['Inter'] text-sm font-bold leading-4.75 tracking-[0.04em] text-black no-underline whitespace-nowrap after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:origin-left after:bg-[#253E38] after:transition-transform after:duration-300 after:ease-out hover:after:scale-x-100 focus-visible:outline-none focus-visible:after:scale-x-100 xl:text-base ${
+                      isActive || openMegaMenu === item.gender
+                        ? "after:scale-x-100"
+                        : "after:scale-x-0"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
 
           <div className="flex flex-row items-center gap-5" onMouseEnter={() => setOpenMegaMenu(null)}>
@@ -145,7 +166,7 @@ export default function MainNavbar() {
               <button
                 aria-label={hasMounted && isAuthenticated ? userDisplayName : "User account"}
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="h-6 flex items-center justify-center gap-1.5 hover:opacity-60 transition-opacity cursor-pointer"
+                className="flex min-h-10 min-w-10 items-center justify-center gap-1.5 rounded-full px-2 text-black transition-colors hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black cursor-pointer"
               >
                 <User size={20} strokeWidth={1.5} color="#000000" />
                 {hasMounted && isAuthenticated && (
@@ -224,14 +245,14 @@ export default function MainNavbar() {
             <button
               aria-label="Search"
               onClick={() => setSearchOpen((open) => !open)}
-              className="w-6 h-6 flex items-center justify-center hover:opacity-60 transition-opacity cursor-pointer"
+              className="flex h-10 w-10 items-center justify-center rounded-full text-black transition-colors hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black cursor-pointer"
             >
               <Search size={20} strokeWidth={1.5} color="#000000" />
             </button>
             <button
               aria-label="Cart"
               onClick={openCart}
-              className="w-6 h-6 flex items-center justify-center hover:opacity-60 transition-opacity cursor-pointer relative"
+              className="relative flex h-10 w-10 items-center justify-center rounded-full text-black transition-colors hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black cursor-pointer"
             >
               <HandbagIcon size={32} />
               {hasMounted && itemCount > 0 && (
@@ -252,6 +273,10 @@ export default function MainNavbar() {
                 activeMegaItem.gender,
                 activeMegaItem.genderName
               )}
+              gender={activeMegaItem.gender}
+              genderName={activeMegaItem.genderName}
+              featuredProduct={newestMenuProduct}
+              featuredLoading={newestMenuProductLoading}
               onNavigate={() => setOpenMegaMenu(null)}
             />
           </div>

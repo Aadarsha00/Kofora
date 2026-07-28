@@ -26,11 +26,13 @@ export default function FootProductGrid({ images }: { images?: SiteImageMap }) {
               className="object-cover object-center transition-transform duration-500 group-hover:scale-[1.03]"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/65 via-black/5 to-transparent" />
-            <div className="absolute inset-x-5 bottom-5 text-white md:inset-x-6 md:bottom-6">
-              <p className="mb-1 text-xs font-medium tracking-wide">{cat.subtitle}</p>
-              <h3 className="text-xl font-black uppercase group-hover:underline md:text-2xl">
-                {cat.title}
-              </h3>
+            <div className="absolute inset-0 flex items-center justify-center px-5 text-center text-white md:px-6">
+              <div>
+                <p className="mb-1 text-xs font-medium tracking-wide">{cat.subtitle}</p>
+                <h3 className="text-xl font-black uppercase group-hover:underline md:text-2xl">
+                  {cat.title}
+                </h3>
+              </div>
             </div>
           </Link>
         ))}

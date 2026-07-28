@@ -4,6 +4,7 @@ import { FacebookLogo, InstagramLogo, XLogo } from "@phosphor-icons/react";
 
 const moreInfoLinks = [
   { label: "About Us", href: "/about" },
+  { label: "Contact Us", href: "/contact" },
   { label: "Size Guide", href: "/size-chart" },
   { label: "Returns & Exchanges", href: "/refund-policy" },
   { label: "Track a Package", href: "/orders" },  
@@ -13,14 +14,18 @@ const shoppingLinks = [
   { label: "Women", href: "/collections/women" },
   { label: "Men", href: "/collections/men" },
   { label: "Kids", href: "/collections/kids" },
+  { label: "Socks", href: "/collections/socks" },
   { label: "Caps", href: "/collections/caps" },
+  { label: "Best Sellers", href: "/collections/women?sort_by=best-selling" },
+];
+
+const collectionLinks = [
   { label: "Dressy", href: "/collections/dressy" },
   { label: "Calf", href: "/collections/calf" },
   { label: "No Show", href: "/collections/no-show" },
   { label: "Quarter", href: "/collections/socks?height=quarter" },
   { label: "Knee High", href: "/collections/socks?height=knee-high" },
   { label: "New Releases", href: "/collections/men?sort_by=best-selling" },
-  { label: "Best Sellers", href: "/collections/women?sort_by=best-selling" },
 ];
 
 export default function Footer() {
@@ -54,13 +59,31 @@ export default function Footer() {
         </p>
 
         <div className="mt-6 flex items-center justify-center gap-6 text-white">
-          <Link href="/contact" aria-label="Facebook" className="hover:text-gray-300 transition-colors">
+          <Link
+            href="https://www.facebook.com/profile.php?id=61586084154391"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Kofora on Facebook"
+            className="hover:text-gray-300 transition-colors"
+          >
             <FacebookLogo size={24} weight="fill" />
           </Link>
-          <Link href="/contact" aria-label="Instagram" className="hover:text-gray-300 transition-colors">
+          <Link
+            href="https://www.instagram.com/kofora.official/"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Kofora on Instagram"
+            className="hover:text-gray-300 transition-colors"
+          >
             <InstagramLogo size={24} weight="fill" />
           </Link>
-          <Link href="/contact" aria-label="X" className="hover:text-gray-300 transition-colors">
+          <Link
+            href="https://x.com/Kofora_official"
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label="Kofora on X"
+            className="hover:text-gray-300 transition-colors"
+          >
             <XLogo size={24} weight="fill" />
           </Link>
         </div>
@@ -93,8 +116,8 @@ export default function Footer() {
             </Link>
           </div>
 
-          {/* Right side - More Info + Shopping */}
-          <div className="grid gap-8 sm:grid-cols-2 lg:pl-10">
+          {/* Right side - Footer links */}
+          <div className="grid gap-8 sm:grid-cols-3 lg:pl-8">
             <div>
               <h3 className="font-bold text-base mb-4">More Info</h3>
               <ul className="space-y-2">
@@ -112,6 +135,19 @@ export default function Footer() {
               <h3 className="font-bold text-base mb-4">Shopping</h3>
               <ul className="space-y-2">
                 {shoppingLinks.map((link) => (
+                  <li key={link.label}>
+                    <Link href={link.href} className="text-sm text-gray-700 hover:underline">
+                      {link.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <h3 className="font-bold text-base mb-4">Collections</h3>
+              <ul className="space-y-2">
+                {collectionLinks.map((link) => (
                   <li key={link.label}>
                     <Link href={link.href} className="text-sm text-gray-700 hover:underline">
                       {link.label}

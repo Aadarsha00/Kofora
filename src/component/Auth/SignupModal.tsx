@@ -254,7 +254,7 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
             <button
               onClick={handleSubmit}
               disabled={signupMutation.isPending || googleLoginMutation.isPending}
-              className="w-full bg-[#253E38] text-white py-3 text-sm font-semibold tracking-wide hover:opacity-90 transition-opacity cursor-pointer rounded-sm disabled:opacity-60 mt-2"
+              className="w-full h-11 bg-[#253E38] text-white text-sm font-semibold tracking-wide hover:opacity-90 transition-opacity cursor-pointer rounded-sm disabled:opacity-60 mt-2"
             >
               {signupMutation.isPending ? "Creating account..." : "Sign Up"}
             </button>
@@ -279,7 +279,7 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
             <button
               onClick={handleVerifyOTP}
               disabled={otp.length !== 6 || verifyOTPMutation.isPending}
-              className="w-full bg-[#253E38] text-white py-3 text-sm font-semibold tracking-wide hover:opacity-90 transition-opacity cursor-pointer rounded-sm disabled:opacity-60"
+              className="w-full h-11 bg-[#253E38] text-white text-sm font-semibold tracking-wide hover:opacity-90 transition-opacity cursor-pointer rounded-sm disabled:opacity-60"
             >
               {verifyOTPMutation.isPending ? "Verifying..." : "Verify Email"}
             </button>

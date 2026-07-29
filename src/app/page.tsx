@@ -26,7 +26,7 @@ export default async function Home() {
       <PromiseBand />
       <NewArrivalsSection />
       <HeightBand images={images} />
-      <FootBanner images={images} />
+      <FootBanner />
       <FootProductGrid images={images} />
     </>
   );

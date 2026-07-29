@@ -42,9 +42,9 @@ export default function Footer() {
           <input
             type="email"
             placeholder="you@example.com"
-            className="min-w-0 flex-1 bg-white px-5 py-4 text-sm text-black outline-none"
+            className="min-w-0 h-11 flex-1 bg-white px-5 text-sm text-black outline-none"
           />
-          <button className="bg-white px-8 py-4 text-sm font-semibold text-black transition-colors hover:bg-gray-100">
+          <button className="h-11 bg-white px-6 text-sm font-semibold text-black transition-colors hover:bg-gray-100">
             Sign Up
           </button>
         </div>
@@ -110,7 +110,7 @@ export default function Footer() {
             </p>
             <Link
               href="/contact"
-              className="border border-black text-sm px-5 py-2 inline-block hover:bg-black hover:text-white transition-colors rounded-xl"
+              className="border border-black text-sm px-6 h-11 inline-flex items-center justify-center hover:bg-black hover:text-white transition-colors rounded-xl"
             >
               Get Help
             </Link>

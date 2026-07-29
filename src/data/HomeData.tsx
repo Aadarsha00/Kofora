@@ -8,21 +8,24 @@ export const DEFAULT_HOMEPAGE_TILES = [
 
 // Fixed landing-page sections use stable image keys. Admin image uploads
 // override the bundled fallback paths through src/lib/siteImages.ts.
+// Two-panel hero: the left panel is photography only, the right panel is a flat
+// colour block carrying the headline, body copy and shop buttons.
 export const HERO_DATA = {
   title: "BETTER FEEL. EVERY STEP.",
   titleLines: ["BETTER FEEL.", "EVERY STEP."],
   subtitle: "Premium comfort, guaranteed for life.",
   image: "/home-hero-family.jpg",
   imageKey: "home-hero",
+  panelColor: "#253E38",
   ctas: [
     { label: "SHOP MEN",   href: "/collections/men"   },
     { label: "SHOP WOMEN", href: "/collections/women" },
+    { label: "SHOP KIDS",  href: "/collections/kids"  },
   ],
 }
 
+// Renders as an animated wave band rather than a photo, so it carries no image.
 export const FOOT_BANNER_DATA = {
-  image: "/cta-home.jpg",
-  imageKey: "home-bottom-banner",
   title: "Their New Favorites",
   subtitle: "Vibrant colors and quirky patterns that turn socks into their new favorite toys.",
   cta: { label: "Shop Kids", href: "/collections/kids" },
@@ -73,8 +76,8 @@ export interface HomeImageSection {
 export const HOME_IMAGE_SECTIONS: HomeImageSection[] = [
   {
     title: "Main Hero Banner",
-    description: "The full-width banner below the tiles, with the headline and shop buttons.",
-    slots: [{ key: HERO_DATA.imageKey, label: "Hero Banner", fallback: HERO_DATA.image }],
+    description: "The two-panel banner below the tiles. Only the left panel uses a photo — the right panel is a flat colour block with the headline and shop buttons.",
+    slots: [{ key: HERO_DATA.imageKey, label: "Hero Photo (left panel)", fallback: HERO_DATA.image }],
   },
   {
     title: "Shop by Collection",
@@ -93,17 +96,6 @@ export const HOME_IMAGE_SECTIONS: HomeImageSection[] = [
       label: height.label,
       fallback: height.image,
     })),
-  },
-  {
-    title: "Bottom Banner",
-    description: `The large "${FOOT_BANNER_DATA.title}" banner near the bottom of the homepage.`,
-    slots: [
-      {
-        key: FOOT_BANNER_DATA.imageKey,
-        label: FOOT_BANNER_DATA.title,
-        fallback: FOOT_BANNER_DATA.image,
-      },
-    ],
   },
   {
     title: "Bottom Product Grid",

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { DM_Sans, Plus_Jakarta_Sans } from "next/font/google";
+import { DM_Sans, Plus_Jakarta_Sans, Fraunces } from "next/font/google";
 import "./globals.css";
 import Provider from "@/provider/provider";
 import StorefrontFrame from "@/component/Layout/StorefrontFrame";
@@ -13,6 +13,13 @@ const dmSans = DM_Sans({
 const plusJakartaSans = Plus_Jakarta_Sans({
   variable: "--font-heading",
   subsets: ["latin"],
+});
+
+// Accent serif, used for the display headings on the marketing sections.
+const fraunces = Fraunces({
+  variable: "--font-accent",
+  subsets: ["latin"],
+  weight: ["400"],
 });
 
 export const metadata: Metadata = {
@@ -28,7 +35,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${dmSans.variable} ${plusJakartaSans.variable} h-full antialiased`}
+      className={`${dmSans.variable} ${plusJakartaSans.variable} ${fraunces.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Provider>

@@ -527,7 +527,7 @@ export default function ProductDetails({
               onClick={handleAddToBag}
               disabled={addToCartPending || !isPurchasable}
               title={!isPurchasable ? "This product does not have a purchasable variant." : undefined}
-              className="w-full rounded-lg bg-[#253E38] py-4 text-sm font-bold text-white transition-colors hover:bg-[#1e3530] disabled:opacity-60"
+              className="flex h-11 w-full items-center justify-center rounded-lg bg-[#253E38] text-sm font-bold text-white transition-colors hover:bg-[#1e3530] disabled:opacity-60"
             >
               {!isPurchasable ? "Unavailable" : addToCartPending ? "Adding..." : "Add to Bag"}
             </button>

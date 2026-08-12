@@ -435,7 +435,7 @@ export default function CheckoutPage() {
               Your guest bag has {guestCount} item{guestCount === 1 ? "" : "s"}. Log in from the account menu and your saved bag will merge into your account cart.
             </p>
             <div className="mt-6 flex flex-wrap gap-3">
-              <Link href="/cart" className="bg-black px-5 py-3 text-sm font-semibold text-white hover:bg-gray-800">
+              <Link href="/cart" className="inline-flex h-11 items-center justify-center bg-black px-6 text-sm font-semibold text-white hover:bg-gray-800">
                 Return to bag
               </Link>
               <Link href="/" className="border border-gray-300 px-5 py-3 text-sm font-semibold text-black hover:bg-gray-50">
@@ -470,7 +470,7 @@ export default function CheckoutPage() {
             </div>
           </div>
           <div className="mt-7 flex flex-wrap gap-3">
-            <Link href="/" className="bg-black px-5 py-3 text-sm font-semibold text-white hover:bg-gray-800">
+            <Link href="/" className="inline-flex h-11 items-center justify-center bg-black px-6 text-sm font-semibold text-white hover:bg-gray-800">
               Continue shopping
             </Link>
             <Link href="/cart" className="border border-gray-300 px-5 py-3 text-sm font-semibold text-black hover:bg-gray-50">
@@ -522,7 +522,7 @@ export default function CheckoutPage() {
           <div className="border border-gray-200 bg-gray-50 p-8 text-center">
             <ShoppingBag className="mx-auto mb-4 text-gray-500" size={28} />
             <p className="text-lg font-semibold text-black">Your bag is empty.</p>
-            <Link href="/" className="mt-5 inline-block bg-black px-5 py-3 text-sm font-semibold text-white hover:bg-gray-800">
+            <Link href="/" className="mt-5 inline-block inline-flex h-11 items-center justify-center bg-black px-6 text-sm font-semibold text-white hover:bg-gray-800">
               Continue shopping
             </Link>
           </div>
@@ -732,7 +732,7 @@ export default function CheckoutPage() {
                 type="button"
                 onClick={handlePlaceOrder}
                 disabled={isSubmitting}
-                className="mt-6 w-full bg-blue-900 py-3 text-sm font-semibold text-white hover:bg-blue-950 disabled:cursor-not-allowed disabled:opacity-60"
+                className="mt-6 flex h-11 w-full items-center justify-center bg-blue-900 text-sm font-semibold text-white hover:bg-blue-950 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSubmitting ? "Preparing payment..." : `Pay with ${paymentProvider === "stripe" ? "card" : "PayPal"}`}
               </button>

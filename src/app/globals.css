@@ -326,3 +326,20 @@ body, p, span, div, button, a, li {
     font-size: clamp(56px, 20vw, 100px);
   }
 }
+
+/* Flowing wave bands on the bottom banner. Each layer is 200% wide and holds a
+   whole number of wave cycles, so sliding it exactly -50% loops seamlessly. */
+@keyframes kofora-wave-flow {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kofora-wave {
+    animation: none !important;
+  }
+}

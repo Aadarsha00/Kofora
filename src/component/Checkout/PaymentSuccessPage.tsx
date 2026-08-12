@@ -170,7 +170,7 @@ export default function PaymentSuccessPage() {
           <p className="mt-3 text-sm leading-6 text-gray-600">
             Your payment provider returned successfully, but this browser is not signed in.
           </p>
-          <Link href="/checkout" className="mt-6 inline-block bg-black px-5 py-3 text-sm font-semibold text-white">
+          <Link href="/checkout" className="mt-6 inline-block inline-flex h-11 items-center justify-center bg-black px-6 text-sm font-semibold text-white">
             Return to checkout
           </Link>
         </div>
@@ -187,7 +187,7 @@ export default function PaymentSuccessPage() {
           <p className="mt-3 text-sm leading-6 text-gray-600">
             We could not find the payment reference needed to confirm this order.
           </p>
-          <Link href="/checkout" className="mt-6 inline-block bg-black px-5 py-3 text-sm font-semibold text-white">
+          <Link href="/checkout" className="mt-6 inline-block inline-flex h-11 items-center justify-center bg-black px-6 text-sm font-semibold text-white">
             Return to checkout
           </Link>
         </div>
@@ -203,7 +203,7 @@ export default function PaymentSuccessPage() {
           <h1 className="text-2xl font-bold text-black">Payment needs attention</h1>
           <p className="mt-3 text-sm leading-6 text-red-700">{error}</p>
           <div className="mt-7 flex flex-wrap gap-3">
-            <Link href="/checkout" className="bg-black px-5 py-3 text-sm font-semibold text-white">
+            <Link href="/checkout" className="inline-flex h-11 items-center justify-center bg-black px-6 text-sm font-semibold text-white">
               Return to checkout
             </Link>
             <Link href="/cart" className="border border-gray-300 px-5 py-3 text-sm font-semibold text-black">
@@ -260,7 +260,7 @@ export default function PaymentSuccessPage() {
         </div>
 
         <div className="mt-7 flex flex-wrap gap-3">
-          <Link href="/" className="inline-flex items-center gap-2 bg-black px-5 py-3 text-sm font-semibold text-white">
+          <Link href="/" className="inline-flex items-center gap-2 inline-flex h-11 items-center justify-center bg-black px-6 text-sm font-semibold text-white">
             <ShoppingBag size={16} />
             Continue shopping
           </Link>

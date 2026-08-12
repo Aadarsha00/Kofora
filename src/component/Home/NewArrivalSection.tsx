@@ -30,13 +30,13 @@ function ProductRow({
           <div className="flex shrink-0 flex-row gap-2 md:flex-col">
             <Link
               href={`/collections/${category.slug}`}
-              className="rounded-md bg-[#253E38] px-4 py-2.5 text-center text-[11px] font-bold uppercase tracking-wider text-white transition-colors hover:bg-[#1a2e28] md:text-xs"
+              className="inline-flex h-11 items-center justify-center rounded-md bg-[#253E38] px-6 text-center text-sm font-bold uppercase tracking-wider text-white transition-colors hover:bg-[#1a2e28]"
             >
               Shop All
             </Link>
             <Link
               href={`/collections/${category.slug}?sort_by=best-selling`}
-              className="rounded-md border border-black px-4 py-2.5 text-center text-[11px] font-bold uppercase tracking-wider text-black transition-colors hover:bg-black hover:text-white md:text-xs"
+              className="inline-flex h-11 items-center justify-center rounded-md border border-black px-6 text-center text-sm font-bold uppercase tracking-wider text-black transition-colors hover:bg-black hover:text-white"
             >
               Best Sellers
             </Link>

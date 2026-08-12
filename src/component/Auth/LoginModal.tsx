@@ -221,7 +221,7 @@ export default function LoginModal({ isOpen, onClose, onSwitchToSignup }: LoginM
         <button
           onClick={handleSubmit}
           disabled={isAuthPending}
-          className="w-full bg-[#253E38] text-white py-3 text-sm font-semibold tracking-wide hover:opacity-90 transition-opacity cursor-pointer rounded-sm disabled:opacity-60"
+          className="w-full h-11 bg-[#253E38] text-white text-sm font-semibold tracking-wide hover:opacity-90 transition-opacity cursor-pointer rounded-sm disabled:opacity-60"
         >
           {loginMutation.isPending ? "Logging in..." : "Log In"}
         </button>

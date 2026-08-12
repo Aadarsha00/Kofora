@@ -164,7 +164,7 @@ export default function OrdersPage() {
         <div className="mx-auto max-w-3xl border border-gray-200 bg-gray-50 p-8">
           <h1 className="text-2xl font-bold text-black">Sign in to view your orders</h1>
           <p className="mt-3 text-sm text-gray-600">Your order and delivery status are available after login.</p>
-          <Link href="/" className="mt-6 inline-block bg-black px-5 py-3 text-sm font-semibold text-white">
+          <Link href="/" className="mt-6 inline-block inline-flex h-11 items-center justify-center bg-black px-6 text-sm font-semibold text-white">
             Go home
           </Link>
         </div>
@@ -199,7 +199,7 @@ export default function OrdersPage() {
                 You have {pendingAttempts.length} unpaid checkout attempt{pendingAttempts.length === 1 ? "" : "s"}.
               </p>
             )}
-            <Link href="/" className="mt-5 inline-block bg-black px-5 py-3 text-sm font-semibold text-white">
+            <Link href="/" className="mt-5 inline-block inline-flex h-11 items-center justify-center bg-black px-6 text-sm font-semibold text-white">
               Continue shopping
             </Link>
           </div>

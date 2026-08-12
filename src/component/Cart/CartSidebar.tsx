@@ -248,7 +248,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
       >
         <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4 flex-shrink-0">
           <div className="flex items-center relative">
-            <HandbagIcon size={32} />
+            <HandbagIcon size={20} />
             {hasMounted && itemCount > 0 && (
               <span className="absolute -top-2 -right-2 bg-blue-500 text-white text-xs font-semibold rounded-full w-5 h-5 flex items-center justify-center">
                 {itemCount}
@@ -260,7 +260,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
             onClick={onClose}
             className="text-gray-500 hover:text-black transition-colors"
           >
-            <X size={24} />
+            <X size={20} />
           </button>
         </div>
 
@@ -281,21 +281,21 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                 <Link
                   href="/collections/women"
                   onClick={onClose}
-                  className="block w-full bg-gray-100 text-black text-center py-3 rounded-md hover:bg-gray-200 transition-colors font-semibold"
+                  className="flex h-11 w-full items-center justify-center bg-gray-100 text-black rounded-md hover:bg-gray-200 transition-colors text-sm font-semibold"
                 >
                   Shop Women
                 </Link>
                 <Link
                   href="/collections/men"
                   onClick={onClose}
-                  className="block w-full bg-gray-100 text-black text-center py-3 rounded-md hover:bg-gray-200 transition-colors font-semibold"
+                  className="flex h-11 w-full items-center justify-center bg-gray-100 text-black rounded-md hover:bg-gray-200 transition-colors text-sm font-semibold"
                 >
                   Shop Men
                 </Link>
                 <Link
                   href="/collections/kids"
                   onClick={onClose}
-                  className="block w-full bg-gray-100 text-black text-center py-3 rounded-md hover:bg-gray-200 transition-colors font-semibold"
+                  className="flex h-11 w-full items-center justify-center bg-gray-100 text-black rounded-md hover:bg-gray-200 transition-colors text-sm font-semibold"
                 >
                   Shop Kids
                 </Link>
@@ -506,12 +506,12 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                           setCouponError("");
                         }}
                         placeholder="Coupon code"
-                        className="flex-1 px-2 py-2 border border-gray-300 rounded-md text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 h-11 px-3 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                       <button
                         onClick={handleApplyCoupon}
                         disabled={validatingCoupon || applyingCoupon}
-                        className="px-2 py-2 bg-blue-900 text-white text-xs font-semibold rounded-md hover:bg-blue-950 transition-colors disabled:opacity-50"
+                        className="h-11 px-6 bg-blue-900 text-white text-sm font-semibold rounded-md hover:bg-blue-950 transition-colors disabled:opacity-50"
                       >
                         {validatingCoupon || applyingCoupon ? "..." : "Apply"}
                       </button>
@@ -541,7 +541,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
                   <Link
                     href="/checkout"
                     onClick={onClose}
-                    className="block w-full bg-blue-900 text-white text-center py-3 rounded-md font-semibold hover:bg-blue-950 transition-colors"
+                    className="flex h-11 w-full items-center justify-center bg-blue-900 text-white rounded-md text-sm font-semibold hover:bg-blue-950 transition-colors"
                   >
                     Checkout
                     {isAuthenticated && totals?.total
@@ -557,7 +557,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
               <Link
                 href="/cart"
                 onClick={onClose}
-                className="block w-full text-center py-2 text-black font-semibold hover:underline transition-colors"
+                className="flex h-11 w-full items-center justify-center text-black text-sm font-semibold hover:underline transition-colors"
               >
                 View Bag
               </Link>

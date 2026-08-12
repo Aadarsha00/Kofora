@@ -258,19 +258,19 @@ export default function CartPage() {
               <div className="space-y-3 mb-8 w-full max-w-xs">
                 <Link 
                   href="/collections/women" 
-                  className="block w-full bg-gray-100 text-black text-center py-3 rounded-md hover:bg-gray-200 transition-colors font-semibold"
+                  className="flex h-11 w-full items-center justify-center bg-gray-100 text-black rounded-md hover:bg-gray-200 transition-colors text-sm font-semibold"
                 >
                   Shop Women
                 </Link>
                 <Link 
                   href="/collections/men" 
-                  className="block w-full bg-gray-100 text-black text-center py-3 rounded-md hover:bg-gray-200 transition-colors font-semibold"
+                  className="flex h-11 w-full items-center justify-center bg-gray-100 text-black rounded-md hover:bg-gray-200 transition-colors text-sm font-semibold"
                 >
                   Shop Men
                 </Link>
                 <Link 
                   href="/collections/kids" 
-                  className="block w-full bg-gray-100 text-black text-center py-3 rounded-md hover:bg-gray-200 transition-colors font-semibold"
+                  className="flex h-11 w-full items-center justify-center bg-gray-100 text-black rounded-md hover:bg-gray-200 transition-colors text-sm font-semibold"
                 >
                   Shop Kids
                 </Link>
@@ -490,12 +490,12 @@ export default function CartPage() {
                             setCouponError("");
                           }}
                           placeholder="Enter coupon code"
-                          className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="flex-1 h-11 px-3 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         <button
                           onClick={handleApplyCoupon}
                           disabled={validatingCoupon || applyingCoupon}
-                          className="px-3 py-2 bg-blue-900 text-white text-sm font-semibold rounded-md hover:bg-blue-950 transition-colors disabled:opacity-50"
+                          className="h-11 px-6 bg-blue-900 text-white text-sm font-semibold rounded-md hover:bg-blue-950 transition-colors disabled:opacity-50"
                         >
                           {validatingCoupon || applyingCoupon ? "..." : "Apply"}
                         </button>
@@ -546,7 +546,7 @@ export default function CartPage() {
               {/* Checkout Button */}
               <Link
                 href="/checkout"
-                className="block w-full bg-blue-900 text-white text-center py-3 rounded-md font-semibold hover:bg-blue-950 transition-colors mb-3"
+                className="flex h-11 w-full items-center justify-center bg-blue-900 text-white rounded-md text-sm font-semibold hover:bg-blue-950 transition-colors mb-3"
               >
                 Checkout
               </Link>

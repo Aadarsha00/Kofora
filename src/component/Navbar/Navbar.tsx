@@ -124,16 +124,18 @@ export default function MainNavbar() {
   return (
     <>
       <div
-        className="sticky top-0 z-50 w-full border-b border-black/5 bg-white shadow-[0_8px_24px_-22px_rgba(0,0,0,0.45)]"
+        className="sticky top-0 z-[999] w-full bg-white"
         onMouseLeave={() => setOpenMegaMenu(null)}
       >
-        <div className="hidden h-18 w-full items-center justify-center px-12.25 py-3 lg:flex">
-          <div className="flex w-full max-w-[1440px] flex-row items-center justify-between gap-10">
-          <Link href="/" className="h-12 w-48 shrink-0" onMouseEnter={() => setOpenMegaMenu(null)}>
-            <Image src="/logo.jpeg" alt="Logo" className="w-full h-full object-contain" width={200} height={100} />
-          </Link>
+        <div className="hidden h-16 w-full items-center lg:flex">
+          <div className="mx-auto flex h-16 w-full max-w-[1520px] flex-row items-center pl-12 pr-8">
+          <div className="order-1 flex flex-1 items-center justify-start">
+            <Link href="/" className="h-12 w-48 shrink-0" onMouseEnter={() => setOpenMegaMenu(null)}>
+              <Image src="/logo.jpeg" alt="Logo" className="w-full h-full object-contain" width={200} height={100} />
+            </Link>
+          </div>
 
-          <ul className="flex flex-row items-center gap-8 xl:gap-12 list-none m-0 p-0">
+          <ul className="order-2 flex h-full flex-row items-center gap-4 list-none m-0 p-0">
             {NAV_ITEMS.map((item) => {
               const isActive =
                 pathname === item.href ||
@@ -148,7 +150,7 @@ export default function MainNavbar() {
                     aria-current={isActive ? "page" : undefined}
                     aria-haspopup={item.gender ? "true" : undefined}
                     aria-expanded={item.gender ? openMegaMenu === item.gender : undefined}
-                    className={`relative inline-flex py-2 font-['Inter'] text-sm font-bold leading-4.75 tracking-[0.04em] text-black no-underline whitespace-nowrap after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:origin-left after:bg-[#253E38] after:transition-transform after:duration-300 after:ease-out hover:after:scale-x-100 focus-visible:outline-none focus-visible:after:scale-x-100 xl:text-base ${
+                    className={`relative mx-2 inline-flex items-center py-2 font-['Inter'] text-sm font-extrabold leading-[1.15em] tracking-normal text-black no-underline whitespace-nowrap after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:origin-left after:bg-current after:transition-transform after:duration-[400ms] after:ease-[cubic-bezier(0,0.5,0.5,1)] hover:after:scale-x-100 focus-visible:outline-none focus-visible:after:scale-x-100 ${
                       isActive || openMegaMenu === item.gender
                         ? "after:scale-x-100"
                         : "after:scale-x-0"
@@ -161,12 +163,12 @@ export default function MainNavbar() {
             })}
           </ul>
 
-          <div className="flex flex-row items-center gap-5" onMouseEnter={() => setOpenMegaMenu(null)}>
+          <div className="order-3 flex flex-1 flex-row items-center justify-end gap-1" onMouseEnter={() => setOpenMegaMenu(null)}>
             <div className="relative">
               <button
                 aria-label={hasMounted && isAuthenticated ? userDisplayName : "User account"}
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex min-h-10 min-w-10 items-center justify-center gap-1.5 rounded-full px-2 text-black transition-colors hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black cursor-pointer"
+                className="flex h-10 min-w-12 items-center justify-center gap-1.5 rounded-[20px] px-2 text-black transition-colors hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black cursor-pointer"
               >
                 <User size={20} strokeWidth={1.5} color="#000000" />
                 {hasMounted && isAuthenticated && (
@@ -245,16 +247,16 @@ export default function MainNavbar() {
             <button
               aria-label="Search"
               onClick={() => setSearchOpen((open) => !open)}
-              className="flex h-10 w-10 items-center justify-center rounded-full text-black transition-colors hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black cursor-pointer"
+              className="flex h-10 w-12 items-center justify-center rounded-[20px] text-black transition-colors hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black cursor-pointer"
             >
               <Search size={20} strokeWidth={1.5} color="#000000" />
             </button>
             <button
               aria-label="Cart"
               onClick={openCart}
-              className="relative flex h-10 w-10 items-center justify-center rounded-full text-black transition-colors hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black cursor-pointer"
+              className="relative flex h-10 w-12 items-center justify-center rounded-[20px] text-black transition-colors hover:bg-black/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-black cursor-pointer"
             >
-              <HandbagIcon size={32} />
+              <HandbagIcon size={20} />
               {hasMounted && itemCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-black text-white text-xs font-semibold w-5 h-5 rounded-full flex items-center justify-center">
                   {itemCount > 9 ? "9+" : itemCount}
@@ -282,34 +284,38 @@ export default function MainNavbar() {
           </div>
         )}
 
-        <div className="flex h-16 items-center justify-between px-4 lg:hidden">
-          <button
-            aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
-            aria-expanded={mobileMenuOpen}
-            onClick={() => setMobileMenuOpen((open) => !open)}
-            className="flex h-10 w-10 items-center justify-center text-black"
-          >
-            {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+        <div className="flex h-16 items-center px-3 md:px-8 lg:hidden">
+          <div className="flex flex-1 items-center justify-start">
+            <button
+              aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen((open) => !open)}
+              className="flex h-10 w-12 items-center justify-center rounded-[20px] text-black"
+            >
+              {mobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+            </button>
+          </div>
 
-          <Link href="/" onClick={closeMobileMenu} className="h-10 w-40 shrink-0">
-            <Image src="/logo.jpeg" alt="Logo" className="h-full w-full object-contain" width={160} height={40} />
-          </Link>
+          <div className="flex flex-1 items-center justify-center">
+            <Link href="/" onClick={closeMobileMenu} className="h-10 w-40 shrink-0">
+              <Image src="/logo.jpeg" alt="Logo" className="h-full w-full object-contain" width={160} height={40} />
+            </Link>
+          </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-1 items-center justify-end gap-1">
             <button
               aria-label="Search"
               onClick={() => setSearchOpen((open) => !open)}
-              className="flex h-10 w-10 items-center justify-center text-black"
+              className="flex h-10 w-12 items-center justify-center rounded-[20px] text-black"
             >
-              <Search size={21} strokeWidth={1.7} />
+              <Search size={20} strokeWidth={1.5} />
             </button>
             <button
               aria-label="Cart"
               onClick={openCart}
-              className="relative flex h-10 w-10 items-center justify-center text-black"
+              className="relative flex h-10 w-12 items-center justify-center rounded-[20px] text-black"
             >
-              <HandbagIcon size={30} />
+              <HandbagIcon size={20} />
               {hasMounted && itemCount > 0 && (
                 <span className="absolute right-0 top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-black px-1 text-[10px] font-semibold text-white">
                   {itemCount > 9 ? "9+" : itemCount}
@@ -372,7 +378,7 @@ export default function MainNavbar() {
                     <Link
                       href="/admin/dashboard"
                       onClick={closeMobileMenu}
-                      className="col-span-2 flex items-center justify-center gap-2 bg-black px-4 py-3 text-sm font-semibold text-white"
+                      className="col-span-2 flex items-center justify-center gap-2 inline-flex h-11 items-center justify-center bg-black px-6 text-sm font-semibold text-white"
                     >
                       <LayoutDashboard size={16} />
                       Admin dashboard
@@ -381,7 +387,7 @@ export default function MainNavbar() {
                   <Link
                     href="/profile"
                     onClick={closeMobileMenu}
-                    className="border border-black px-4 py-3 text-center text-sm font-semibold text-black"
+                    className="inline-flex h-11 items-center justify-center border border-black px-6 text-sm font-semibold text-black"
                   >
                     Profile
                   </Link>
@@ -390,7 +396,7 @@ export default function MainNavbar() {
                       handleLogout();
                       closeMobileMenu();
                     }}
-                    className="bg-black px-4 py-3 text-sm font-semibold text-white"
+                    className="inline-flex h-11 items-center justify-center bg-black px-6 text-sm font-semibold text-white"
                   >
                     Logout
                   </button>
@@ -402,7 +408,7 @@ export default function MainNavbar() {
                       setLoginOpen(true);
                       closeMobileMenu();
                     }}
-                    className="border border-black px-4 py-3 text-sm font-semibold text-black"
+                    className="inline-flex h-11 items-center justify-center border border-black px-6 text-sm font-semibold text-black"
                   >
                     Login
                   </button>
@@ -411,7 +417,7 @@ export default function MainNavbar() {
                       setSignupOpen(true);
                       closeMobileMenu();
                     }}
-                    className="bg-black px-4 py-3 text-sm font-semibold text-white"
+                    className="inline-flex h-11 items-center justify-center bg-black px-6 text-sm font-semibold text-white"
                   >
                     Sign Up
                   </button>
@@ -437,7 +443,7 @@ export default function MainNavbar() {
                 placeholder="Search socks, caps & more"
                 className="min-w-0 flex-1 border border-gray-300 px-4 py-3 text-sm text-black outline-none focus:border-black"
               />
-              <button type="submit" className="bg-black px-5 py-3 text-sm font-semibold text-white">
+              <button type="submit" className="inline-flex h-11 items-center justify-center bg-black px-6 text-sm font-semibold text-white">
                 Search
               </button>
             </div>

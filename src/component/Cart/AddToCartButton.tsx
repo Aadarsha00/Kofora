@@ -88,9 +88,9 @@ export default function AddToCartButton({
         <button
           onClick={handleAddToCart}
           disabled={authLoading || apiPending || disabled}
-          className="flex-1 bg-black text-white px-4 py-2 rounded-md font-semibold hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
+          className="flex-1 h-11 bg-black text-white px-6 rounded-md text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
         >
-          <HandbagIcon size={32} />
+          <HandbagIcon size={20} />
           {authLoading || apiPending ? "Adding..." : "Add to Cart"}
         </button>
 
@@ -99,7 +99,7 @@ export default function AddToCartButton({
             setShowQuantityPicker(false);
             setQuantity(1);
           }}
-          className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+          className="h-11 px-6 border border-gray-300 rounded-md text-sm hover:bg-gray-50 transition-colors"
         >
           Cancel
         </button>
@@ -111,9 +111,9 @@ export default function AddToCartButton({
     <button
       onClick={() => setShowQuantityPicker(true)}
       disabled={authLoading || apiPending || disabled}
-      className={`bg-black text-white px-6 py-2.5 rounded-md font-semibold hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 ${className}`}
+      className={`h-11 bg-black text-white px-6 rounded-md text-sm font-semibold hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 ${className}`}
     >
-      <HandbagIcon size={32} />
+      <HandbagIcon size={20} />
       {authLoading || apiPending ? "Adding to Cart..." : "Add to Cart"}
     </button>
   );

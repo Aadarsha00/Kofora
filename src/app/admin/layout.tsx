@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut, Store } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
@@ -10,13 +11,22 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const isAdmin = isAuthenticated && (user?.role === "admin" || user?.role === "staff");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    // Gate the auth-dependent branch behind mount to keep the first client render
+    // identical to SSR output; AuthContext resolves isLoading before hydration
+    // finishes, which otherwise mismatches.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
 
   const handleLogout = () => {
     logout();
     router.push("/");
   };
 
-  if (isLoading) {
+  if (!mounted || isLoading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50 text-sm text-gray-500">
         Loading admin...

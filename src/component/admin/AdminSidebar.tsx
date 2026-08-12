@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Boxes, Image as ImageIcon, LayoutDashboard, ListTree, Package, ShoppingBag, Tag, Users } from "lucide-react";
+import { Boxes, Image as ImageIcon, LayoutDashboard, ListTree, Package, ShoppingBag, Tag, Truck, Users } from "lucide-react";
 
 type NavItem = {
   label: string;
@@ -20,6 +20,7 @@ const NAV_ITEMS: NavItem[] = [
   { label: "Customers", href: "/admin/customers", icon: Users, ready: true },
   { label: "Discounts", href: "/admin/discounts", icon: Tag, ready: true },
   { label: "Inventory", href: "/admin/inventory", icon: Boxes, ready: true },
+  { label: "Shipping", href: "/admin/shipping", icon: Truck, ready: true },
 ];
 
 export default function AdminSidebar() {

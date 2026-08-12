@@ -26,9 +26,14 @@ export interface ShippingMethod {
   name: string;
   code: string;
   base_rate: string;
+  ups_service_code: string;
   free_shipping_threshold: string | null;
   is_active: boolean;
 }
+
+export type ShippingMethodInput = Partial<
+  Pick<ShippingMethod, "name" | "base_rate" | "ups_service_code" | "free_shipping_threshold" | "is_active">
+>;
 
 export interface OrderItem {
   id: number;
@@ -98,6 +103,7 @@ export interface PaginatedResponse<T> {
 export type AddressListResponse = ApiEnvelope<PaginatedResponse<Address>>;
 export type AddressResponse = ApiEnvelope<Address>;
 export type ShippingMethodListResponse = ApiEnvelope<PaginatedResponse<ShippingMethod>>;
+export type ShippingMethodResponse = ApiEnvelope<ShippingMethod>;
 export type OrderResponse = ApiEnvelope<Order>;
 export type OrderListResponse = ApiEnvelope<Order[]>;
 export type PaymentTransactionResponse = ApiEnvelope<PaymentTransaction>;

@@ -15,8 +15,11 @@ import {
   getShippingMethods,
 } from "@/api/checkout.api";
 import { AddressInput, Order, PaymentProvider } from "@/interface/checkout";
+import AddressAutocomplete from "@/component/Checkout/AddressAutocomplete";
+import { ParsedAddress } from "@/lib/googleMaps";
 import {
   useCart,
+  useForceRefetchCart,
   useSetBillingAddress,
   useSetShippingAddress,
   useSetShippingMethod,
@@ -24,6 +27,8 @@ import {
 import { useAuth } from "@/context/AuthContext";
 import { useGuestCartStore } from "@/store/guestCartStore";
 import { redirectToStripeCheckout } from "@/lib/stripeCheckout";
+import { updateAddress } from "@/api/profile.api";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 
 const EMPTY_ADDRESS: AddressInput = {
   full_name: "",
@@ -70,20 +75,36 @@ function roundMoney(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+function isAddressComplete(form: AddressInput): boolean {
+  return Boolean(
+    form.full_name.trim() &&
+      form.phone.trim() &&
+      form.address_line_1.trim() &&
+      form.city.trim() &&
+      form.state_province.trim() &&
+      form.postal_code.trim() &&
+      form.country.trim().length === 2
+  );
+}
+
 export default function CheckoutPage() {
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
   const guestItems = useGuestCartStore((state) => state.items);
   const { data: cart, isLoading: cartLoading } = useCart();
+  const forceRefetchCart = useForceRefetchCart();
   const setShippingAddress = useSetShippingAddress();
   const setBillingAddress = useSetBillingAddress();
   const setShippingMethod = useSetShippingMethod();
 
+  const [mounted, setMounted] = useState(false);
   const [useNewAddress, setUseNewAddress] = useState(false);
   const [selectedAddressId, setSelectedAddressId] = useState("");
   const [selectedShippingMethodId, setSelectedShippingMethodId] = useState("");
   const [addressForm, setAddressForm] = useState<AddressInput>(EMPTY_ADDRESS);
+  const [previewAddressId, setPreviewAddressId] = useState<number | null>(null);
+  const debouncedAddressForm = useDebouncedValue(addressForm, 700);
   const [customerNotes, setCustomerNotes] = useState("");
   const [paymentProvider, setPaymentProvider] = useState<PaymentProvider>("stripe");
   const [placedOrder, setPlacedOrder] = useState<Order | null>(null);
@@ -103,6 +124,15 @@ export default function CheckoutPage() {
   });
 
   const createAddressMutation = useMutation({ mutationFn: createAddress });
+  const updateAddressMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number; payload: AddressInput }) => updateAddress(id, payload),
+  });
+  // Separate from the two above so its pending state doesn't flicker the "Pay"
+  // button's loading state while it saves quietly in the background.
+  const previewAddressMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: number | null; payload: AddressInput }) =>
+      id ? updateAddress(id, payload) : createAddress(payload),
+  });
   const createOrderMutation = useMutation({
     mutationFn: createOrderFromCart,
     onSuccess: () => {
@@ -128,6 +158,20 @@ export default function CheckoutPage() {
       ? "Payment submitted. Your order will update when Stripe confirms the payment."
       : "";
   const visiblePaymentReturnMessage = paymentReturnMessage || stripeReturnMessage;
+
+  useEffect(() => {
+    // Gate the auth-dependent branch behind mount to keep the first client render
+    // identical to SSR output; AuthContext resolves isLoading before hydration
+    // finishes for this Suspense-wrapped page, which otherwise mismatches.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
+
+  // Shipping is now a live UPS rate, so a cart cached earlier in the session can
+  // hold a stale amount. Refetch once on entry so the summary is always current.
+  useEffect(() => {
+    if (isAuthenticated) forceRefetchCart().catch(() => {});
+  }, [isAuthenticated, forceRefetchCart]);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -202,8 +246,63 @@ export default function CheckoutPage() {
 
     return { subtotal, discount, shipping, tax, total };
   }, [cart, selectedShippingMethod]);
+
+  // A new (unsaved) address has no id to price shipping against, so save it as a
+  // draft address as soon as its required fields are filled in - debounced so we're
+  // not writing on every keystroke. The sync effect below then previews the live
+  // UPS rate against it the same way it does for an already-saved address.
+  useEffect(() => {
+    if (!mounted || !isAuthenticated || !shouldUseNewAddress) return;
+    if (!isAddressComplete(debouncedAddressForm)) return;
+    if (previewAddressMutation.isPending) return;
+
+    previewAddressMutation
+      .mutateAsync({ id: previewAddressId, payload: debouncedAddressForm })
+      .then((saved) => setPreviewAddressId(saved.id))
+      .catch(() => {
+        // Non-fatal: submit falls back to creating the address fresh.
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mounted, isAuthenticated, shouldUseNewAddress, debouncedAddressForm, previewAddressId]);
+
+  // Sync the chosen address + method onto the cart so the summary shows the live
+  // UPS shipping rate before payment (address is either a saved one or the draft
+  // created by the effect above for a new address).
+  useEffect(() => {
+    if (!mounted || !isAuthenticated || !cart) return;
+    if (setShippingAddress.isPending || setShippingMethod.isPending) return;
+
+    const addressId = shouldUseNewAddress ? previewAddressId : Number(selectedAddressValue);
+    const methodId = Number(selectedShippingValue);
+    if (!addressId || !methodId) return;
+
+    const needsAddress = cart.shipping_address !== addressId;
+    const needsMethod = cart.shipping_method !== methodId;
+    if (!needsAddress && !needsMethod) return;
+
+    (async () => {
+      try {
+        if (needsAddress) await setShippingAddress.mutateAsync(addressId);
+        if (needsMethod) await setShippingMethod.mutateAsync(methodId);
+      } catch {
+        // Non-fatal: submit re-syncs and the order recomputes server-side.
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    mounted,
+    isAuthenticated,
+    cart?.shipping_address,
+    cart?.shipping_method,
+    shouldUseNewAddress,
+    previewAddressId,
+    selectedAddressValue,
+    selectedShippingValue,
+  ]);
+
   const isSubmitting =
     createAddressMutation.isPending ||
+    updateAddressMutation.isPending ||
     setShippingAddress.isPending ||
     setBillingAddress.isPending ||
     setShippingMethod.isPending ||
@@ -214,6 +313,17 @@ export default function CheckoutPage() {
 
   const updateAddressField = (field: keyof AddressInput, value: string | boolean) => {
     setAddressForm((current) => ({ ...current, [field]: value }));
+  };
+
+  const handleAddressAutocompleteSelect = (parsed: ParsedAddress) => {
+    setAddressForm((current) => ({
+      ...current,
+      address_line_1: parsed.address_line_1 || current.address_line_1,
+      city: parsed.city || current.city,
+      state_province: parsed.state_province || current.state_province,
+      postal_code: parsed.postal_code || current.postal_code,
+      country: parsed.country || current.country,
+    }));
   };
 
   const handlePlaceOrder = async () => {
@@ -235,8 +345,15 @@ export default function CheckoutPage() {
       let addressId = Number(selectedAddressValue);
 
       if (shouldUseNewAddress) {
-        const createdAddress = await createAddressMutation.mutateAsync(addressForm);
-        addressId = createdAddress.id;
+        if (previewAddressId) {
+          // Reuse the draft address already saved by the background preview,
+          // updated once more here to catch any edits made since the last debounce.
+          const updated = await updateAddressMutation.mutateAsync({ id: previewAddressId, payload: addressForm });
+          addressId = updated.id;
+        } else {
+          const createdAddress = await createAddressMutation.mutateAsync(addressForm);
+          addressId = createdAddress.id;
+        }
       }
 
       if (!addressId) {
@@ -292,7 +409,7 @@ export default function CheckoutPage() {
     }
   };
 
-  if (authLoading) {
+  if (!mounted || authLoading) {
     return (
       <main className="min-h-screen bg-white px-6 py-16">
         <div className="mx-auto max-w-5xl text-sm text-gray-500">Loading checkout...</div>
@@ -466,7 +583,12 @@ export default function CheckoutPage() {
                   <div className="grid gap-4 md:grid-cols-2">
                     <input className="border border-gray-300 px-3 py-3 text-sm" placeholder="Full name" value={addressForm.full_name} onChange={(event) => updateAddressField("full_name", event.target.value)} />
                     <input className="border border-gray-300 px-3 py-3 text-sm" placeholder="Phone" value={addressForm.phone} onChange={(event) => updateAddressField("phone", event.target.value)} />
-                    <input className="border border-gray-300 px-3 py-3 text-sm md:col-span-2" placeholder="Address line 1" value={addressForm.address_line_1} onChange={(event) => updateAddressField("address_line_1", event.target.value)} />
+                    <AddressAutocomplete
+                      value={addressForm.address_line_1}
+                      onChange={(value) => updateAddressField("address_line_1", value)}
+                      onAddressSelect={handleAddressAutocompleteSelect}
+                      className="md:col-span-2"
+                    />
                     <input className="border border-gray-300 px-3 py-3 text-sm md:col-span-2" placeholder="Address line 2" value={addressForm.address_line_2} onChange={(event) => updateAddressField("address_line_2", event.target.value)} />
                     <input className="border border-gray-300 px-3 py-3 text-sm" placeholder="City" value={addressForm.city} onChange={(event) => updateAddressField("city", event.target.value)} />
                     <input className="border border-gray-300 px-3 py-3 text-sm" placeholder="State / Province" value={addressForm.state_province} onChange={(event) => updateAddressField("state_province", event.target.value)} />
@@ -501,7 +623,11 @@ export default function CheckoutPage() {
                         <span className="block font-semibold text-black">{method.name}</span>
                         <span className="mt-1 block text-gray-500">{method.code}</span>
                       </span>
-                      <span className="font-semibold text-black">{money(currency, method.base_rate)}</span>
+                      <span className="font-semibold text-black">
+                        {cart?.shipping_method === method.id && cart?.totals?.shipping != null
+                          ? money(currency, Number(cart.totals.shipping))
+                          : money(currency, method.base_rate)}
+                      </span>
                     </label>
                   ))}
                 </div>

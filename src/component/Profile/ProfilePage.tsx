@@ -1,13 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, CheckCircle2, Home, LockKeyhole, Mail, MapPin, PackageCheck, Plus, Trash2, Truck, UserRound, X } from "lucide-react";
 import { createAddress, getAddresses, getMyOrders } from "@/api/checkout.api";
 import { changePassword, deleteAddress, getProfile, updateAddress, updateProfile } from "@/api/profile.api";
 import { useAuth } from "@/context/AuthContext";
 import { Address, AddressInput, Order } from "@/interface/checkout";
+import AddressAutocomplete from "@/component/Checkout/AddressAutocomplete";
+import { ParsedAddress } from "@/lib/googleMaps";
 import { User } from "@/interface/auth";
 
 const EMPTY_ADDRESS: AddressInput = {
@@ -143,6 +145,7 @@ function OrderPanel({ order }: { order: Order }) {
 export default function ProfilePage() {
   const queryClient = useQueryClient();
   const { isAuthenticated, isLoading, setAuthUser } = useAuth();
+  const [mounted, setMounted] = useState(false);
   const [profileMessage, setProfileMessage] = useState("");
   const [profileError, setProfileError] = useState("");
   const [addressMessage, setAddressMessage] = useState("");
@@ -159,6 +162,14 @@ export default function ProfilePage() {
   }>({});
   const [addressForm, setAddressForm] = useState<AddressInput>(EMPTY_ADDRESS);
   const [passwordForm, setPasswordForm] = useState({ current_password: "", new_password: "" });
+
+  useEffect(() => {
+    // Gate the auth-dependent branch behind mount to keep the first client render
+    // identical to SSR output; AuthContext resolves isLoading before hydration
+    // finishes for this Suspense-wrapped page, which otherwise mismatches.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setMounted(true);
+  }, []);
 
   const profileQuery = useQuery({ queryKey: ["profile"], queryFn: getProfile, enabled: isAuthenticated });
   const addressesQuery = useQuery({ queryKey: ["addresses"], queryFn: getAddresses, enabled: isAuthenticated });
@@ -239,6 +250,17 @@ export default function ProfilePage() {
     setAddressForm((current) => ({ ...current, [field]: value }));
   };
 
+  const handleAddressAutocompleteSelect = (parsed: ParsedAddress) => {
+    setAddressForm((current) => ({
+      ...current,
+      address_line_1: parsed.address_line_1 || current.address_line_1,
+      city: parsed.city || current.city,
+      state_province: parsed.state_province || current.state_province,
+      postal_code: parsed.postal_code || current.postal_code,
+      country: parsed.country || current.country,
+    }));
+  };
+
   const startEditAddress = (address: Address) => {
     setEditingAddressId(address.id);
     setAddressForm({
@@ -273,7 +295,7 @@ export default function ProfilePage() {
     passwordMutation.mutate(passwordForm);
   };
 
-  if (isLoading) {
+  if (!mounted || isLoading) {
     return <main className="min-h-screen bg-white px-6 py-16 text-sm text-gray-500">Loading profile...</main>;
   }
 
@@ -359,7 +381,15 @@ export default function ProfilePage() {
                     <option value="other">Other</option>
                   </select>
                 </label>
-                <Field label="Address line 1" required value={addressForm.address_line_1} onChange={(value) => updateAddressField("address_line_1", value)} />
+                <label className="grid gap-1.5 text-sm">
+                  <span className="font-semibold text-black">Address line 1</span>
+                  <AddressAutocomplete
+                    value={addressForm.address_line_1}
+                    onChange={(value) => updateAddressField("address_line_1", value)}
+                    onAddressSelect={handleAddressAutocompleteSelect}
+                    required
+                  />
+                </label>
                 <Field label="Address line 2" value={addressForm.address_line_2} onChange={(value) => updateAddressField("address_line_2", value)} />
                 <Field label="City" required value={addressForm.city} onChange={(value) => updateAddressField("city", value)} />
                 <Field label="State / Province" required value={addressForm.state_province} onChange={(value) => updateAddressField("state_province", value)} />

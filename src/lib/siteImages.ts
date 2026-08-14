@@ -33,6 +33,10 @@ export async function fetchSiteImageMap(): Promise<SiteImageMap> {
     const response = await fetch(`${API_URL}/site-images/`, {
       next: { revalidate: 300 },
       signal: AbortSignal.timeout(10000),
+      // Bypasses nginx when hitting the backend over the internal Docker
+      // network, so add back the header nginx would normally set - otherwise
+      // Django's SECURE_SSL_REDIRECT 301-loops back to itself over plain HTTP.
+      headers: { "X-Forwarded-Proto": "https" },
     });
 
     if (!response.ok) {

@@ -10,10 +10,16 @@ const API_URL =
 
 const FETCH_TIMEOUT_MS = 10000;
 
+// Bypasses nginx when hitting the backend over the internal Docker network,
+// so add back the header nginx would normally set - otherwise Django's
+// SECURE_SSL_REDIRECT 301-loops back to itself over plain HTTP.
+const INTERNAL_FETCH_HEADERS = { "X-Forwarded-Proto": "https" };
+
 export async function getCategoriesServer(): Promise<Category[]> {
   const response = await fetch(`${API_URL}/categories/`, {
     next: { revalidate: 300 },
     signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    headers: INTERNAL_FETCH_HEADERS,
   });
 
   if (!response.ok) {
@@ -32,6 +38,7 @@ export async function getCategoryBySlugServer(
     {
       next: { revalidate: 300 },
       signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+      headers: INTERNAL_FETCH_HEADERS,
     }
   );
 

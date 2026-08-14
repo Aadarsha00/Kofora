@@ -21,14 +21,18 @@ type RefreshResponse = {
 // reach the public NEXT_PUBLIC_API_BASE_URL (e.g. it may be firewalled or
 // bound to loopback on the host) - INTERNAL_API_BASE_URL lets it talk to the
 // backend container directly. The browser always uses the public URL.
-const baseURL =
-  typeof window === "undefined"
-    ? process.env.INTERNAL_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL
-    : process.env.NEXT_PUBLIC_API_BASE_URL;
+const isServer = typeof window === "undefined";
+const baseURL = isServer
+  ? process.env.INTERNAL_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL
+  : process.env.NEXT_PUBLIC_API_BASE_URL;
 
 const api = axios.create({
   baseURL,
   timeout: 30000, // 30 seconds - signup/login with email sending needs more time
+  // Talking to the backend directly (bypassing nginx) skips the
+  // X-Forwarded-Proto header nginx normally adds, which trips Django's
+  // SECURE_SSL_REDIRECT into 301-looping back to itself over plain HTTP.
+  headers: isServer ? { "X-Forwarded-Proto": "https" } : undefined,
 });
 
 let refreshPromise: Promise<string> | null = null;

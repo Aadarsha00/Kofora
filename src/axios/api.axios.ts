@@ -17,8 +17,17 @@ type RefreshResponse = {
   };
 };
 
+// Server-side rendering runs inside the Docker network and can't necessarily
+// reach the public NEXT_PUBLIC_API_BASE_URL (e.g. it may be firewalled or
+// bound to loopback on the host) - INTERNAL_API_BASE_URL lets it talk to the
+// backend container directly. The browser always uses the public URL.
+const baseURL =
+  typeof window === "undefined"
+    ? process.env.INTERNAL_API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL
+    : process.env.NEXT_PUBLIC_API_BASE_URL;
+
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+  baseURL,
   timeout: 30000, // 30 seconds - signup/login with email sending needs more time
 });
 

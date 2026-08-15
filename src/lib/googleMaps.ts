@@ -78,7 +78,10 @@ export function parsePlaceAddress(place: google.maps.places.Place): ParsedAddres
   return {
     address_line_1: [streetNumber, route].filter(Boolean).join(" "),
     city: get("locality") || get("postal_town") || get("sublocality"),
-    state_province: get("administrative_area_level_1"),
+    // shortText, not the default longText - UPS's rating API requires the
+    // 2-letter state code ("NC"), not the full name ("North Carolina"), and
+    // rejects the whole rate request outright if given the long form.
+    state_province: get("administrative_area_level_1", true),
     postal_code: get("postal_code"),
     country: get("country", true),
   };

@@ -75,16 +75,20 @@ function roundMoney(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+function getMissingAddressFields(form: AddressInput): string[] {
+  const missing: string[] = [];
+  if (!form.full_name.trim()) missing.push("full name");
+  if (!form.phone.trim()) missing.push("phone");
+  if (!form.address_line_1.trim()) missing.push("address");
+  if (!form.city.trim()) missing.push("city");
+  if (!form.state_province.trim()) missing.push("state/province");
+  if (!form.postal_code.trim()) missing.push("postal code");
+  if (form.country.trim().length !== 2) missing.push("country");
+  return missing;
+}
+
 function isAddressComplete(form: AddressInput): boolean {
-  return Boolean(
-    form.full_name.trim() &&
-      form.phone.trim() &&
-      form.address_line_1.trim() &&
-      form.city.trim() &&
-      form.state_province.trim() &&
-      form.postal_code.trim() &&
-      form.country.trim().length === 2
-  );
+  return getMissingAddressFields(form).length === 0;
 }
 
 export default function CheckoutPage() {
@@ -587,7 +591,7 @@ export default function CheckoutPage() {
                       value={addressForm.address_line_1}
                       onChange={(value) => updateAddressField("address_line_1", value)}
                       onAddressSelect={handleAddressAutocompleteSelect}
-                      className="md:col-span-2"
+                      className="border border-gray-300 md:col-span-2"
                     />
                     <input className="border border-gray-300 px-3 py-3 text-sm md:col-span-2" placeholder="Address line 2" value={addressForm.address_line_2} onChange={(event) => updateAddressField("address_line_2", event.target.value)} />
                     <input className="border border-gray-300 px-3 py-3 text-sm" placeholder="City" value={addressForm.city} onChange={(event) => updateAddressField("city", event.target.value)} />
@@ -596,6 +600,24 @@ export default function CheckoutPage() {
                     <input className="border border-gray-300 px-3 py-3 text-sm" placeholder="Country code" value={addressForm.country} maxLength={2} onChange={(event) => updateAddressField("country", event.target.value.toUpperCase())} />
                   </div>
                 )}
+
+                {shouldUseNewAddress && (() => {
+                  const missingFields = getMissingAddressFields(addressForm);
+                  const isSyncingRate =
+                    previewAddressMutation.isPending || setShippingAddress.isPending || setShippingMethod.isPending;
+
+                  if (missingFields.length > 0) {
+                    return (
+                      <p className="mt-3 text-xs text-gray-500">
+                        Fill in {missingFields.join(", ")} to see the live shipping cost.
+                      </p>
+                    );
+                  }
+                  if (isSyncingRate) {
+                    return <p className="mt-3 text-xs text-gray-500">Calculating shipping cost&hellip;</p>;
+                  }
+                  return null;
+                })()}
               </section>
 
               <section className="border-b border-gray-200 pb-8">

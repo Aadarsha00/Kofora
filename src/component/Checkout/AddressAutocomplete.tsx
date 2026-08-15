@@ -41,8 +41,12 @@ export default function AddressAutocomplete({
         // Restrict to real addresses. Without this, landmark/business predictions
         // (e.g. "Apple Park") can get selected and lack street_number/route
         // components entirely, so parsePlaceAddress has nothing to extract.
+        // "route" is included even though it lacks a street_number by itself -
+        // it's what Google typically suggests while a user is still mid-typing
+        // a house number, and excluding it was cutting off most in-progress
+        // suggestions, not just landmarks/businesses.
         const element = new PlaceAutocompleteElement({
-          includedPrimaryTypes: ["street_address", "premise", "subpremise"],
+          includedPrimaryTypes: ["street_address", "premise", "subpremise", "route"],
         });
         // The element declares color-scheme: light dark on its own host, which
         // wins over anything set on ancestors. Overriding it here directly (inline
@@ -50,6 +54,12 @@ export default function AddressAutocomplete({
         // tree, including the suggestions dropdown - to render light regardless
         // of the browser/OS dark-mode preference.
         element.style.setProperty("color-scheme", "light");
+        // The element renders its own internal input with no border, so the
+        // visible border/padding is supplied by the wrapper div (className)
+        // instead - this just makes the element fill that box edge-to-edge so
+        // it lines up with sibling <input> fields instead of floating inside.
+        element.style.setProperty("width", "100%");
+        element.style.setProperty("display", "block");
         element.placeholder = placeholder;
         if (required) element.setAttribute("required", "");
         if (value) element.value = value;

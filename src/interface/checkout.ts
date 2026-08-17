@@ -35,6 +35,14 @@ export type ShippingMethodInput = Partial<
   Pick<ShippingMethod, "name" | "base_rate" | "ups_service_code" | "free_shipping_threshold" | "is_active">
 >;
 
+export interface ShippingRateQuote {
+  method_id: number;
+  name: string;
+  code: string;
+  rate: string;
+  free: boolean;
+}
+
 export interface OrderItem {
   id: number;
   product_name: string;
@@ -104,6 +112,7 @@ export type AddressListResponse = ApiEnvelope<PaginatedResponse<Address>>;
 export type AddressResponse = ApiEnvelope<Address>;
 export type ShippingMethodListResponse = ApiEnvelope<PaginatedResponse<ShippingMethod>>;
 export type ShippingMethodResponse = ApiEnvelope<ShippingMethod>;
+export type ShippingRatesResponse = ApiEnvelope<{ rates: ShippingRateQuote[] }>;
 export type OrderResponse = ApiEnvelope<Order>;
 export type OrderListResponse = ApiEnvelope<Order[]>;
 export type PaymentTransactionResponse = ApiEnvelope<PaymentTransaction>;

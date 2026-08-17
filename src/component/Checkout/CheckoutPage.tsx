@@ -13,6 +13,7 @@ import {
   createStripeCheckoutSession,
   getAddresses,
   getShippingMethods,
+  getShippingRates,
 } from "@/api/checkout.api";
 import { AddressInput, Order, PaymentProvider } from "@/interface/checkout";
 import AddressAutocomplete from "@/component/Checkout/AddressAutocomplete";
@@ -224,6 +225,20 @@ export default function CheckoutPage() {
   const selectedShippingValue = selectedShippingMethodId || (defaultShippingMethod ? String(defaultShippingMethod.id) : "");
   const selectedShippingMethod = shippingMethods.find((method) => String(method.id) === selectedShippingValue);
 
+  // Real, live UPS price for every method at once, quoted against whichever
+  // address is currently active (a saved one, or the auto-saved draft of a
+  // new one) - never a placeholder number a customer could mistake for real.
+  const activeAddressId = shouldUseNewAddress
+    ? previewAddressId
+    : (selectedAddressValue ? Number(selectedAddressValue) : null);
+  const ratesQuery = useQuery({
+    queryKey: ["shipping-rates", activeAddressId],
+    queryFn: () => getShippingRates(activeAddressId as number),
+    enabled: isAuthenticated && !!activeAddressId,
+  });
+  const rateByMethodId = new Map((ratesQuery.data ?? []).map((quote) => [quote.method_id, quote]));
+  const selectedLiveRate = selectedShippingMethod ? rateByMethodId.get(selectedShippingMethod.id) : undefined;
+
   const items = useMemo(
     () => [...(cart?.variant_items ?? []), ...(cart?.bundle_items ?? [])],
     [cart]
@@ -234,22 +249,22 @@ export default function CheckoutPage() {
   const summaryTotals = useMemo(() => {
     const subtotal = Number(cart?.totals.subtotal ?? 0);
     const discount = Number(cart?.totals.discount ?? 0);
-    const shipping =
-      selectedShippingMethod && cart?.shipping_method !== selectedShippingMethod.id
-        ? Number(selectedShippingMethod.base_rate)
-        : Number(cart?.totals.shipping ?? selectedShippingMethod?.base_rate ?? 0);
+    // Prefer the live per-method quote (real, fetched for whichever method is
+    // selected); fall back to the cart's already-synced total if that method
+    // is the one currently synced server-side; otherwise 0 until a real quote
+    // comes in - never the flat base_rate, which isn't a real price.
+    const hasCartSyncedRate = selectedShippingMethod && cart?.shipping_method === selectedShippingMethod.id;
+    const shipping = selectedLiveRate
+      ? Number(selectedLiveRate.rate)
+      : hasCartSyncedRate
+        ? Number(cart?.totals.shipping ?? 0)
+        : 0;
     const taxableAmount = subtotal - discount + shipping;
-    const tax =
-      selectedShippingMethod && cart?.shipping_method !== selectedShippingMethod.id
-        ? roundMoney(taxableAmount * 0.08)
-        : Number(cart?.totals.tax ?? 0);
-    const total =
-      selectedShippingMethod && cart?.shipping_method !== selectedShippingMethod.id
-        ? roundMoney(taxableAmount + tax)
-        : Number(cart?.totals.total ?? taxableAmount + tax);
+    const tax = hasCartSyncedRate && !selectedLiveRate ? Number(cart?.totals.tax ?? 0) : roundMoney(taxableAmount * 0.08);
+    const total = hasCartSyncedRate && !selectedLiveRate ? Number(cart?.totals.total ?? taxableAmount + tax) : roundMoney(taxableAmount + tax);
 
     return { subtotal, discount, shipping, tax, total };
-  }, [cart, selectedShippingMethod]);
+  }, [cart, selectedShippingMethod, selectedLiveRate]);
 
   // A new (unsaved) address has no id to price shipping against, so save it as a
   // draft address as soon as its required fields are filled in - debounced so we're
@@ -625,34 +640,52 @@ export default function CheckoutPage() {
                   <Truck size={20} />
                   <h2 className="text-lg font-bold text-black">Shipping</h2>
                 </div>
+                {!activeAddressId && (
+                  <p className="mb-3 text-xs text-gray-500">Enter a delivery address to see real shipping prices.</p>
+                )}
                 <div className="grid gap-3">
-                  {shippingMethods.map((method) => (
-                    <label
-                      key={method.id}
-                      className={`flex cursor-pointer items-center justify-between border p-4 text-sm ${
-                        selectedShippingValue === String(method.id) ? "border-black bg-gray-50" : "border-gray-200"
-                      }`}
-                    >
-                      <span>
-                        <input
-                          type="radio"
-                          name="shipping"
-                          value={method.id}
-                          checked={selectedShippingValue === String(method.id)}
-                          onChange={(event) => setSelectedShippingMethodId(event.target.value)}
-                          className="sr-only"
-                        />
-                        <span className="block font-semibold text-black">{method.name}</span>
-                        <span className="mt-1 block text-gray-500">{method.code}</span>
-                      </span>
-                      <span className="font-semibold text-black">
-                        {cart?.shipping_method === method.id && cart?.totals?.shipping != null
-                          ? money(currency, Number(cart.totals.shipping))
-                          : money(currency, method.base_rate)}
-                      </span>
-                    </label>
-                  ))}
+                  {shippingMethods.map((method) => {
+                    const liveQuote = rateByMethodId.get(method.id);
+                    let priceLabel: string;
+                    if (liveQuote) {
+                      priceLabel = liveQuote.free ? "Free" : money(currency, liveQuote.rate);
+                    } else if (!activeAddressId) {
+                      priceLabel = "—";
+                    } else if (ratesQuery.isLoading || ratesQuery.isFetching) {
+                      priceLabel = "Calculating…";
+                    } else {
+                      priceLabel = "Unavailable";
+                    }
+
+                    return (
+                      <label
+                        key={method.id}
+                        className={`flex cursor-pointer items-center justify-between border p-4 text-sm ${
+                          selectedShippingValue === String(method.id) ? "border-black bg-gray-50" : "border-gray-200"
+                        }`}
+                      >
+                        <span>
+                          <input
+                            type="radio"
+                            name="shipping"
+                            value={method.id}
+                            checked={selectedShippingValue === String(method.id)}
+                            onChange={(event) => setSelectedShippingMethodId(event.target.value)}
+                            className="sr-only"
+                          />
+                          <span className="block font-semibold text-black">{method.name}</span>
+                          <span className="mt-1 block text-gray-500">{method.code}</span>
+                        </span>
+                        <span className="font-semibold text-black">{priceLabel}</span>
+                      </label>
+                    );
+                  })}
                 </div>
+                {ratesQuery.isError && (
+                  <p className="mt-3 text-xs text-red-600">
+                    Live shipping rates are temporarily unavailable. Please try again in a moment.
+                  </p>
+                )}
               </section>
 
               <section className="pb-4">

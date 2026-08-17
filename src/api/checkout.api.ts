@@ -11,6 +11,8 @@ import {
   PaymentTransactionResponse,
   ShippingMethod,
   ShippingMethodListResponse,
+  ShippingRateQuote,
+  ShippingRatesResponse,
 } from "@/interface/checkout";
 
 export const getAddresses = async (): Promise<Address[]> => {
@@ -26,6 +28,16 @@ export const createAddress = async (payload: AddressInput): Promise<Address> => 
 export const getShippingMethods = async (): Promise<ShippingMethod[]> => {
   const response = await api.get<ShippingMethodListResponse>("/shipping/methods/?is_active=true&page_size=100");
   return response.data.data.results ?? [];
+};
+
+// Live UPS price for every shipping method against a specific address, in one
+// call - lets checkout show every option's real price up front instead of
+// only whichever one happens to already be synced onto the cart.
+export const getShippingRates = async (addressId: number): Promise<ShippingRateQuote[]> => {
+  const response = await api.get<ShippingRatesResponse>("/cart/shipping-rates/", {
+    params: { address_id: addressId },
+  });
+  return response.data.data.rates ?? [];
 };
 
 export const createOrderFromCart = async (customerNotes: string): Promise<Order> => {

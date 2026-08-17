@@ -38,13 +38,18 @@ export default function Footer() {
           <span className="block">plus the latest Kofora news.</span>
         </h2>
 
-        <div className="mx-auto flex w-full max-w-lg flex-col gap-2 overflow-hidden rounded-md bg-[#1e3a35] sm:flex-row sm:gap-1">
+        {/* Stacked and full-width on phones; joined into a single pill from sm up.
+            The mobile input stays at 16px so iOS Safari does not zoom on focus. */}
+        <div className="mx-auto flex w-full max-w-lg flex-col gap-2 sm:flex-row sm:gap-1 sm:overflow-hidden sm:rounded-md">
           <input
             type="email"
+            inputMode="email"
+            autoComplete="email"
+            aria-label="Email address"
             placeholder="you@example.com"
-            className="min-w-0 h-11 flex-1 bg-white px-5 text-sm text-black outline-none"
+            className="h-12 w-full min-w-0 rounded-md bg-white px-5 text-base text-black outline-none sm:h-11 sm:flex-1 sm:rounded-none sm:text-sm"
           />
-          <button className="h-11 bg-white px-6 text-sm font-semibold text-black transition-colors hover:bg-gray-100">
+          <button className="h-12 w-full shrink-0 rounded-md bg-white px-6 text-sm font-semibold text-black transition-colors hover:bg-gray-100 sm:h-11 sm:w-auto sm:rounded-none">
             Sign Up
           </button>
         </div>
@@ -116,8 +121,9 @@ export default function Footer() {
             </Link>
           </div>
 
-          {/* Right side - Footer links */}
-          <div className="grid gap-8 sm:grid-cols-3 lg:pl-8">
+          {/* Right side - Footer links. Two columns on phones so the three lists
+              do not stack into one very long strip. */}
+          <div className="grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-3 sm:gap-x-8 lg:pl-8">
             <div>
               <h3 className="font-bold text-base mb-4">More Info</h3>
               <ul className="space-y-2">
@@ -144,9 +150,11 @@ export default function Footer() {
               </ul>
             </div>
 
-            <div>
+            {/* On phones this is the odd list out, so it spans the full width and
+                splits its own links two-up rather than leaving half a row empty. */}
+            <div className="col-span-2 sm:col-span-1">
               <h3 className="font-bold text-base mb-4">Collections</h3>
-              <ul className="space-y-2">
+              <ul className="grid grid-cols-2 gap-x-6 gap-y-2 sm:block sm:space-y-2">
                 {collectionLinks.map((link) => (
                   <li key={link.label}>
                     <Link href={link.href} className="text-sm text-gray-700 hover:underline">

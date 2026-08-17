@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Eye, EyeSlash, FacebookLogo, X } from "@phosphor-icons/react";
+import { Eye, EyeSlash, X } from "@phosphor-icons/react";
 import Link from "next/link";
 import { LoginInput, loginSchema } from "@/schema/auth.schema";
 import { AuthResponse } from "@/interface/auth";
@@ -232,18 +232,11 @@ export default function LoginModal({ isOpen, onClose, onSwitchToSignup }: LoginM
           <div className="flex-1 h-px bg-gray-200" />
         </div>
 
-        <div className="mb-3">
-          <GoogleSignInButton
-            disabled={isAuthPending}
-            onCredential={handleGoogleCredential}
-            onError={setApiError}
-          />
-        </div>
-
-        <button className="w-full border border-gray-300 rounded-sm py-3 text-sm font-medium flex items-center justify-center gap-3 hover:bg-gray-50 transition-colors cursor-pointer">
-          <FacebookLogo size={18} weight="bold" color="#1877F2" />
-          Continue with Facebook
-        </button>
+        <GoogleSignInButton
+          disabled={isAuthPending}
+          onCredential={handleGoogleCredential}
+          onError={setApiError}
+        />
 
         <p className="text-center text-sm text-gray-500 mt-6">
           Don&apos;t Have An Account?{" "}

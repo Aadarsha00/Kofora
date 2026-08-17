@@ -2,7 +2,7 @@ import { Category, TaxonomyGroup } from "@/interface/Category";
 import { Product } from "@/interface/Product";
 
 export const PRODUCT_FAMILY_SLUGS = ["socks", "caps"] as const;
-export const AUDIENCE_SLUGS = ["men", "women", "kids", "unisex"] as const;
+export const AUDIENCE_SLUGS = ["men", "women", "kids", "teens", "unisex"] as const;
 export const SOCK_HEIGHT_SLUGS = [
   "no-show",
   "ankle",

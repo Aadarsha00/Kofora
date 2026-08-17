@@ -43,9 +43,10 @@ function ProductRow({
           </div>
         </div>
 
-        <div className="flex w-full min-w-0 snap-x snap-mandatory gap-4 overflow-x-auto pb-2 [scrollbar-width:none] md:grid md:flex-1 md:grid-cols-4 md:overflow-visible md:pb-0 [&::-webkit-scrollbar]:hidden">
+        {/* Two-up grid on phones rather than a sideways scroller. */}
+        <div className="grid w-full min-w-0 grid-cols-2 gap-4 md:flex-1 md:grid-cols-4">
           {products.map((product) => (
-            <div key={product.id} className="min-w-[74vw] snap-start sm:min-w-[43vw] md:min-w-0">
+            <div key={product.id} className="min-w-0">
               <ProductCard product={product} gender={category.slug} />
             </div>
           ))}

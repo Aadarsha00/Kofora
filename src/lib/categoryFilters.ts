@@ -13,7 +13,7 @@ import {
 export type SubCategoryOption = TaxonomyCategoryOption;
 export type CategoryFilterOption = TaxonomyCategoryOption & { disabled?: boolean };
 
-const GENDER_SLUGS = ["men", "women", "kids"] as const;
+const GENDER_SLUGS = ["men", "women", "kids", "teens"] as const;
 
 export function getGenderCategories(categories: Category[]): Category[] {
   return categories.filter((category) =>

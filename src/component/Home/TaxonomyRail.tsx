@@ -60,8 +60,10 @@ export default function TaxonomyRail({
           </div>
         )}
 
+        {/* Mobile wraps two-up instead of scrolling sideways; from md up this is
+            the original horizontal snap rail, untouched. */}
         <div
-          className={`mx-auto flex w-full max-w-[1424px] snap-x snap-mandatory overflow-x-auto pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden ${
+          className={`mx-auto grid w-full max-w-[1424px] grid-cols-2 md:flex md:snap-x md:snap-mandatory md:overflow-x-auto md:pb-1 md:[scrollbar-width:none] md:[&::-webkit-scrollbar]:hidden ${
             isCollection ? "gap-[14px] md:gap-[26px]" : "gap-4 md:gap-8"
           }`}
         >
@@ -74,10 +76,10 @@ export default function TaxonomyRail({
               <Link
                 key={item.id}
                 href={`/collections/${item.slug}`}
-                className={`group relative shrink-0 snap-start overflow-hidden rounded-md bg-[#efefed] ${
+                className={`group relative min-w-0 overflow-hidden rounded-md bg-[#efefed] md:shrink-0 md:snap-start ${
                   isCollection
-                    ? "min-w-[calc((100%_-_14px)/2)] md:min-w-[calc((100%_-_78px)/4)]"
-                    : "min-w-[calc((100%_-_16px)/2)] md:min-w-[calc((100%_-_64px)/3)] lg:min-w-[calc((100%_-_160px)/6)]"
+                    ? "md:min-w-[calc((100%_-_78px)/4)]"
+                    : "md:min-w-[calc((100%_-_64px)/3)] lg:min-w-[calc((100%_-_160px)/6)]"
                 }`}
               >
                 <div className={`relative ${isCollection ? "aspect-[287/292]" : "aspect-[7/8]"}`}>

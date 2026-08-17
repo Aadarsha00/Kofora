@@ -1,15 +1,19 @@
 // Backend-managed homepage tiles use these images only until an admin uploads
-// a replacement for the seeded Women, Men, or Kids record.
+// a replacement for the seeded Women, Men, Kids, or Teens record.
 export const DEFAULT_HOMEPAGE_TILES = [
   { key: "women", title: "Women", href: "/collections/women", image: "/women-hero.jpg" },
   { key: "men", title: "Men", href: "/collections/men", image: "/men-hero.webp" },
   { key: "kids", title: "Kids", href: "/collections/kids", image: "/kids-hero.webp" },
+  // No bundled Teens photo yet — falls back to the generic sock hero until an
+  // admin uploads one from the Homepage Tiles screen.
+  { key: "teens", title: "Teens", href: "/collections/teens", image: "/socks-hero.webp" },
 ]
 
 // Fixed landing-page sections use stable image keys. Admin image uploads
 // override the bundled fallback paths through src/lib/siteImages.ts.
-// Two-panel hero: the left panel is photography only, the right panel is a flat
-// colour block carrying the headline, body copy and shop buttons.
+// Two-panel hero from md up: the left panel is photography only, the right
+// panel is a flat colour block carrying the headline, body copy and shop
+// buttons. On mobile the two merge — the copy sits on top of the photo.
 export const HERO_DATA = {
   title: "BETTER FEEL. EVERY STEP.",
   titleLines: ["BETTER FEEL.", "EVERY STEP."],
@@ -20,7 +24,6 @@ export const HERO_DATA = {
   ctas: [
     { label: "SHOP MEN",   href: "/collections/men"   },
     { label: "SHOP WOMEN", href: "/collections/women" },
-    { label: "SHOP KIDS",  href: "/collections/kids"  },
   ],
 }
 
@@ -76,7 +79,7 @@ export interface HomeImageSection {
 export const HOME_IMAGE_SECTIONS: HomeImageSection[] = [
   {
     title: "Main Hero Banner",
-    description: "The two-panel banner below the tiles. Only the left panel uses a photo — the right panel is a flat colour block with the headline and shop buttons.",
+    description: "The two-panel banner below the tiles. Only the left panel uses a photo — the right panel is a flat colour block with the headline and shop buttons. On mobile the copy sits on top of the photo, so pick one that stays readable under white text.",
     slots: [{ key: HERO_DATA.imageKey, label: "Hero Photo (left panel)", fallback: HERO_DATA.image }],
   },
   {

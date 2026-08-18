@@ -131,7 +131,7 @@ export default function MainNavbar() {
           <div className="mx-auto flex h-16 w-full max-w-[1520px] flex-row items-center pl-12 pr-8">
           <div className="order-1 flex flex-1 items-center justify-start">
             <Link href="/" className="h-12 w-48 shrink-0" onMouseEnter={() => setOpenMegaMenu(null)}>
-              <Image src="/logo.jpeg" alt="Logo" className="w-full h-full object-contain" width={200} height={100} />
+              <Image src="/logo.png" alt="Kofora" className="w-full h-full object-contain" width={472} height={80} />
             </Link>
           </div>
 
@@ -298,7 +298,7 @@ export default function MainNavbar() {
 
           <div className="flex flex-1 items-center justify-center">
             <Link href="/" onClick={closeMobileMenu} className="h-10 w-40 shrink-0">
-              <Image src="/logo.jpeg" alt="Logo" className="h-full w-full object-contain" width={160} height={40} />
+              <Image src="/logo.png" alt="Kofora" className="h-full w-full object-contain" width={472} height={80} />
             </Link>
           </div>
 

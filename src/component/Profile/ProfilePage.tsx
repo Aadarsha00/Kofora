@@ -11,7 +11,7 @@ import { Address, AddressInput, Order } from "@/interface/checkout";
 import AddressAutocomplete from "@/component/Checkout/AddressAutocomplete";
 import { ParsedAddress } from "@/lib/googleMaps";
 import { User } from "@/interface/auth";
-import { US_STATES } from "@/data/usStates";
+import { CA_PROVINCES, US_STATES } from "@/data/usStates";
 
 const EMPTY_ADDRESS: AddressInput = {
   full_name: "",
@@ -103,18 +103,22 @@ function Field({
   );
 }
 
-// UPS's rating and validation APIs reject the full state name outright, so US
-// addresses get a dropdown (storing the 2-letter code directly) instead of a
-// free-text field that lets that class of error happen at all.
+// UPS's rating and validation APIs reject the full state/province name
+// outright, so US and Canadian addresses get a dropdown (storing the
+// 2-letter code directly) instead of a free-text field that lets that class
+// of error happen at all.
 function USStateField({
   value,
   onChange,
+  country,
   required = false,
 }: {
   value: string;
   onChange: (value: string) => void;
+  country: string;
   required?: boolean;
 }) {
+  const options = country === "CA" ? CA_PROVINCES : US_STATES;
   return (
     <label className="grid gap-1.5 text-sm">
       <span className="font-semibold text-black">State / Province</span>
@@ -124,10 +128,10 @@ function USStateField({
         onChange={(event) => onChange(event.target.value)}
         className="border border-gray-300 px-3 py-2.5 text-sm text-black outline-none focus:border-black"
       >
-        <option value="">State</option>
-        {US_STATES.map((state) => (
-          <option key={state.code} value={state.code}>
-            {state.name}
+        <option value="">{country === "CA" ? "Province" : "State"}</option>
+        {options.map((region) => (
+          <option key={region.code} value={region.code}>
+            {region.name}
           </option>
         ))}
       </select>
@@ -425,9 +429,10 @@ export default function ProfilePage() {
                 </label>
                 <Field label="Address line 2" value={addressForm.address_line_2} onChange={(value) => updateAddressField("address_line_2", value)} />
                 <Field label="City" required value={addressForm.city} onChange={(value) => updateAddressField("city", value)} />
-                {addressForm.country === "US" ? (
+                {addressForm.country === "US" || addressForm.country === "CA" ? (
                   <USStateField
                     required
+                    country={addressForm.country}
                     value={addressForm.state_province}
                     onChange={(value) => updateAddressField("state_province", value)}
                   />

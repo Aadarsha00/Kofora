@@ -47,6 +47,10 @@ export default function AddressAutocomplete({
         // suggestions, not just landmarks/businesses.
         const element = new PlaceAutocompleteElement({
           includedPrimaryTypes: ["street_address", "premise", "subpremise", "route"],
+          // The store only ships to the US (see UPS_SHIPPER_COUNTRY) and Canada -
+          // restricting here means Google never returns/bills for predictions
+          // outside them in the first place, not just hiding them client-side.
+          includedRegionCodes: ["us", "ca"],
         });
         // The element declares color-scheme: light dark on its own host, which
         // wins over anything set on ancestors. Overriding it here directly (inline

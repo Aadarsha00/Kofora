@@ -31,7 +31,7 @@ import { useGuestCartStore } from "@/store/guestCartStore";
 import { redirectToStripeCheckout } from "@/lib/stripeCheckout";
 import { updateAddress } from "@/api/profile.api";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
-import { US_STATES } from "@/data/usStates";
+import { CA_PROVINCES, US_STATES } from "@/data/usStates";
 
 const EMPTY_ADDRESS: AddressInput = {
   full_name: "",
@@ -638,16 +638,16 @@ export default function CheckoutPage() {
                     />
                     <input className="border border-gray-300 px-3 py-3 text-sm md:col-span-2" placeholder="Address line 2" value={addressForm.address_line_2} onChange={(event) => updateAddressField("address_line_2", event.target.value)} />
                     <input className="border border-gray-300 px-3 py-3 text-sm" placeholder="City" value={addressForm.city} onChange={(event) => updateAddressField("city", event.target.value)} />
-                    {addressForm.country === "US" ? (
+                    {addressForm.country === "US" || addressForm.country === "CA" ? (
                       <select
                         className="border border-gray-300 px-3 py-3 text-sm text-black"
                         value={addressForm.state_province}
                         onChange={(event) => updateAddressField("state_province", event.target.value)}
                       >
-                        <option value="">State</option>
-                        {US_STATES.map((state) => (
-                          <option key={state.code} value={state.code}>
-                            {state.name}
+                        <option value="">{addressForm.country === "US" ? "State" : "Province"}</option>
+                        {(addressForm.country === "US" ? US_STATES : CA_PROVINCES).map((region) => (
+                          <option key={region.code} value={region.code}>
+                            {region.name}
                           </option>
                         ))}
                       </select>

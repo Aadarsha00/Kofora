@@ -58,13 +58,33 @@ export const US_STATES: { code: string; name: string }[] = [
   { code: "GU", name: "Guam" },
 ];
 
-// Handles the common failure mode directly: full state names typed by hand,
-// or (previously) parsed from Google Places' longText - normalizes either to
-// the 2-letter code UPS requires. Falls through unchanged if already a code
-// or not recognized (e.g. non-US regions), rather than guessing.
-export function normalizeUsState(value: string): string {
+// Same story as US states: UPS's Canadian rating/validation also requires the
+// 2-letter province code, not the full name.
+export const CA_PROVINCES: { code: string; name: string }[] = [
+  { code: "AB", name: "Alberta" },
+  { code: "BC", name: "British Columbia" },
+  { code: "MB", name: "Manitoba" },
+  { code: "NB", name: "New Brunswick" },
+  { code: "NL", name: "Newfoundland and Labrador" },
+  { code: "NS", name: "Nova Scotia" },
+  { code: "NT", name: "Northwest Territories" },
+  { code: "NU", name: "Nunavut" },
+  { code: "ON", name: "Ontario" },
+  { code: "PE", name: "Prince Edward Island" },
+  { code: "QC", name: "Quebec" },
+  { code: "SK", name: "Saskatchewan" },
+  { code: "YT", name: "Yukon" },
+];
+
+// Handles the common failure mode directly: full state/province names typed
+// by hand, or (previously) parsed from Google Places' longText - normalizes
+// either to the 2-letter code UPS requires. Falls through unchanged if
+// already a code or not recognized, rather than guessing.
+export function normalizeStateProvince(value: string): string {
   const trimmed = value.trim();
   if (trimmed.length === 2) return trimmed.toUpperCase();
-  const match = US_STATES.find((state) => state.name.toLowerCase() === trimmed.toLowerCase());
+  const match = [...US_STATES, ...CA_PROVINCES].find(
+    (region) => region.name.toLowerCase() === trimmed.toLowerCase()
+  );
   return match ? match.code : trimmed;
 }

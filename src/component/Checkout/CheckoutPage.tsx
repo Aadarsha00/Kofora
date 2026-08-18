@@ -221,11 +221,8 @@ export default function CheckoutPage() {
   const addresses = addressesQuery.data ?? [];
   const shippingMethods = shippingQuery.data ?? [];
   const defaultAddress = addresses.find((address) => address.is_default_shipping) ?? addresses[0];
-  const defaultShippingMethod = shippingMethods[0];
   const shouldUseNewAddress = useNewAddress || addresses.length === 0;
   const selectedAddressValue = selectedAddressId || (defaultAddress ? String(defaultAddress.id) : "");
-  const selectedShippingValue = selectedShippingMethodId || (defaultShippingMethod ? String(defaultShippingMethod.id) : "");
-  const selectedShippingMethod = shippingMethods.find((method) => String(method.id) === selectedShippingValue);
 
   // Real, live UPS price for every method at once, quoted against whichever
   // address is currently active (a saved one, or the auto-saved draft of a
@@ -239,7 +236,32 @@ export default function CheckoutPage() {
     enabled: isAuthenticated && !!activeAddressId,
   });
   const rateByMethodId = new Map((ratesQuery.data ?? []).map((quote) => [quote.method_id, quote]));
+  // Once an address's rates have actually loaded, only show methods UPS priced
+  // for that destination - e.g. a US-only method has no business appearing as
+  // a dead "Unavailable" option for a Canadian address, and vice versa. Before
+  // that (no address yet, still loading, or the rates call failed) fall back
+  // to the full list so there's still something to look at.
+  const ratesSettled = !ratesQuery.isLoading && !ratesQuery.isFetching && !ratesQuery.isError;
+  const visibleShippingMethods =
+    activeAddressId && ratesSettled
+      ? shippingMethods.filter((method) => rateByMethodId.has(method.id))
+      : shippingMethods;
+
+  const defaultShippingMethod = visibleShippingMethods[0] ?? shippingMethods[0];
+  const selectedShippingValue = selectedShippingMethodId || (defaultShippingMethod ? String(defaultShippingMethod.id) : "");
+  const selectedShippingMethod = shippingMethods.find((method) => String(method.id) === selectedShippingValue);
   const selectedLiveRate = selectedShippingMethod ? rateByMethodId.get(selectedShippingMethod.id) : undefined;
+
+  // The user's explicit pick (or the default) can point at a method that's no
+  // longer in the visible list once the destination country changes (e.g. a
+  // US-only method after switching to a Canadian address) - reset to the
+  // first genuinely available one instead of silently submitting a method
+  // that was never priced for this address.
+  useEffect(() => {
+    if (!activeAddressId || !ratesSettled || visibleShippingMethods.length === 0) return;
+    const stillVisible = visibleShippingMethods.some((method) => String(method.id) === selectedShippingValue);
+    if (!stillVisible) setSelectedShippingMethodId(String(visibleShippingMethods[0].id));
+  }, [activeAddressId, ratesSettled, visibleShippingMethods, selectedShippingValue]);
 
   // UPS's own address validation - runs once the new-address form is filled
   // in, so an ambiguous/undeliverable address gets caught (and a real
@@ -704,7 +726,7 @@ export default function CheckoutPage() {
                   <p className="mb-3 text-xs text-gray-500">Enter a delivery address to see real shipping prices.</p>
                 )}
                 <div className="grid gap-3">
-                  {shippingMethods.map((method) => {
+                  {visibleShippingMethods.map((method) => {
                     const liveQuote = rateByMethodId.get(method.id);
                     let priceLabel: string;
                     if (liveQuote) {

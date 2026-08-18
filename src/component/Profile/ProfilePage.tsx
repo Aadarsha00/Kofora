@@ -424,7 +424,7 @@ export default function ProfilePage() {
                     value={addressForm.address_line_1}
                     onChange={(value) => updateAddressField("address_line_1", value)}
                     onAddressSelect={handleAddressAutocompleteSelect}
-                    className="border border-gray-300 px-3 py-2.5 text-sm text-black outline-none focus:border-black"
+                    className="border border-gray-300"
                     required
                   />
                 </label>

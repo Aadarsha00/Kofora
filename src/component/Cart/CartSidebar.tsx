@@ -236,7 +236,7 @@ export default function CartSidebar({ isOpen, onClose }: CartSidebarProps) {
     <>
       {isOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 transition-opacity"
+          className="fixed inset-0 z-50 bg-black/50 transition-opacity"
           onClick={onClose}
         />
       )}

@@ -1,4 +1,5 @@
   import FilterSidebar from "@/ui/FilterSidebar";
+  import MobileFilterBar from "@/ui/MobileFilterBar";
   import ProductGrid from "./ProductGrid";
   import { getProductsByGender } from "@/api/products.api";
   import { getCategories, getCategoryBySlug } from "@/api/category.api";
@@ -257,18 +258,33 @@
           />
 
           <div className="min-w-0 flex-1">
+            <MobileFilterBar
+              availableFamilies={familyOptions}
+              availableHeights={heightOptions}
+              availablePurposes={collectionOptions}
+              availableStyles={styleOptions}
+              minPrice={unfilteredPriceRange.minPrice}
+              maxPrice={unfilteredPriceRange.maxPrice}
+              resultCount={sortedProducts.length}
+              sortOptions={SORT_OPTIONS}
+              currentSort={sortBy}
+            />
+
             <div className="mb-6 md:mb-8">
               <h2 className="text-lg font-semibold capitalize text-black mb-1">
                 {collectionLabel ?? gender}
               </h2>
 
-              <div className="flex flex-wrap items-center gap-3 text-sm text-gray-500">
-                <span>Sort:</span>
-                <SortSelect sortOptions={SORT_OPTIONS} currentSort={sortBy} />
-                <span className="w-full sm:ml-auto sm:w-auto">
-                  Showing {sortedProducts.length} product
-                  {sortedProducts.length !== 1 ? "s" : ""}
+              {/* Item count left, sort right — matching the Bombas collection filter bar. */}
+              <div className="mt-4 hidden flex-row items-center justify-between gap-4 lg:flex">
+                <span className="text-sm font-medium leading-tight text-gray-700">
+                  {sortedProducts.length} Item{sortedProducts.length !== 1 ? "s" : ""}
                 </span>
+
+                <div className="flex items-center whitespace-nowrap px-3 py-2 text-sm text-gray-700">
+                  <span>Sort:&nbsp;</span>
+                  <SortSelect sortOptions={SORT_OPTIONS} currentSort={sortBy} />
+                </div>
               </div>
             </div>
 

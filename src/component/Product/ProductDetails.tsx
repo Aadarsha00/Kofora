@@ -1,7 +1,8 @@
 "use client";
 import { useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
-import { useState, useCallback, useEffect, useId, useMemo } from "react";
+import { useState, useCallback, useEffect, useId, useMemo, useRef } from "react";
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { Plus, X, ArrowLeft, ArrowRight } from "@phosphor-icons/react";
 import { ColorMixItem, Product, ProductVariant } from "@/interface/Product";
@@ -191,6 +192,7 @@ export default function ProductDetails({
   const [shippingOpen, setShippingOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [imageIndex, setImageIndex] = useState(0);
+  const galleryRef = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(false);
   const shippingReturnsId = useId();
   const productDetailsId = useId();
@@ -213,6 +215,22 @@ export default function ProductDetails({
     };
   }, [isModal]);
 
+  // Mobile gallery is a native scroll-snap carousel; desktop is transform driven.
+  const scrollToImage = useCallback((index: number) => {
+    const gallery = galleryRef.current;
+    const slide = gallery?.firstElementChild as HTMLElement | null;
+    setImageIndex(index);
+    if (!gallery || !slide) return;
+    gallery.scrollTo({ left: slide.clientWidth * index, behavior: "smooth" });
+  }, []);
+
+  const handleGalleryScroll = useCallback(() => {
+    const gallery = galleryRef.current;
+    const slide = gallery?.firstElementChild as HTMLElement | null;
+    if (!gallery || !slide || slide.clientWidth === 0) return;
+    setImageIndex(Math.round(gallery.scrollLeft / slide.clientWidth));
+  }, []);
+
   const handleClose = useCallback(() => {
     if (!isModal) return;
     setVisible(false);
@@ -223,6 +241,7 @@ export default function ProductDetails({
     (i: number) => {
       setActiveColor(i);
       setImageIndex(0);
+      galleryRef.current?.scrollTo({ left: 0 });
       setActiveSize(colorGroups[i]?.sizes[0] ?? null);
     },
     [colorGroups]
@@ -284,7 +303,15 @@ export default function ProductDetails({
         }
       );
     } else {
-      addGuestItem(variant.id, product.name, 1, variant.price, availableQuantity);
+      addGuestItem(
+        variant.id,
+        product.name,
+        1,
+        variant.price,
+        availableQuantity,
+        product.id,
+        product.categories
+      );
       openCart();
     }
   }
@@ -369,13 +396,13 @@ export default function ProductDetails({
               {total > 0 ? (
                 <>
                   <div
-                    className="flex transition-transform duration-300 ease-out"
-                    style={{
-                      transform: `translateX(calc(-${currentImageIndex} * var(--slide)))`,
-                    }}
+                    ref={galleryRef}
+                    onScroll={handleGalleryScroll}
+                    className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] lg:snap-none lg:overflow-x-hidden lg:transition-transform lg:duration-300 lg:ease-out lg:[transform:translateX(calc(-1*var(--offset)*var(--slide)))] [&::-webkit-scrollbar]:hidden"
+                    style={{ "--offset": currentImageIndex } as CSSProperties}
                   >
                     {images.map((img, i) => (
-                      <div key={i} style={{ width: "var(--slide)" }} className="shrink-0 pr-1.5">
+                      <div key={i} style={{ width: "var(--slide)" }} className="shrink-0 snap-start pr-1.5">
                         <div className="relative aspect-square w-full overflow-hidden bg-[#f4f1ec] lg:aspect-[1.1/1]">
                           <Image
                             src={img}
@@ -391,7 +418,7 @@ export default function ProductDetails({
                   </div>
 
                   {total > 1 && (
-                    <div className="absolute bottom-0 left-[var(--slide)] flex -translate-x-1/2 items-center gap-3 rounded-full bg-white/90 px-3 py-1.5 shadow-sm backdrop-blur-sm">
+                    <div className="absolute bottom-0 left-[var(--slide)] hidden -translate-x-1/2 items-center gap-3 rounded-full bg-white/90 px-3 py-1.5 shadow-sm backdrop-blur-sm lg:flex">
                       <button onClick={prev} aria-label="Previous image" className="text-black transition hover:opacity-60">
                         <ArrowLeft size={16} />
                       </button>
@@ -408,6 +435,27 @@ export default function ProductDetails({
                 <div className="relative aspect-square w-[var(--slide)] overflow-hidden bg-[#E8E6E1] lg:aspect-[1.1/1]" />
               )}
             </div>
+
+            {total > 1 && (
+              <div className="mt-3 flex w-[85%] items-center justify-center lg:hidden">
+                {images.map((_, i) => (
+                  <button
+                    key={i}
+                    type="button"
+                    onClick={() => scrollToImage(i)}
+                    aria-label={`Show image ${i + 1} of ${total}`}
+                    aria-current={currentImageIndex === i ? "true" : undefined}
+                    className="box-content p-1"
+                  >
+                    <span
+                      className={`block h-1.5 rounded-full transition-[width,background-color] duration-200 ${
+                        currentImageIndex === i ? "w-5 bg-black" : "w-1.5 bg-black/25"
+                      }`}
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* ── DETAIL (left on desktop, below photo on mobile) ── */}

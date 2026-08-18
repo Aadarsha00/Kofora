@@ -2,6 +2,10 @@ import api from "@/axios/api.axios";
 import {
   AdminCoupon,
   AdminCouponInput,
+  AdminDiscountRule,
+  AdminDiscountRuleInput,
+  AdminDiscountRuleListResponse,
+  AdminDiscountRuleResponse,
   AdminCouponListResponse,
   AdminCouponResponse,
   AdminDiscount,
@@ -65,4 +69,23 @@ export const updateCoupon = async (
 
 export const deleteCoupon = async (id: number): Promise<void> => {
   await api.delete(`/discounts/coupons/${id}/`);
+};
+
+// ─── Scope rules (which products/categories an offer covers) ───
+export const getDiscountRules = async (discountId: number): Promise<AdminDiscountRule[]> => {
+  const response = await api.get<AdminDiscountRuleListResponse>("/discounts/rules/", {
+    params: { discount: discountId, page_size: 200 },
+  });
+  return response.data.data.results ?? [];
+};
+
+export const createDiscountRule = async (
+  payload: AdminDiscountRuleInput
+): Promise<AdminDiscountRule> => {
+  const response = await api.post<AdminDiscountRuleResponse>("/discounts/rules/", payload);
+  return response.data.data;
+};
+
+export const deleteDiscountRule = async (id: number): Promise<void> => {
+  await api.delete(`/discounts/rules/${id}/`);
 };

@@ -6,6 +6,9 @@ export interface GuestCartItem {
   quantity: number;
   price: string;
   maxAvailable?: number;
+  /** Catalogue identity, so scoped buy-X-get-Y offers can be priced locally. */
+  productId?: number;
+  categoryIds?: number[];
 }
 
 const GUEST_CART_KEY = "guest-cart-items";
@@ -15,7 +18,15 @@ interface GuestCartStore {
   isLoading: boolean;
   
   // Actions
-  addItem: (variantId: number, productName: string, quantity: number, price?: string, maxAvailable?: number) => void;
+  addItem: (
+    variantId: number,
+    productName: string,
+    quantity: number,
+    price?: string,
+    maxAvailable?: number,
+    productId?: number,
+    categoryIds?: number[]
+  ) => void;
   updateItem: (variantId: number, quantity: number, maxAvailable?: number) => void;
   removeItem: (variantId: number) => void;
   clearCart: () => void;
@@ -32,7 +43,7 @@ export const useGuestCartStore = create<GuestCartStore>((set, get) => {
     items: initialItems,
     isLoading: false,
 
-    addItem: (variantId, productName, quantity, price = "0", maxAvailable) => {
+    addItem: (variantId, productName, quantity, price = "0", maxAvailable, productId, categoryIds) => {
       set((state) => {
         const existing = state.items.find((item) => item.variantId === variantId);
         const stockLimit = maxAvailable ?? existing?.maxAvailable;
@@ -45,6 +56,9 @@ export const useGuestCartStore = create<GuestCartStore>((set, get) => {
                   ...item,
                   quantity: Math.min(item.quantity + quantity, stockLimit ?? item.quantity + quantity),
                   maxAvailable: stockLimit,
+                  // Backfill catalogue identity on carts saved before offers existed.
+                  productId: item.productId ?? productId,
+                  categoryIds: item.categoryIds ?? categoryIds,
                 }
               : item
           );
@@ -57,6 +71,8 @@ export const useGuestCartStore = create<GuestCartStore>((set, get) => {
               quantity: Math.min(quantity, stockLimit ?? quantity),
               price,
               maxAvailable: stockLimit,
+              productId,
+              categoryIds,
             },
           ];
         }

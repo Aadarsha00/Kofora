@@ -6,6 +6,7 @@ import { useState } from "react";
 import { ArrowLeft, Trash2 } from "lucide-react";
 import DiscountForm from "@/component/admin/DiscountForm";
 import CouponManager from "@/component/admin/CouponManager";
+import DiscountRuleManager from "@/component/admin/DiscountRuleManager";
 import {
   useAdminDiscount,
   useDeleteAdminDiscount,
@@ -74,6 +75,11 @@ export default function EditDiscountPage() {
     is_auto_applied: discount.is_auto_applied,
     is_stackable: discount.is_stackable,
     is_active: discount.is_active,
+    buy_quantity: discount.buy_quantity,
+    get_quantity: discount.get_quantity,
+    reward_percentage: discount.reward_percentage,
+    max_applications: discount.max_applications,
+    reward_source: discount.reward_source,
   };
 
   return (
@@ -105,6 +111,8 @@ export default function EditDiscountPage() {
           message={message}
           onSubmit={handleSubmit}
         />
+        <DiscountRuleManager discountId={discountId} isBogo={discount.discount_type === "bogo"} />
+
         <CouponManager discountId={discountId} firstOrderOnly={discount.first_order_only} />
       </div>
     </div>

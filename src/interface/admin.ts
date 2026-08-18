@@ -369,9 +369,23 @@ export interface DashboardSummary {
 export type DashboardResponse = ApiEnvelope<DashboardSummary>;
 
 // ─── Discounts ────────────────────────────────────────────────
-export type DiscountType = "flat" | "percent";
+export type DiscountType = "flat" | "percent" | "bogo";
 
-export interface AdminDiscount {
+/** Where the free/discounted units come from on a buy-X-get-Y offer. */
+export type RewardSource = "cheapest" | "reward_set";
+
+/** Buy-X-get-Y configuration, only meaningful when discount_type is "bogo". */
+export interface BogoFields {
+  buy_quantity: number | null;
+  get_quantity: number | null;
+  /** 100 = reward units are free, 50 = half price. */
+  reward_percentage: string;
+  /** Cap on how many times the offer repeats in one cart. Null = unlimited. */
+  max_applications: number | null;
+  reward_source: RewardSource;
+}
+
+export interface AdminDiscount extends BogoFields {
   id: number;
   name: string;
   discount_type: DiscountType;
@@ -390,7 +404,7 @@ export interface AdminDiscount {
   updated_at: string;
 }
 
-export interface AdminDiscountInput {
+export interface AdminDiscountInput extends BogoFields {
   name: string;
   discount_type: DiscountType;
   flat_amount: string | null;
@@ -404,6 +418,30 @@ export interface AdminDiscountInput {
   is_auto_applied: boolean;
   is_stackable: boolean;
   is_active: boolean;
+}
+
+/** Which side of a buy-X-get-Y offer a scope rule sits on. */
+export type DiscountRuleRole = "eligible" | "reward";
+
+export interface AdminDiscountRule {
+  id: number;
+  discount: number;
+  product: number | null;
+  product_name: string | null;
+  bundle: number | null;
+  subscription_plan: number | null;
+  category: number | null;
+  category_name: string | null;
+  role: DiscountRuleRole;
+}
+
+export interface AdminDiscountRuleInput {
+  discount: number;
+  product?: number | null;
+  bundle?: number | null;
+  subscription_plan?: number | null;
+  category?: number | null;
+  role: DiscountRuleRole;
 }
 
 export interface AdminCoupon {
@@ -431,5 +469,7 @@ export interface AdminDiscountListParams {
 
 export type AdminDiscountListResponse = ApiEnvelope<PaginatedResponse<AdminDiscount>>;
 export type AdminDiscountResponse = ApiEnvelope<AdminDiscount>;
+export type AdminDiscountRuleListResponse = ApiEnvelope<PaginatedResponse<AdminDiscountRule>>;
+export type AdminDiscountRuleResponse = ApiEnvelope<AdminDiscountRule>;
 export type AdminCouponListResponse = ApiEnvelope<PaginatedResponse<AdminCoupon>>;
 export type AdminCouponResponse = ApiEnvelope<AdminCoupon>;

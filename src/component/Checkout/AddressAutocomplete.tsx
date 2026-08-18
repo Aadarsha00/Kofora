@@ -64,6 +64,11 @@ export default function AddressAutocomplete({
         // it lines up with sibling <input> fields instead of floating inside.
         element.style.setProperty("width", "100%");
         element.style.setProperty("display", "block");
+        // font-size on the wrapper div alone doesn't reach the element's own
+        // internal input across the shadow boundary - set directly on the
+        // element so it actually matches sibling text-sm inputs (14px) rather
+        // than the element's own larger default.
+        element.style.setProperty("font-size", "14px");
         element.placeholder = placeholder;
         if (required) element.setAttribute("required", "");
         if (value) element.value = value;

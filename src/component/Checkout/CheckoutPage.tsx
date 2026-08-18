@@ -657,6 +657,7 @@ export default function CheckoutPage() {
                       onChange={(value) => updateAddressField("address_line_1", value)}
                       onAddressSelect={handleAddressAutocompleteSelect}
                       className="border border-gray-300 md:col-span-2"
+                      heightPx={46}
                     />
                     {addressForm.address_line_1.trim() !== "" && !/^\d/.test(addressForm.address_line_1.trim()) && (
                       <p className="-mt-2 text-xs text-amber-700 md:col-span-2">

@@ -10,6 +10,12 @@ interface AddressAutocompleteProps {
   placeholder?: string;
   className?: string;
   required?: boolean;
+  // The element's own natural height doesn't exactly match any given page's
+  // sibling <input> height (their padding scales differ), so it's pinned
+  // explicitly rather than left to size itself - pass the target px height
+  // computed from that page's own input classes (padding*2 + line-height +
+  // border). Defaults to 42px, matching a `px-3 py-2.5 text-sm` input.
+  heightPx?: number;
 }
 
 export default function AddressAutocomplete({
@@ -19,6 +25,7 @@ export default function AddressAutocomplete({
   placeholder = "Address line 1",
   className = "",
   required = false,
+  heightPx = 42,
 }: AddressAutocompleteProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [loadError, setLoadError] = useState("");
@@ -64,6 +71,11 @@ export default function AddressAutocomplete({
         // it lines up with sibling <input> fields instead of floating inside.
         element.style.setProperty("width", "100%");
         element.style.setProperty("display", "block");
+        // The element's natural height doesn't match any sibling <input>'s
+        // computed height on its own - pin it explicitly instead of letting
+        // its own internal padding decide.
+        element.style.setProperty("height", `${heightPx}px`);
+        element.style.setProperty("box-sizing", "border-box");
         // font-size on the wrapper div alone doesn't reach the element's own
         // internal input across the shadow boundary - set directly on the
         // element so it actually matches sibling text-sm inputs (14px) rather

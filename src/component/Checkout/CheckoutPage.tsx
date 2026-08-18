@@ -13,6 +13,8 @@ import {
   createStripeCheckoutSession,
   getAddresses,
   getShippingMethods,
+  getShippingRates,
+  validateShippingAddress,
 } from "@/api/checkout.api";
 import { AddressInput, Order, PaymentProvider } from "@/interface/checkout";
 import AddressAutocomplete from "@/component/Checkout/AddressAutocomplete";
@@ -29,6 +31,7 @@ import { useGuestCartStore } from "@/store/guestCartStore";
 import { redirectToStripeCheckout } from "@/lib/stripeCheckout";
 import { updateAddress } from "@/api/profile.api";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { CA_PROVINCES, US_STATES } from "@/data/usStates";
 
 const EMPTY_ADDRESS: AddressInput = {
   full_name: "",
@@ -218,11 +221,73 @@ export default function CheckoutPage() {
   const addresses = addressesQuery.data ?? [];
   const shippingMethods = shippingQuery.data ?? [];
   const defaultAddress = addresses.find((address) => address.is_default_shipping) ?? addresses[0];
-  const defaultShippingMethod = shippingMethods[0];
   const shouldUseNewAddress = useNewAddress || addresses.length === 0;
   const selectedAddressValue = selectedAddressId || (defaultAddress ? String(defaultAddress.id) : "");
+
+  // Real, live UPS price for every method at once, quoted against whichever
+  // address is currently active (a saved one, or the auto-saved draft of a
+  // new one) - never a placeholder number a customer could mistake for real.
+  const activeAddressId = shouldUseNewAddress
+    ? previewAddressId
+    : (selectedAddressValue ? Number(selectedAddressValue) : null);
+  const ratesQuery = useQuery({
+    queryKey: ["shipping-rates", activeAddressId],
+    queryFn: () => getShippingRates(activeAddressId as number),
+    enabled: isAuthenticated && !!activeAddressId,
+  });
+  const rateByMethodId = new Map((ratesQuery.data ?? []).map((quote) => [quote.method_id, quote]));
+  // Once an address's rates have actually loaded, only show methods UPS priced
+  // for that destination - e.g. a US-only method has no business appearing as
+  // a dead "Unavailable" option for a Canadian address, and vice versa. Before
+  // that (no address yet, still loading, or the rates call failed) fall back
+  // to the full list so there's still something to look at.
+  const ratesSettled = !ratesQuery.isLoading && !ratesQuery.isFetching && !ratesQuery.isError;
+  const visibleShippingMethods =
+    activeAddressId && ratesSettled
+      ? shippingMethods.filter((method) => rateByMethodId.has(method.id))
+      : shippingMethods;
+
+  const defaultShippingMethod = visibleShippingMethods[0] ?? shippingMethods[0];
   const selectedShippingValue = selectedShippingMethodId || (defaultShippingMethod ? String(defaultShippingMethod.id) : "");
   const selectedShippingMethod = shippingMethods.find((method) => String(method.id) === selectedShippingValue);
+  const selectedLiveRate = selectedShippingMethod ? rateByMethodId.get(selectedShippingMethod.id) : undefined;
+
+  // The user's explicit pick (or the default) can point at a method that's no
+  // longer in the visible list once the destination country changes (e.g. a
+  // US-only method after switching to a Canadian address) - reset to the
+  // first genuinely available one instead of silently submitting a method
+  // that was never priced for this address.
+  useEffect(() => {
+    if (!activeAddressId || !ratesSettled || visibleShippingMethods.length === 0) return;
+    const stillVisible = visibleShippingMethods.some((method) => String(method.id) === selectedShippingValue);
+    if (!stillVisible) setSelectedShippingMethodId(String(visibleShippingMethods[0].id));
+  }, [activeAddressId, ratesSettled, visibleShippingMethods, selectedShippingValue]);
+
+  // UPS's own address validation - runs once the new-address form is filled
+  // in, so an ambiguous/undeliverable address gets caught (and a real
+  // correction offered) before checkout ever tries to rate or ship it.
+  const addressValidationQuery = useQuery({
+    queryKey: ["ups-address-validation", debouncedAddressForm],
+    queryFn: () => validateShippingAddress(debouncedAddressForm),
+    enabled: isAuthenticated && shouldUseNewAddress && isAddressComplete(debouncedAddressForm),
+    retry: false,
+  });
+  const addressSuggestion =
+    addressValidationQuery.data && (addressValidationQuery.data.ambiguous || !addressValidationQuery.data.valid)
+      ? addressValidationQuery.data.candidates[0]
+      : undefined;
+
+  const applyAddressSuggestion = () => {
+    if (!addressSuggestion) return;
+    setAddressForm((current) => ({
+      ...current,
+      address_line_1: addressSuggestion.address_lines[0] || current.address_line_1,
+      address_line_2: addressSuggestion.address_lines[1] || current.address_line_2,
+      city: addressSuggestion.city || current.city,
+      state_province: addressSuggestion.state_province || current.state_province,
+      postal_code: addressSuggestion.postal_code || current.postal_code,
+    }));
+  };
 
   const items = useMemo(
     () => [...(cart?.variant_items ?? []), ...(cart?.bundle_items ?? [])],
@@ -234,22 +299,22 @@ export default function CheckoutPage() {
   const summaryTotals = useMemo(() => {
     const subtotal = Number(cart?.totals.subtotal ?? 0);
     const discount = Number(cart?.totals.discount ?? 0);
-    const shipping =
-      selectedShippingMethod && cart?.shipping_method !== selectedShippingMethod.id
-        ? Number(selectedShippingMethod.base_rate)
-        : Number(cart?.totals.shipping ?? selectedShippingMethod?.base_rate ?? 0);
+    // Prefer the live per-method quote (real, fetched for whichever method is
+    // selected); fall back to the cart's already-synced total if that method
+    // is the one currently synced server-side; otherwise 0 until a real quote
+    // comes in - never the flat base_rate, which isn't a real price.
+    const hasCartSyncedRate = selectedShippingMethod && cart?.shipping_method === selectedShippingMethod.id;
+    const shipping = selectedLiveRate
+      ? Number(selectedLiveRate.rate)
+      : hasCartSyncedRate
+        ? Number(cart?.totals.shipping ?? 0)
+        : 0;
     const taxableAmount = subtotal - discount + shipping;
-    const tax =
-      selectedShippingMethod && cart?.shipping_method !== selectedShippingMethod.id
-        ? roundMoney(taxableAmount * 0.08)
-        : Number(cart?.totals.tax ?? 0);
-    const total =
-      selectedShippingMethod && cart?.shipping_method !== selectedShippingMethod.id
-        ? roundMoney(taxableAmount + tax)
-        : Number(cart?.totals.total ?? taxableAmount + tax);
+    const tax = hasCartSyncedRate && !selectedLiveRate ? Number(cart?.totals.tax ?? 0) : roundMoney(taxableAmount * 0.08);
+    const total = hasCartSyncedRate && !selectedLiveRate ? Number(cart?.totals.total ?? taxableAmount + tax) : roundMoney(taxableAmount + tax);
 
     return { subtotal, discount, shipping, tax, total };
-  }, [cart, selectedShippingMethod]);
+  }, [cart, selectedShippingMethod, selectedLiveRate]);
 
   // A new (unsaved) address has no id to price shipping against, so save it as a
   // draft address as soon as its required fields are filled in - debounced so we're
@@ -592,11 +657,38 @@ export default function CheckoutPage() {
                       onChange={(value) => updateAddressField("address_line_1", value)}
                       onAddressSelect={handleAddressAutocompleteSelect}
                       className="border border-gray-300 md:col-span-2"
+                      heightPx={46}
                     />
+                    {addressForm.address_line_1.trim() !== "" && !/^\d/.test(addressForm.address_line_1.trim()) && (
+                      <p className="-mt-2 text-xs text-amber-700 md:col-span-2">
+                        This looks like a street without a house number - Google can&apos;t provide a postal code for
+                        it. Keep typing to pick a more specific suggestion, or fill in the address details manually.
+                      </p>
+                    )}
                     <input className="border border-gray-300 px-3 py-3 text-sm md:col-span-2" placeholder="Address line 2" value={addressForm.address_line_2} onChange={(event) => updateAddressField("address_line_2", event.target.value)} />
                     <input className="border border-gray-300 px-3 py-3 text-sm" placeholder="City" value={addressForm.city} onChange={(event) => updateAddressField("city", event.target.value)} />
-                    <input className="border border-gray-300 px-3 py-3 text-sm" placeholder="State / Province" value={addressForm.state_province} onChange={(event) => updateAddressField("state_province", event.target.value)} />
-                    <input className="border border-gray-300 px-3 py-3 text-sm" placeholder="Postal code" value={addressForm.postal_code} onChange={(event) => updateAddressField("postal_code", event.target.value)} />
+                    {addressForm.country === "US" || addressForm.country === "CA" ? (
+                      <select
+                        className="border border-gray-300 px-3 py-3 text-sm text-black"
+                        value={addressForm.state_province}
+                        onChange={(event) => updateAddressField("state_province", event.target.value)}
+                      >
+                        <option value="">{addressForm.country === "US" ? "State" : "Province"}</option>
+                        {(addressForm.country === "US" ? US_STATES : CA_PROVINCES).map((region) => (
+                          <option key={region.code} value={region.code}>
+                            {region.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input className="border border-gray-300 px-3 py-3 text-sm" placeholder="State / Province" value={addressForm.state_province} onChange={(event) => updateAddressField("state_province", event.target.value)} />
+                    )}
+                    <input
+                      className="border border-gray-300 px-3 py-3 text-sm"
+                      placeholder={addressForm.country === "CA" ? "Postal code (e.g. A1A 1A1)" : "Postal code"}
+                      value={addressForm.postal_code}
+                      onChange={(event) => updateAddressField("postal_code", event.target.value)}
+                    />
                     <input className="border border-gray-300 px-3 py-3 text-sm" placeholder="Country code" value={addressForm.country} maxLength={2} onChange={(event) => updateAddressField("country", event.target.value.toUpperCase())} />
                   </div>
                 )}
@@ -618,6 +710,23 @@ export default function CheckoutPage() {
                   }
                   return null;
                 })()}
+
+                {shouldUseNewAddress && addressSuggestion && (
+                  <div className="mt-3 border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+                    <p className="font-semibold">UPS couldn&apos;t confirm this address as entered.</p>
+                    <p className="mt-1">
+                      Did you mean: {addressSuggestion.address_lines.join(", ")}, {addressSuggestion.city},{" "}
+                      {addressSuggestion.state_province} {addressSuggestion.postal_code}?
+                    </p>
+                    <button
+                      type="button"
+                      onClick={applyAddressSuggestion}
+                      className="mt-2 border border-amber-900 px-3 py-1.5 font-semibold text-amber-900 hover:bg-amber-100"
+                    >
+                      Use this address
+                    </button>
+                  </div>
+                )}
               </section>
 
               <section className="border-b border-gray-200 pb-8">
@@ -625,34 +734,52 @@ export default function CheckoutPage() {
                   <Truck size={20} />
                   <h2 className="text-lg font-bold text-black">Shipping</h2>
                 </div>
+                {!activeAddressId && (
+                  <p className="mb-3 text-xs text-gray-500">Enter a delivery address to see real shipping prices.</p>
+                )}
                 <div className="grid gap-3">
-                  {shippingMethods.map((method) => (
-                    <label
-                      key={method.id}
-                      className={`flex cursor-pointer items-center justify-between border p-4 text-sm ${
-                        selectedShippingValue === String(method.id) ? "border-black bg-gray-50" : "border-gray-200"
-                      }`}
-                    >
-                      <span>
-                        <input
-                          type="radio"
-                          name="shipping"
-                          value={method.id}
-                          checked={selectedShippingValue === String(method.id)}
-                          onChange={(event) => setSelectedShippingMethodId(event.target.value)}
-                          className="sr-only"
-                        />
-                        <span className="block font-semibold text-black">{method.name}</span>
-                        <span className="mt-1 block text-gray-500">{method.code}</span>
-                      </span>
-                      <span className="font-semibold text-black">
-                        {cart?.shipping_method === method.id && cart?.totals?.shipping != null
-                          ? money(currency, Number(cart.totals.shipping))
-                          : money(currency, method.base_rate)}
-                      </span>
-                    </label>
-                  ))}
+                  {visibleShippingMethods.map((method) => {
+                    const liveQuote = rateByMethodId.get(method.id);
+                    let priceLabel: string;
+                    if (liveQuote) {
+                      priceLabel = liveQuote.free ? "Free" : money(currency, liveQuote.rate);
+                    } else if (!activeAddressId) {
+                      priceLabel = "—";
+                    } else if (ratesQuery.isLoading || ratesQuery.isFetching) {
+                      priceLabel = "Calculating…";
+                    } else {
+                      priceLabel = "Unavailable";
+                    }
+
+                    return (
+                      <label
+                        key={method.id}
+                        className={`flex cursor-pointer items-center justify-between border p-4 text-sm ${
+                          selectedShippingValue === String(method.id) ? "border-black bg-gray-50" : "border-gray-200"
+                        }`}
+                      >
+                        <span>
+                          <input
+                            type="radio"
+                            name="shipping"
+                            value={method.id}
+                            checked={selectedShippingValue === String(method.id)}
+                            onChange={(event) => setSelectedShippingMethodId(event.target.value)}
+                            className="sr-only"
+                          />
+                          <span className="block font-semibold text-black">{method.name}</span>
+                          <span className="mt-1 block text-gray-500">{method.code}</span>
+                        </span>
+                        <span className="font-semibold text-black">{priceLabel}</span>
+                      </label>
+                    );
+                  })}
                 </div>
+                {ratesQuery.isError && (
+                  <p className="mt-3 text-xs text-red-600">
+                    Live shipping rates are temporarily unavailable. Please try again in a moment.
+                  </p>
+                )}
               </section>
 
               <section className="pb-4">

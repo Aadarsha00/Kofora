@@ -20,6 +20,24 @@ export interface Address {
 
 export type AddressInput = Omit<Address, "id" | "user">;
 
+export interface AddressValidationCandidate {
+  address_lines: string[];
+  city: string;
+  state_province: string;
+  postal_code: string;
+  country: string;
+}
+
+export interface AddressValidationResult {
+  valid: boolean;
+  ambiguous: boolean;
+  no_candidates: boolean;
+  classification: string;
+  candidates: AddressValidationCandidate[];
+}
+
+export type AddressValidationResponse = ApiEnvelope<AddressValidationResult>;
+
 export interface ShippingMethod {
   id: number;
   zone: number;

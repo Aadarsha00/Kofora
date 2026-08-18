@@ -14,6 +14,7 @@ import {
   getAddresses,
   getShippingMethods,
   getShippingRates,
+  validateShippingAddress,
 } from "@/api/checkout.api";
 import { AddressInput, Order, PaymentProvider } from "@/interface/checkout";
 import AddressAutocomplete from "@/component/Checkout/AddressAutocomplete";
@@ -30,6 +31,7 @@ import { useGuestCartStore } from "@/store/guestCartStore";
 import { redirectToStripeCheckout } from "@/lib/stripeCheckout";
 import { updateAddress } from "@/api/profile.api";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
+import { US_STATES } from "@/data/usStates";
 
 const EMPTY_ADDRESS: AddressInput = {
   full_name: "",
@@ -238,6 +240,32 @@ export default function CheckoutPage() {
   });
   const rateByMethodId = new Map((ratesQuery.data ?? []).map((quote) => [quote.method_id, quote]));
   const selectedLiveRate = selectedShippingMethod ? rateByMethodId.get(selectedShippingMethod.id) : undefined;
+
+  // UPS's own address validation - runs once the new-address form is filled
+  // in, so an ambiguous/undeliverable address gets caught (and a real
+  // correction offered) before checkout ever tries to rate or ship it.
+  const addressValidationQuery = useQuery({
+    queryKey: ["ups-address-validation", debouncedAddressForm],
+    queryFn: () => validateShippingAddress(debouncedAddressForm),
+    enabled: isAuthenticated && shouldUseNewAddress && isAddressComplete(debouncedAddressForm),
+    retry: false,
+  });
+  const addressSuggestion =
+    addressValidationQuery.data && (addressValidationQuery.data.ambiguous || !addressValidationQuery.data.valid)
+      ? addressValidationQuery.data.candidates[0]
+      : undefined;
+
+  const applyAddressSuggestion = () => {
+    if (!addressSuggestion) return;
+    setAddressForm((current) => ({
+      ...current,
+      address_line_1: addressSuggestion.address_lines[0] || current.address_line_1,
+      address_line_2: addressSuggestion.address_lines[1] || current.address_line_2,
+      city: addressSuggestion.city || current.city,
+      state_province: addressSuggestion.state_province || current.state_province,
+      postal_code: addressSuggestion.postal_code || current.postal_code,
+    }));
+  };
 
   const items = useMemo(
     () => [...(cart?.variant_items ?? []), ...(cart?.bundle_items ?? [])],
@@ -610,7 +638,22 @@ export default function CheckoutPage() {
                     />
                     <input className="border border-gray-300 px-3 py-3 text-sm md:col-span-2" placeholder="Address line 2" value={addressForm.address_line_2} onChange={(event) => updateAddressField("address_line_2", event.target.value)} />
                     <input className="border border-gray-300 px-3 py-3 text-sm" placeholder="City" value={addressForm.city} onChange={(event) => updateAddressField("city", event.target.value)} />
-                    <input className="border border-gray-300 px-3 py-3 text-sm" placeholder="State / Province" value={addressForm.state_province} onChange={(event) => updateAddressField("state_province", event.target.value)} />
+                    {addressForm.country === "US" ? (
+                      <select
+                        className="border border-gray-300 px-3 py-3 text-sm text-black"
+                        value={addressForm.state_province}
+                        onChange={(event) => updateAddressField("state_province", event.target.value)}
+                      >
+                        <option value="">State</option>
+                        {US_STATES.map((state) => (
+                          <option key={state.code} value={state.code}>
+                            {state.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input className="border border-gray-300 px-3 py-3 text-sm" placeholder="State / Province" value={addressForm.state_province} onChange={(event) => updateAddressField("state_province", event.target.value)} />
+                    )}
                     <input className="border border-gray-300 px-3 py-3 text-sm" placeholder="Postal code" value={addressForm.postal_code} onChange={(event) => updateAddressField("postal_code", event.target.value)} />
                     <input className="border border-gray-300 px-3 py-3 text-sm" placeholder="Country code" value={addressForm.country} maxLength={2} onChange={(event) => updateAddressField("country", event.target.value.toUpperCase())} />
                   </div>
@@ -633,6 +676,23 @@ export default function CheckoutPage() {
                   }
                   return null;
                 })()}
+
+                {shouldUseNewAddress && addressSuggestion && (
+                  <div className="mt-3 border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">
+                    <p className="font-semibold">UPS couldn&apos;t confirm this address as entered.</p>
+                    <p className="mt-1">
+                      Did you mean: {addressSuggestion.address_lines.join(", ")}, {addressSuggestion.city},{" "}
+                      {addressSuggestion.state_province} {addressSuggestion.postal_code}?
+                    </p>
+                    <button
+                      type="button"
+                      onClick={applyAddressSuggestion}
+                      className="mt-2 border border-amber-900 px-3 py-1.5 font-semibold text-amber-900 hover:bg-amber-100"
+                    >
+                      Use this address
+                    </button>
+                  </div>
+                )}
               </section>
 
               <section className="border-b border-gray-200 pb-8">

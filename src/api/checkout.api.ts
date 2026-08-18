@@ -4,6 +4,8 @@ import {
   AddressInput,
   AddressListResponse,
   AddressResponse,
+  AddressValidationResponse,
+  AddressValidationResult,
   Order,
   OrderListResponse,
   OrderResponse,
@@ -38,6 +40,22 @@ export const getShippingRates = async (addressId: number): Promise<ShippingRateQ
     params: { address_id: addressId },
   });
   return response.data.data.rates ?? [];
+};
+
+// UPS's own address validation (non-billable, same as rating) - catches
+// addresses UPS considers ambiguous or undeliverable before checkout ever
+// tries to rate or ship them, and offers the real correction UPS suggests.
+export const validateShippingAddress = async (address: AddressInput): Promise<AddressValidationResult> => {
+  const response = await api.post<AddressValidationResponse>("/shipping/ups/validate-address/", {
+    full_name: address.full_name,
+    address_line_1: address.address_line_1,
+    address_line_2: address.address_line_2,
+    city: address.city,
+    state_province: address.state_province,
+    postal_code: address.postal_code,
+    country: address.country,
+  });
+  return response.data.data;
 };
 
 export const createOrderFromCart = async (customerNotes: string): Promise<Order> => {

@@ -658,6 +658,12 @@ export default function CheckoutPage() {
                       onAddressSelect={handleAddressAutocompleteSelect}
                       className="border border-gray-300 md:col-span-2"
                     />
+                    {addressForm.address_line_1.trim() !== "" && !/^\d/.test(addressForm.address_line_1.trim()) && (
+                      <p className="-mt-2 text-xs text-amber-700 md:col-span-2">
+                        This looks like a street without a house number - Google can&apos;t provide a postal code for
+                        it. Keep typing to pick a more specific suggestion, or fill in the address details manually.
+                      </p>
+                    )}
                     <input className="border border-gray-300 px-3 py-3 text-sm md:col-span-2" placeholder="Address line 2" value={addressForm.address_line_2} onChange={(event) => updateAddressField("address_line_2", event.target.value)} />
                     <input className="border border-gray-300 px-3 py-3 text-sm" placeholder="City" value={addressForm.city} onChange={(event) => updateAddressField("city", event.target.value)} />
                     {addressForm.country === "US" || addressForm.country === "CA" ? (

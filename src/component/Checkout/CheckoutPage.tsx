@@ -676,7 +676,12 @@ export default function CheckoutPage() {
                     ) : (
                       <input className="border border-gray-300 px-3 py-3 text-sm" placeholder="State / Province" value={addressForm.state_province} onChange={(event) => updateAddressField("state_province", event.target.value)} />
                     )}
-                    <input className="border border-gray-300 px-3 py-3 text-sm" placeholder="Postal code" value={addressForm.postal_code} onChange={(event) => updateAddressField("postal_code", event.target.value)} />
+                    <input
+                      className="border border-gray-300 px-3 py-3 text-sm"
+                      placeholder={addressForm.country === "CA" ? "Postal code (e.g. A1A 1A1)" : "Postal code"}
+                      value={addressForm.postal_code}
+                      onChange={(event) => updateAddressField("postal_code", event.target.value)}
+                    />
                     <input className="border border-gray-300 px-3 py-3 text-sm" placeholder="Country code" value={addressForm.country} maxLength={2} onChange={(event) => updateAddressField("country", event.target.value.toUpperCase())} />
                   </div>
                 )}

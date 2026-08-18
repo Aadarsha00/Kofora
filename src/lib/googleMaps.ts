@@ -82,7 +82,11 @@ export function parsePlaceAddress(place: google.maps.places.Place): ParsedAddres
     // 2-letter state code ("NC"), not the full name ("North Carolina"), and
     // rejects the whole rate request outright if given the long form.
     state_province: get("administrative_area_level_1", true),
-    postal_code: get("postal_code"),
+    // Canadian addresses that aren't geocoded to an exact point often only
+    // get a "postal_code_prefix" (the 3-character Forward Sortation Area,
+    // e.g. "M5H") rather than the full 6-character code - fall back to it
+    // rather than leaving the field empty.
+    postal_code: get("postal_code") || get("postal_code_prefix"),
     country: get("country", true),
   };
 }

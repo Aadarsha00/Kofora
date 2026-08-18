@@ -12,6 +12,9 @@ interface AddToCartButtonProps {
   productName: string;
   price?: string;
   availableQuantity?: number;
+  /** Passed to the guest cart so scoped offers can be priced before sign-in. */
+  productId?: number;
+  categoryIds?: number[];
   disabled?: boolean;
   className?: string;
   onSuccess?: () => void;
@@ -22,6 +25,8 @@ export default function AddToCartButton({
   productName,
   price = "0",
   availableQuantity,
+  productId,
+  categoryIds,
   disabled = false,
   className = "",
   onSuccess,
@@ -58,7 +63,7 @@ export default function AddToCartButton({
       );
     } else {
       // Guest user: use local storage cart
-      addGuestItem(variantId, productName, quantity, price, availableQuantity);
+      addGuestItem(variantId, productName, quantity, price, availableQuantity, productId, categoryIds);
       setQuantity(1);
       setShowQuantityPicker(false);
       onSuccess?.();

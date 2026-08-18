@@ -10,6 +10,7 @@ import { useGuestCartStore } from "@/store/guestCartStore";
 import { useCart, useRemoveFromCart, useUpdateCartItem, useCartTotals, useApplyCoupon, useRemoveCoupon } from "@/hooks/useCart";
 import { useValidateCoupon } from "@/hooks/useDiscounts";
 import { useGuestDiscount } from "@/hooks/useGuestDiscount";
+import { useGuestCartCalculations } from "@/hooks/useGuestCartCalculations";
 import { getProductVariantsByIds } from "@/api/products.api";
 
 // Hex to Color Name mapping
@@ -216,19 +217,23 @@ export default function CartPage() {
   const itemCount = allItems.reduce((sum, item) => sum + item.quantity, 0);
   const isLoading = isAuthenticated ? cartLoading : false;
 
-  const guestSubtotal = guestItems.reduce((sum, item) => sum + parseFloat(item.price || "0") * item.quantity, 0);
-  
-  // Calculate guest discount
-  const guestDiscount = getGuestDiscount();
-  let guestDiscountAmount = 0;
-  if (guestDiscount) {
-    if (guestDiscount.discountType === "percent") {
-      guestDiscountAmount = guestSubtotal * (guestDiscount.discountAmount / 100);
-    } else {
-      guestDiscountAmount = Math.min(guestDiscount.discountAmount, guestSubtotal);
-    }
-  }
-  const guestTotal = guestSubtotal - guestDiscountAmount;
+  // Guest totals come from the shared calculator so the coupon, the buy-X-get-Y
+  // offer and the stacking rule between them match what the server will charge
+  // once this cart is merged into an account.
+  const {
+    subtotal: guestSubtotal,
+    discountAmount: guestDiscountAmount,
+    total: guestTotal,
+    appliedOffer: guestOffer,
+  } = useGuestCartCalculations(
+    guestItems.map((item) => ({
+      key: `variant:${item.variantId}`,
+      price: parseFloat(item.price || "0"),
+      quantity: item.quantity,
+      productId: item.productId,
+      categoryIds: item.categoryIds,
+    }))
+  );
 
   if (!hasMounted) {
     return (
@@ -513,6 +518,17 @@ export default function CartPage() {
                   </div>
                 )}
 
+                {!isAuthenticated && guestOffer && (
+                  <div className="flex justify-between text-sm text-green-700">
+                    <span>
+                      {guestOffer.offer.name} &mdash; {guestOffer.freeUnits} item
+                      {guestOffer.freeUnits === 1 ? "" : "s"} free
+                    </span>
+                    <span className="font-semibold">
+                      -USD {guestOffer.discountAmount.toLocaleString()}
+                    </span>
+                  </div>
+                )}
                 {!isAuthenticated && guestDiscountAmount > 0 && (
                   <div className="flex justify-between text-sm text-green-600">
                     <span>First-Order Discount</span>

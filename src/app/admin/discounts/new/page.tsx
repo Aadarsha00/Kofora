@@ -23,6 +23,11 @@ const EMPTY_DISCOUNT: AdminDiscountInput = {
   is_auto_applied: false,
   is_stackable: false,
   is_active: true,
+  buy_quantity: null,
+  get_quantity: null,
+  reward_percentage: "100",
+  max_applications: null,
+  reward_source: "cheapest",
 };
 
 export default function NewDiscountPage() {

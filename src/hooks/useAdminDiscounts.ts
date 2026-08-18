@@ -2,15 +2,23 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import {
   createAdminDiscount,
   createCoupon,
+  createDiscountRule,
   deleteAdminDiscount,
   deleteCoupon,
+  deleteDiscountRule,
   getAdminDiscount,
   getAdminDiscounts,
   getDiscountCoupons,
+  getDiscountRules,
   updateAdminDiscount,
   updateCoupon,
 } from "@/api/adminDiscounts.api";
-import { AdminCouponInput, AdminDiscountInput, AdminDiscountListParams } from "@/interface/admin";
+import {
+  AdminCouponInput,
+  AdminDiscountInput,
+  AdminDiscountListParams,
+  AdminDiscountRuleInput,
+} from "@/interface/admin";
 
 export const useAdminDiscounts = (params: AdminDiscountListParams) =>
   useQuery({
@@ -75,5 +83,36 @@ export const useDeleteCoupon = (discountId: number) => {
   return useMutation({
     mutationFn: (id: number) => deleteCoupon(id),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["discount-coupons", discountId] }),
+  });
+};
+
+// ─── Scope rules (scoped to a discount) ───────────────────────
+export const useDiscountRules = (discountId: number | undefined) =>
+  useQuery({
+    queryKey: ["discount-rules", discountId],
+    queryFn: () => getDiscountRules(discountId as number),
+    enabled: Boolean(discountId),
+  });
+
+export const useCreateDiscountRule = (discountId: number) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: AdminDiscountRuleInput) => createDiscountRule(payload),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["discount-rules", discountId] });
+      // The discount detail embeds its rules, so it goes stale too.
+      queryClient.invalidateQueries({ queryKey: ["admin-discount", discountId] });
+    },
+  });
+};
+
+export const useDeleteDiscountRule = (discountId: number) => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => deleteDiscountRule(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["discount-rules", discountId] });
+      queryClient.invalidateQueries({ queryKey: ["admin-discount", discountId] });
+    },
   });
 };

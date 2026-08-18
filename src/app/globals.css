@@ -5,7 +5,20 @@
 @source "../component";
 @source "../ui";
 
-/* Apply heading font to all heading elements */
+/* Stacking layers. Every fixed/sticky element in the app picks one of these,
+   so overlays never need an ad-hoc escalation to outrank the header:
+
+     z-0 / z-10  in-page decoration (hero scrims, image overlays, section copy)
+     z-20        in-page sticky bars (the mobile filter chip row)
+     z-30        the site header
+     z-40        header flyouts (mega menu, account menu) and the promo pill
+     z-50        modals and drawers, backdrop and panel alike — always on top
+
+   Within a modal the backdrop and panel share z-50 and rely on DOM order, so
+   there is no second scale to keep in sync. */
+
+/* Two-font system: Fredoka for every heading, Manrope for everything else.
+   Hierarchy comes from the size/weight scale below, not from a third face. */
 h1, h2, h3, h4, h5, h6 {
   font-family: var(--font-heading);
 }
@@ -13,6 +26,13 @@ h1, h2, h3, h4, h5, h6 {
 /* Apply body font to body and other text elements */
 body, p, span, div, button, a, li {
   font-family: var(--font-body);
+}
+
+/* ...but the rule above also catches spans/divs nested inside a heading, which
+   silently knocks headline text back to the body face. Anything inside a
+   heading follows that heading instead. */
+:is(h1, h2, h3, h4, h5, h6) :where(span, div, p, a, li, button, strong, em) {
+  font-family: inherit;
 }
 
 @custom-variant dark (&:is(.dark *));
@@ -139,6 +159,52 @@ body, p, span, div, button, a, li {
   }
   html {
     @apply font-sans;
+  }
+
+  /* Type scale. These are defaults, not decrees: they live in @layer base so any
+     Tailwind sizing or weight utility on a heading still wins. The point is
+     that a heading with no size utility lands somewhere sensible for its level
+     instead of inheriting 1rem from the body, which is what Tailwind's preflight
+     reset otherwise leaves you with.
+
+     Hierarchy is carried by size and weight alone, since headings and body share
+     no typeface contrast — Fredoka above, Manrope below. */
+  h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    line-height: 1;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  h2 {
+    font-size: clamp(1.5rem, 3vw, 2.25rem);
+    line-height: 1.1;
+    font-weight: 600;
+    letter-spacing: -0.005em;
+  }
+  h3 {
+    font-size: 1.5rem;
+    line-height: 1.2;
+    font-weight: 600;
+  }
+  h4 {
+    font-size: 1.25rem;
+    line-height: 1.25;
+    font-weight: 600;
+  }
+  h5 {
+    font-size: 1.0625rem;
+    line-height: 1.3;
+    font-weight: 600;
+  }
+  h6 {
+    font-size: 0.9375rem;
+    line-height: 1.35;
+    font-weight: 600;
+  }
+
+  /* Body copy defaults to a comfortable measure-independent leading. */
+  p {
+    line-height: 1.6;
   }
 }
 

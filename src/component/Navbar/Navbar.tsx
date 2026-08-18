@@ -124,7 +124,7 @@ export default function MainNavbar() {
   return (
     <>
       <div
-        className="sticky top-0 z-[999] w-full bg-white"
+        className="sticky top-0 z-30 w-full bg-white"
         onMouseLeave={() => setOpenMegaMenu(null)}
       >
         <div className="hidden h-16 w-full items-center lg:flex">
@@ -150,7 +150,7 @@ export default function MainNavbar() {
                     aria-current={isActive ? "page" : undefined}
                     aria-haspopup={item.gender ? "true" : undefined}
                     aria-expanded={item.gender ? openMegaMenu === item.gender : undefined}
-                    className={`relative mx-2 inline-flex items-center py-2 font-['Inter'] text-sm font-extrabold leading-[1.15em] tracking-normal text-black no-underline whitespace-nowrap after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:origin-left after:bg-current after:transition-transform after:duration-[400ms] after:ease-[cubic-bezier(0,0.5,0.5,1)] hover:after:scale-x-100 focus-visible:outline-none focus-visible:after:scale-x-100 ${
+                    className={`relative mx-2 inline-flex items-center py-2 text-sm font-extrabold leading-[1.15em] tracking-normal text-black no-underline whitespace-nowrap after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 after:origin-left after:bg-current after:transition-transform after:duration-[400ms] after:ease-[cubic-bezier(0,0.5,0.5,1)] hover:after:scale-x-100 focus-visible:outline-none focus-visible:after:scale-x-100 ${
                       isActive || openMegaMenu === item.gender
                         ? "after:scale-x-100"
                         : "after:scale-x-0"
@@ -179,7 +179,7 @@ export default function MainNavbar() {
               </button>
 
               {hasMounted && isAuthenticated && userMenuOpen && (
-                <div className="absolute right-0 top-8 bg-white rounded shadow-lg py-2 z-50 min-w-48 border border-gray-200">
+                <div className="absolute right-0 top-8 bg-white rounded shadow-lg py-2 z-40 min-w-48 border border-gray-200">
                   <div className="px-4 py-2 border-b border-gray-100">
                     <p className="text-sm font-semibold text-black">{userMenuTitle}</p>
                     {user?.email && user?.email !== userMenuTitle && (
@@ -221,7 +221,7 @@ export default function MainNavbar() {
               )}
 
               {hasMounted && !isAuthenticated && userMenuOpen && (
-                <div className="absolute right-0 top-8 bg-white rounded shadow-lg py-2 z-50 min-w-48 border border-gray-200">
+                <div className="absolute right-0 top-8 bg-white rounded shadow-lg py-2 z-40 min-w-48 border border-gray-200">
                   <button
                     onClick={() => {
                       setLoginOpen(true);

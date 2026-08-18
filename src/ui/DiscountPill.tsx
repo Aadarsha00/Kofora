@@ -64,11 +64,11 @@ export default function DiscountPill() {
 
   return (
     <>
-      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50">
+      <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40">
         <div className="flex items-center gap-3 bg-white rounded-full px-5 py-3 shadow-[0_4px_24px_rgba(0,0,0,0.18)] border border-gray-100">
           <button
             onClick={() => setShowModal(true)}
-            className="font-['Inter'] font-semibold text-sm text-black hover:opacity-60 transition-opacity cursor-pointer"
+            className="font-semibold text-sm text-black hover:opacity-60 transition-opacity cursor-pointer"
           >
             Get 20% Off
           </button>

@@ -32,7 +32,7 @@ export default function FootBanner() {
           </div>
 
           <div className="flex flex-col items-center gap-6 text-center">
-            <p className="font-(family-name:--font-accent) text-[#fdfcf6] leading-snug text-lg md:text-xl">
+            <p className="text-[#fdfcf6] leading-snug text-lg md:text-xl">
               {FOOT_BANNER_DATA.subtitle}
             </p>
             <Link

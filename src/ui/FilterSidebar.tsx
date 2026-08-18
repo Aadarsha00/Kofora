@@ -1,10 +1,8 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { memo, useCallback, useEffect, useMemo, useState } from "react";
-import { Slider } from "./slider";
 import type { CategoryFilterOption } from "@/lib/categoryFilters";
-import { normalizeTaxonomySlug } from "@/lib/productTaxonomy";
+import { useCollectionFilters } from "@/hooks/useCollectionFilters";
+import { CheckboxOption, FilterAccordion, PriceRangeControl } from "./filters/FilterControls";
 
 interface FilterSidebarProps {
   availableFamilies: CategoryFilterOption[];
@@ -15,104 +13,6 @@ interface FilterSidebarProps {
   maxPrice: number;
 }
 
-const PARAMS = {
-  subCategory: "sub_category",
-  family: "family",
-  height: "height",
-  purpose: "purpose",
-  style: "style",
-  minPrice: "min_price",
-  maxPrice: "max_price",
-} as const;
-
-function FilterSection({
-  title,
-  children,
-  defaultOpen = true,
-}: {
-  title: string;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-
-  return (
-    <section className="border-b border-gray-200 py-4">
-      <button
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        aria-expanded={open}
-        className="flex w-full items-center justify-between text-left"
-      >
-        <span className="text-xs font-semibold uppercase tracking-widest text-gray-800">
-          {title}
-        </span>
-        <span
-          className={`inline-block h-2.5 w-2.5 border-r-2 border-b-2 border-gray-600 transition-transform duration-200 ${
-            open ? "-rotate-135" : "rotate-45"
-          }`}
-        />
-      </button>
-
-      <div
-        className={`grid transition-all duration-300 ease-in-out ${
-          open ? "grid-rows-[1fr] opacity-100 pt-3" : "grid-rows-[0fr] opacity-0 pt-0"
-        }`}
-      >
-        <div className="overflow-hidden">{children}</div>
-      </div>
-    </section>
-  );
-}
-
-const CheckboxOption = memo(function CheckboxOption({
-  label,
-  checked,
-  disabled,
-  onChange,
-}: {
-  label: string;
-  checked: boolean;
-  disabled?: boolean;
-  onChange: () => void;
-}) {
-  return (
-    <label
-      className={`mb-2 flex items-center gap-2.5 ${
-        disabled ? "cursor-not-allowed" : "group cursor-pointer"
-      }`}
-    >
-      <input
-        type="checkbox"
-        checked={checked}
-        disabled={disabled}
-        onChange={onChange}
-        className={`h-4 w-4 shrink-0 border-gray-300 accent-black ${
-          disabled ? "cursor-not-allowed" : "cursor-pointer"
-        }`}
-      />
-      <span
-        className={`text-sm transition-colors ${
-          disabled
-            ? "text-gray-300"
-            : checked
-              ? "font-medium text-black"
-              : "text-gray-500 group-hover:text-black"
-        }`}
-      >
-        {label}
-      </span>
-    </label>
-  );
-});
-
-function parsePriceParam(value: string | null, fallback: number, min: number, max: number) {
-  if (value === null) return fallback;
-  const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return fallback;
-  return Math.min(Math.max(parsed, min), max);
-}
-
 export default function FilterSidebar({
   availableFamilies,
   availableHeights,
@@ -121,230 +21,60 @@ export default function FilterSidebar({
   minPrice,
   maxPrice,
 }: FilterSidebarProps) {
-  const router = useRouter();
-  const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const legacySubCategories = searchParams.getAll(PARAMS.subCategory);
-  const familyValues = useMemo(() => new Set(availableFamilies.map((item) => item.value)), [availableFamilies]);
-  const heightValues = useMemo(() => new Set(availableHeights.map((item) => item.value)), [availableHeights]);
-  const purposeValues = useMemo(() => new Set(availablePurposes.map((item) => item.value)), [availablePurposes]);
-  const styleValues = useMemo(() => new Set(availableStyles.map((item) => item.value)), [availableStyles]);
-  const activeFamilies = useMemo(
-    () =>
-      Array.from(
-        new Set(searchParams.getAll(PARAMS.family).map(normalizeTaxonomySlug).filter((value) => familyValues.has(value)))
-      ),
-    [familyValues, searchParams]
-  );
-  const activeHeights = useMemo(
-    () =>
-      Array.from(
-        new Set([
-          ...searchParams.getAll(PARAMS.height).map(normalizeTaxonomySlug),
-          ...legacySubCategories
-            .map(normalizeTaxonomySlug)
-            .filter((value) => heightValues.has(value)),
-        ])
-      ),
-    [heightValues, legacySubCategories, searchParams]
-  );
-  const activePurposes = useMemo(
-    () =>
-      Array.from(
-        new Set([
-          ...searchParams.getAll(PARAMS.purpose).map(normalizeTaxonomySlug),
-          ...legacySubCategories
-            .map(normalizeTaxonomySlug)
-            .filter((value) => purposeValues.has(value)),
-        ])
-      ),
-    [legacySubCategories, purposeValues, searchParams]
-  );
-  const activeStyles = useMemo(
-    () =>
-      Array.from(
-        new Set([
-          ...searchParams.getAll(PARAMS.style).map(normalizeTaxonomySlug),
-          ...legacySubCategories
-            .map(normalizeTaxonomySlug)
-            .filter((value) => styleValues.has(value)),
-        ])
-      ),
-    [legacySubCategories, styleValues, searchParams]
-  );
-  const rawMinPrice = parsePriceParam(searchParams.get(PARAMS.minPrice), minPrice, minPrice, maxPrice);
-  const rawMaxPrice = parsePriceParam(searchParams.get(PARAMS.maxPrice), maxPrice, minPrice, maxPrice);
-  const activeMinPrice = Math.min(rawMinPrice, rawMaxPrice);
-  const activeMaxPrice = Math.max(rawMinPrice, rawMaxPrice);
-  const [draftPrice, setDraftPrice] = useState<[number, number]>([activeMinPrice, activeMaxPrice]);
-  const displayPrice = draftPrice;
-  const hasFilters =
-    activeFamilies.length > 0 ||
-    activeHeights.length > 0 ||
-    activePurposes.length > 0 ||
-    activeStyles.length > 0 ||
-    legacySubCategories.length > 0 ||
-    activeMinPrice !== minPrice ||
-    activeMaxPrice !== maxPrice;
-
-  useEffect(() => {
-    const frame = requestAnimationFrame(() => {
-      setDraftPrice([activeMinPrice, activeMaxPrice]);
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [activeMinPrice, activeMaxPrice]);
-
-  const buildQueryString = useCallback(
-    (updater: (params: URLSearchParams) => void) => {
-      const params = new URLSearchParams(searchParams.toString());
-      updater(params);
-      const qs = params.toString();
-      return qs ? `${pathname}?${qs}` : pathname;
-    },
-    [pathname, searchParams]
-  );
-
-  const toggleMultiValueParam = useCallback(
-    (key: string, value: string) => {
-      const url = buildQueryString((params) => {
-        const currentValues = params.getAll(key);
-        const alreadySelected = currentValues.includes(value);
-
-        params.delete(PARAMS.subCategory);
-        params.delete(key);
-        if (alreadySelected) {
-          currentValues
-            .filter((item) => item !== value)
-            .forEach((item) => params.append(key, item));
-        } else {
-          [...currentValues, value].forEach((item) => params.append(key, item));
-        }
-      });
-
-      router.replace(url, { scroll: false });
-    },
-    [buildQueryString, router]
-  );
-
-  const clearAll = useCallback(() => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.delete(PARAMS.subCategory);
-    params.delete(PARAMS.family);
-    params.delete(PARAMS.height);
-    params.delete(PARAMS.purpose);
-    params.delete(PARAMS.style);
-    params.delete(PARAMS.minPrice);
-    params.delete(PARAMS.maxPrice);
-    const qs = params.toString();
-    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-  }, [pathname, router, searchParams]);
-
-  const sortedFamilies = useMemo(() => [...availableFamilies], [availableFamilies]);
-  const sortedHeights = useMemo(() => [...availableHeights], [availableHeights]);
-  const sortedPurposes = useMemo(() => [...availablePurposes], [availablePurposes]);
-  const sortedStyles = useMemo(() => [...availableStyles], [availableStyles]);
+  const {
+    groups,
+    hasFilters,
+    activeMinPrice,
+    activeMaxPrice,
+    toggleValue,
+    optionHref,
+    commitPrice,
+    clearAll,
+  } = useCollectionFilters({
+    availableFamilies,
+    availableHeights,
+    availablePurposes,
+    availableStyles,
+    minPrice,
+    maxPrice,
+  });
 
   return (
-    <aside className="w-full shrink-0 self-start border-b border-gray-200 pb-2 lg:sticky lg:top-24 lg:w-56 lg:border-b-0 lg:pb-0">
+    <aside className="hidden shrink-0 self-start lg:sticky lg:top-24 lg:block lg:w-60 lg:pt-2 lg:pr-4">
       {hasFilters && (
         <button
           type="button"
           onClick={clearAll}
-          className="mb-3 block text-left text-xs text-gray-400 underline underline-offset-2 transition-colors hover:text-black"
+          className="mb-2 block px-2 text-left text-xs text-gray-400 underline underline-offset-2 transition-colors hover:text-black"
         >
           Clear all filters
         </button>
       )}
 
-      {sortedFamilies.length > 0 && (
-        <FilterSection title="Category">
-          {sortedFamilies.map((family) => (
+      {groups.map((group) => (
+        <FilterAccordion key={group.key} title={group.title}>
+          {group.options.map((option) => (
             <CheckboxOption
-              key={family.id}
-              label={family.label}
-              checked={activeFamilies.includes(family.value)}
-              disabled={family.disabled}
-              onChange={() => toggleMultiValueParam(PARAMS.family, family.value)}
+              key={option.id}
+              label={option.label}
+              checked={group.activeValues.includes(option.value)}
+              disabled={option.disabled}
+              href={optionHref(group.key, option.value)}
+              onChange={() => toggleValue(group.key, option.value)}
             />
           ))}
-        </FilterSection>
-      )}
+        </FilterAccordion>
+      ))}
 
-      {sortedHeights.length > 0 && (
-        <FilterSection title="Height">
-          {sortedHeights.map((height) => (
-            <CheckboxOption
-              key={height.id}
-              label={height.label}
-              checked={activeHeights.includes(height.value)}
-              disabled={height.disabled}
-              onChange={() => toggleMultiValueParam(PARAMS.height, height.value)}
-            />
-          ))}
-        </FilterSection>
-      )}
-
-      {sortedStyles.length > 0 && (
-        <FilterSection title="Style">
-          {sortedStyles.map((style) => (
-            <CheckboxOption
-              key={style.id}
-              label={style.label}
-              checked={activeStyles.includes(style.value)}
-              disabled={style.disabled}
-              onChange={() => toggleMultiValueParam(PARAMS.style, style.value)}
-            />
-          ))}
-        </FilterSection>
-      )}
-
-      {sortedPurposes.length > 0 && (
-        <FilterSection title="Collection">
-          {sortedPurposes.map((purpose) => (
-            <CheckboxOption
-              key={purpose.id}
-              label={purpose.label}
-              checked={activePurposes.includes(purpose.value)}
-              disabled={purpose.disabled}
-              onChange={() => toggleMultiValueParam(PARAMS.purpose, purpose.value)}
-            />
-          ))}
-        </FilterSection>
-      )}
-
-      <FilterSection title="Price Range">
-        <div className="mb-3 flex items-center justify-between text-xs text-gray-500">
-          <span>USD {displayPrice[0].toLocaleString()}</span>
-          <span>USD {displayPrice[1].toLocaleString()}</span>
-        </div>
-
-        <Slider
-          min={minPrice}
-          max={maxPrice}
-          step={1}
-          value={displayPrice}
-          className="mb-2"
-          onValueChange={(val) => setDraftPrice([val[0], val[1]])}
-          onValueCommit={(val) => {
-            const newMin = Math.min(val[0], val[1]);
-            const newMax = Math.max(val[0], val[1]);
-            setDraftPrice([newMin, newMax]);
-
-            const url = buildQueryString((params) => {
-              params.delete(PARAMS.minPrice);
-              params.delete(PARAMS.maxPrice);
-              if (newMin > minPrice) params.set(PARAMS.minPrice, String(newMin));
-              if (newMax < maxPrice) params.set(PARAMS.maxPrice, String(newMax));
-            });
-
-            router.replace(url, { scroll: false });
-          }}
+      <FilterAccordion title="Price Range">
+        <PriceRangeControl
+          minPrice={minPrice}
+          maxPrice={maxPrice}
+          activeMinPrice={activeMinPrice}
+          activeMaxPrice={activeMaxPrice}
+          onCommit={commitPrice}
         />
-      </FilterSection>
-
-      <FilterSection title="Featured Products" defaultOpen={false}>
-        <p className="text-xs text-gray-400">No featured products</p>
-      </FilterSection>
+      </FilterAccordion>
     </aside>
   );
 }

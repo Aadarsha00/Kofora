@@ -1,25 +1,21 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { DM_Sans, Plus_Jakarta_Sans, Fraunces } from "next/font/google";
+import { Fredoka, Manrope } from "next/font/google";
 import "./globals.css";
 import Provider from "@/provider/provider";
 import StorefrontFrame from "@/component/Layout/StorefrontFrame";
 
-const dmSans = DM_Sans({
+const manrope = Manrope({
   variable: "--font-body",
   subsets: ["latin"],
+  display: "swap",
 });
 
-const plusJakartaSans = Plus_Jakarta_Sans({
+// Rounded display face for every heading level.
+const fredoka = Fredoka({
   variable: "--font-heading",
   subsets: ["latin"],
-});
-
-// Accent serif, used for the display headings on the marketing sections.
-const fraunces = Fraunces({
-  variable: "--font-accent",
-  subsets: ["latin"],
-  weight: ["400"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -35,7 +31,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${dmSans.variable} ${plusJakartaSans.variable} ${fraunces.variable} h-full antialiased`}
+      className={`${manrope.variable} ${fredoka.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <Provider>

@@ -5,11 +5,16 @@ import Link from "next/link";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ExternalLink } from "lucide-react";
 import { updateCategoryImage } from "@/api/category.api";
-import { deleteSiteImage, upsertSiteImage } from "@/api/siteImage.api";
+import {
+  clearSiteMedia,
+  deleteSiteImage,
+  SiteMediaKind,
+  upsertSiteImage,
+} from "@/api/siteImage.api";
 import { useCategories } from "@/hooks/useCategories";
 import { useSiteImages } from "@/hooks/useSiteImages";
+import { SiteImage } from "@/interface/SiteImage";
 import { getApiErrorMessage } from "@/lib/apiError";
-import { toSiteImageMap } from "@/lib/siteImages";
 import { flattenCategories, TaxonomyCategoryOption } from "@/lib/productTaxonomy";
 import { HOME_IMAGE_SECTIONS } from "@/data/HomeData";
 import { LOCAL_HERO_IMAGES } from "@/component/Gender/HeroGender";
@@ -27,8 +32,9 @@ export default function AdminImagesPage() {
       <div className="border-b border-gray-200 pb-6">
         <h1 className="text-2xl font-bold text-black">Images</h1>
         <p className="mt-1 text-sm text-gray-500">
-          Manage homepage tiles and the other pictures shown across the storefront,
-          organized by where they appear.
+          Manage homepage tiles and the other media shown across the storefront,
+          organized by where they appear. The main hero also takes a looping
+          video in place of its photo.
         </p>
         <div className="mt-4 flex gap-2">
           <TabButton active={tab === "homepage-tiles"} onClick={() => setTab("homepage-tiles")}>
@@ -87,20 +93,28 @@ function LandingImagesTab() {
   const [error, setError] = useState("");
   const [busyKey, setBusyKey] = useState<string | null>(null);
 
-  const imageMap = useMemo(() => toSiteImageMap(siteImages ?? []), [siteImages]);
+  // Keyed by slot so a card can show both halves (photo and video) of its row.
+  const slotByKey = useMemo(() => {
+    const map = new Map<string, SiteImage>();
+    for (const item of siteImages ?? []) map.set(item.key, item);
+    return map;
+  }, [siteImages]);
 
   const uploadMutation = useMutation({
-    mutationFn: ({ key, file }: { key: string; file: File }) => upsertSiteImage(key, file),
+    mutationFn: ({ key, file, kind }: { key: string; file: File; kind: SiteMediaKind }) =>
+      upsertSiteImage(key, file, kind),
     onMutate: ({ key }) => {
       setBusyKey(key);
       setMessage("");
       setError("");
     },
-    onSuccess: () => {
+    onSuccess: (_data, { kind }) => {
       queryClient.invalidateQueries({ queryKey: ["site-images"] });
-      setMessage("Image updated. The homepage may take a few minutes to refresh.");
+      setMessage(
+        `${kind === "video" ? "Video" : "Image"} updated. The homepage may take a few minutes to refresh.`
+      );
     },
-    onError: (err) => setError(getApiErrorMessage(err, "Failed to upload image.")),
+    onError: (err) => setError(getApiErrorMessage(err, "Failed to upload file.")),
     onSettled: () => setBusyKey(null),
   });
 
@@ -113,13 +127,32 @@ function LandingImagesTab() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["site-images"] });
-      setMessage("Image reset to the default.");
+      setMessage("Slot reset to the default image.");
     },
     onError: (err) => setError(getApiErrorMessage(err, "Failed to reset image.")),
     onSettled: () => setBusyKey(null),
   });
 
-  const busy = uploadMutation.isPending || resetMutation.isPending;
+  // Dropping the video keeps the photo, so it is a field clear rather than a
+  // row delete - unless the video is all the row has.
+  const removeVideoMutation = useMutation({
+    mutationFn: ({ key, hasImage }: { key: string; hasImage: boolean }) =>
+      hasImage ? clearSiteMedia(key, "video").then(() => undefined) : deleteSiteImage(key),
+    onMutate: ({ key }) => {
+      setBusyKey(key);
+      setMessage("");
+      setError("");
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["site-images"] });
+      setMessage("Video removed. The photo is live again.");
+    },
+    onError: (err) => setError(getApiErrorMessage(err, "Failed to remove video.")),
+    onSettled: () => setBusyKey(null),
+  });
+
+  const busy =
+    uploadMutation.isPending || resetMutation.isPending || removeVideoMutation.isPending;
 
   return (
     <div className="space-y-8">
@@ -155,18 +188,31 @@ function LandingImagesTab() {
               <p className="mt-0.5 text-sm text-gray-400">{section.description}</p>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {section.slots.map((slot) => (
-                <SiteImageCard
-                  key={slot.key}
-                  label={slot.label}
-                  image={imageMap[slot.key]}
-                  fallback={slot.fallback}
-                  uploading={busyKey === slot.key}
-                  disabled={busy}
-                  onSelect={(file) => uploadMutation.mutate({ key: slot.key, file })}
-                  onReset={() => resetMutation.mutate(slot.key)}
-                />
-              ))}
+              {section.slots.map((slot) => {
+                const row = slotByKey.get(slot.key);
+                return (
+                  <SiteImageCard
+                    key={slot.key}
+                    label={slot.label}
+                    image={row?.image}
+                    video={row?.video}
+                    allowsVideo={slot.allowsVideo}
+                    fallback={slot.fallback}
+                    uploading={busyKey === slot.key}
+                    disabled={busy}
+                    onSelect={(file, kind) =>
+                      uploadMutation.mutate({ key: slot.key, file, kind })
+                    }
+                    onReset={() => resetMutation.mutate(slot.key)}
+                    onRemoveVideo={() =>
+                      removeVideoMutation.mutate({
+                        key: slot.key,
+                        hasImage: Boolean(row?.image),
+                      })
+                    }
+                  />
+                );
+              })}
             </div>
           </section>
         ))

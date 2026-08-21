@@ -11,16 +11,14 @@ export const DEFAULT_HOMEPAGE_TILES = [
 
 // Fixed landing-page sections use stable image keys. Admin image uploads
 // override the bundled fallback paths through src/lib/siteImages.ts.
-// Two-panel hero from md up: the left panel is photography only, the right
-// panel is a flat colour block carrying the headline, body copy and shop
-// buttons. On mobile the two merge — the copy sits on top of the photo.
+// Full-bleed hero: one photo spanning the viewport width with the headline,
+// body copy and shop buttons centred over it.
 export const HERO_DATA = {
   title: "BETTER FEEL. EVERY STEP.",
   titleLines: ["BETTER FEEL.", "EVERY STEP."],
   subtitle: "Premium comfort, guaranteed for life.",
   image: "/home-hero-family.jpg",
   imageKey: "home-hero",
-  panelColor: "#253E38",
   ctas: [
     { label: "SHOP MEN",   href: "/collections/men"   },
     { label: "SHOP WOMEN", href: "/collections/women" },
@@ -68,6 +66,8 @@ export interface HomeImageSlot {
   key: string;
   label: string;
   fallback: string;
+  /** Slots whose section can play a background video instead of the photo. */
+  allowsVideo?: boolean;
 }
 
 export interface HomeImageSection {
@@ -79,8 +79,15 @@ export interface HomeImageSection {
 export const HOME_IMAGE_SECTIONS: HomeImageSection[] = [
   {
     title: "Main Hero Banner",
-    description: "The two-panel banner below the tiles. Only the left panel uses a photo — the right panel is a flat colour block with the headline and shop buttons. On mobile the copy sits on top of the photo, so pick one that stays readable under white text.",
-    slots: [{ key: HERO_DATA.imageKey, label: "Hero Photo (left panel)", fallback: HERO_DATA.image }],
+    description: "The full-width banner below the tiles, with the headline and shop buttons centred over it. It takes a photo or a looping video — upload a video and it plays instead, with the photo as its poster frame. The copy sits on top, so pick media that stays readable under white text.",
+    slots: [
+      {
+        key: HERO_DATA.imageKey,
+        label: "Hero Photo / Video (full width)",
+        fallback: HERO_DATA.image,
+        allowsVideo: true,
+      },
+    ],
   },
   {
     title: "Shop by Collection",

@@ -7,6 +7,7 @@ import Link from "next/link";
 import { Plus, X, ArrowLeft, ArrowRight } from "@phosphor-icons/react";
 import { ColorMixItem, Product, ProductVariant } from "@/interface/Product";
 import ProductFeatures from "./ProductFeature";
+import InfoModal from "./InfoModal";
 import { useProductById, useProductBySlug } from "@/hooks/useProducts";
 import { useAuth } from "@/context/AuthContext";
 import { useGuestCartStore } from "@/store/guestCartStore";
@@ -586,117 +587,119 @@ export default function ProductDetails({
               </p>
             )}
 
-            {/* Purchase reassurance and detail accordions */}
+            {/* Purchase reassurance and detail popups */}
             <p className="px-3 py-3 text-center text-[11px] font-semibold tracking-[0.02em] text-[#253E38]">
               {purchaseReassurance}
             </p>
 
             <div className="border-t border-gray-300">
-              <div className="border-b border-gray-300">
-                <button
-                  type="button"
-                  className="group flex w-full items-center justify-between gap-4 py-4 text-left text-[13px] font-semibold text-black transition-colors hover:text-[#253E38]"
-                  onClick={() => setShippingOpen(!shippingOpen)}
-                  aria-expanded={shippingOpen}
-                  aria-controls={shippingReturnsId}
-                >
-                  <span>Shipping &amp; Return Details</span>
-                  <Plus
-                    size={18}
-                    aria-hidden="true"
-                    className={`shrink-0 transition-transform duration-200 ${shippingOpen ? "rotate-45" : ""}`}
-                  />
-                </button>
-                {shippingOpen && (
-                  <div
-                    id={shippingReturnsId}
-                    className="grid gap-6 pb-6 text-[12px] leading-5 text-gray-600"
-                  >
-                    <section aria-labelledby={`${shippingReturnsId}-shipping`}>
-                      <h2
-                        id={`${shippingReturnsId}-shipping`}
-                        className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-black"
-                      >
-                        International shipping
-                      </h2>
-                      {internationalShippingLines.length > 0 ? (
-                        <ul className="grid gap-1">
-                          {internationalShippingLines.map((line, index) => (
-                            <li key={`${line}-${index}`}>{line}</li>
-                          ))}
-                        </ul>
-                      ) : (
-                        <p>
-                          International shipping details are not available for this item.
-                          Contact us before ordering to confirm delivery options for your destination.
-                        </p>
-                      )}
-                    </section>
-
-                    <section aria-labelledby={`${shippingReturnsId}-returns`}>
-                      <h2
-                        id={`${shippingReturnsId}-returns`}
-                        className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-black"
-                      >
-                        Returns
-                      </h2>
-                      <ul className="grid list-disc gap-1 pl-4">
-                        <li>Request a return within 30 days of delivery.</li>
-                        <li>Items must be unused, unworn, in original condition, and in original packaging.</li>
-                        <li>
-                          Customers pay return shipping. Kofora covers it only when the item is defective or incorrect.
-                        </li>
-                        <li>Original shipping charges are non-refundable unless the return is due to our error.</li>
-                      </ul>
-                      {hasText(product.international_shipping_details?.return_policy) && (
-                        <p className="mt-3 border-l-2 border-[#253E38] pl-3">
-                          <span className="font-semibold text-black">Additional return note: </span>
-                          {product.international_shipping_details.return_policy}
-                        </p>
-                      )}
-                      <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2">
-                        <Link
-                          href="/refund-policy"
-                          className="font-semibold text-black underline decoration-1 underline-offset-4 transition-colors hover:text-[#253E38]"
-                        >
-                          Read the full policy
-                        </Link>
-                        <Link
-                          href="/contact?topic=returns"
-                          className="font-semibold text-black underline decoration-1 underline-offset-4 transition-colors hover:text-[#253E38]"
-                        >
-                          Start a return request
-                        </Link>
-                      </div>
-                    </section>
-                  </div>
-                )}
-              </div>
+              <button
+                type="button"
+                className="flex w-full cursor-pointer items-center justify-between gap-4 border-b border-gray-300 py-4 text-left text-[13px] font-semibold text-black transition-colors hover:text-[#253E38]"
+                onClick={() => setShippingOpen(true)}
+                aria-haspopup="dialog"
+                aria-expanded={shippingOpen}
+              >
+                <span>Shipping &amp; Return Details</span>
+                <Plus size={18} aria-hidden="true" className="shrink-0" />
+              </button>
 
               {product.full_description && (
-                <div className="border-b border-gray-300">
-                  <button
-                    type="button"
-                    className="flex w-full items-center justify-between gap-4 py-4 text-left text-[13px] font-semibold text-black transition-colors hover:text-[#253E38]"
-                    onClick={() => setDetailsOpen(!detailsOpen)}
-                    aria-expanded={detailsOpen}
-                    aria-controls={productDetailsId}
-                  >
-                    <span>Product &amp; Material Details</span>
-                    <Plus
-                      size={18}
-                      aria-hidden="true"
-                      className={`shrink-0 transition-transform duration-200 ${detailsOpen ? "rotate-45" : ""}`}
-                    />
-                  </button>
-                  {detailsOpen && (
-                    <p id={productDetailsId} className="pb-6 text-[12px] leading-5 text-gray-600">
-                      {product.full_description}
-                    </p>
-                  )}
-                </div>
+                <button
+                  type="button"
+                  className="flex w-full cursor-pointer items-center justify-between gap-4 border-b border-gray-300 py-4 text-left text-[13px] font-semibold text-black transition-colors hover:text-[#253E38]"
+                  onClick={() => setDetailsOpen(true)}
+                  aria-haspopup="dialog"
+                  aria-expanded={detailsOpen}
+                >
+                  <span>Product &amp; Material Details</span>
+                  <Plus size={18} aria-hidden="true" className="shrink-0" />
+                </button>
               )}
             </div>
+
+            <InfoModal
+              open={shippingOpen}
+              title="Shipping & Return Details"
+              onClose={() => setShippingOpen(false)}
+            >
+              <div className="grid gap-7 text-[13px] leading-6 text-gray-600">
+                <section aria-labelledby={`${shippingReturnsId}-shipping`}>
+                  <h3
+                    id={`${shippingReturnsId}-shipping`}
+                    className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-black"
+                  >
+                    International shipping
+                  </h3>
+                  {internationalShippingLines.length > 0 ? (
+                    <ul className="grid gap-1">
+                      {internationalShippingLines.map((line, index) => (
+                        <li key={`${line}-${index}`}>{line}</li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>
+                      International shipping details are not available for this item.
+                      Contact us before ordering to confirm delivery options for your destination.
+                    </p>
+                  )}
+                </section>
+
+                <section aria-labelledby={`${shippingReturnsId}-returns`}>
+                  <h3
+                    id={`${shippingReturnsId}-returns`}
+                    className="mb-2.5 text-[11px] font-bold uppercase tracking-[0.12em] text-black"
+                  >
+                    Returns
+                  </h3>
+                  <ul className="grid list-disc gap-1 pl-4">
+                    <li>Request a return within 30 days of delivery.</li>
+                    <li>Items must be unused, unworn, in original condition, and in original packaging.</li>
+                    <li>
+                      Customers pay return shipping. Kofora covers it only when the item is defective or incorrect.
+                    </li>
+                    <li>Original shipping charges are non-refundable unless the return is due to our error.</li>
+                  </ul>
+                  {hasText(product.international_shipping_details?.return_policy) && (
+                    <p className="mt-3 border-l-2 border-[#253E38] pl-3">
+                      <span className="font-semibold text-black">Additional return note: </span>
+                      {product.international_shipping_details.return_policy}
+                    </p>
+                  )}
+                  <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2">
+                    <Link
+                      href="/refund-policy"
+                      onClick={() => setShippingOpen(false)}
+                      className="font-semibold text-black underline decoration-1 underline-offset-4 transition-colors hover:text-[#253E38]"
+                    >
+                      Read the full policy
+                    </Link>
+                    <Link
+                      href="/contact?topic=returns"
+                      onClick={() => setShippingOpen(false)}
+                      className="font-semibold text-black underline decoration-1 underline-offset-4 transition-colors hover:text-[#253E38]"
+                    >
+                      Start a return request
+                    </Link>
+                  </div>
+                </section>
+              </div>
+            </InfoModal>
+
+            {product.full_description && (
+              <InfoModal
+                open={detailsOpen}
+                title="Product & Material Details"
+                onClose={() => setDetailsOpen(false)}
+              >
+                <p
+                  id={productDetailsId}
+                  className="whitespace-pre-line text-[13px] leading-6 text-gray-600"
+                >
+                  {product.full_description}
+                </p>
+              </InfoModal>
+            )}
           </div>
         </div>
       </div>

@@ -5,6 +5,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { ColorMixItem, Product } from "@/interface/Product";
 import { needsSwatchBorder, swatchBackground, variantSwatchColors } from "@/lib/colorMix";
+import {
+  PRODUCT_CARD_MEDIA,
+  PRODUCT_CARD_MEDIA_STYLE,
+  PRODUCT_CARD_SHELL,
+  PRODUCT_CARD_SHELL_RESTING,
+  PRODUCT_CARD_TEXT,
+  PRODUCT_CARD_TITLE,
+} from "./productCardShell";
 import { useProductModal } from "@/store/productModalStore";
 
 type ProductImageLike = {
@@ -192,17 +200,17 @@ export default function ProductCard({
 
   return (
     <div
-      className={`flex min-w-0 flex-col gap-2 rounded-2xl transition-all duration-300 md:gap-2.5 ${
+      className={`${PRODUCT_CARD_SHELL} ${
         hovered
           ? "md:bg-white md:shadow-[0_4px_24px_rgba(0,0,0,0.10)] md:p-3 md:-m-3"
-          : "bg-transparent p-0 m-0"
+          : PRODUCT_CARD_SHELL_RESTING
       }`}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
     >
       <div
-        className="relative block w-full overflow-hidden rounded-lg bg-[#EFEFEF] md:rounded-xl"
-        style={{ aspectRatio: "1 / 1" }}
+        className={PRODUCT_CARD_MEDIA}
+        style={PRODUCT_CARD_MEDIA_STYLE}
       >
         {finalDisplayImages.length > 0 ? (
           <div
@@ -310,8 +318,8 @@ export default function ProductCard({
         </div>
       )}
 
-      <Link href={href} className="flex flex-col gap-0.5 px-0.5">
-        <p className="font-semibold text-[13px] leading-snug text-black md:text-[14px]">
+      <Link href={href} className={PRODUCT_CARD_TEXT}>
+        <p className={PRODUCT_CARD_TITLE}>
           {product.name}
         </p>
 

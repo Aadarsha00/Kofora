@@ -115,18 +115,20 @@ function MenuLink({
   onNavigate: () => void;
   mobile?: boolean;
 }) {
-  const className = `${mobile ? "text-sm" : "text-sm no-underline underline-offset-4"} ${
-    link.emphasize ? "font-semibold" : ""
-  }`;
-
+  // Weight is reserved for the section headings, so "Shop All ..." links are
+  // set apart with a standing underline instead of a heavier font.
   return (
     <Link
       href={link.href}
       onClick={onNavigate}
-      className={`${className} text-black ${
+      className={`text-sm text-black ${
         mobile
-          ? "transition-colors hover:text-[#253E38]"
-          : "relative w-fit after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-left after:scale-x-0 after:bg-[#253E38] after:transition-transform after:duration-300 hover:after:scale-x-100 focus-visible:outline-none focus-visible:after:scale-x-100"
+          ? `transition-colors hover:text-[#253E38] ${
+              link.emphasize ? "underline decoration-1 underline-offset-4" : ""
+            }`
+          : `relative w-fit no-underline underline-offset-4 after:absolute after:inset-x-0 after:-bottom-0.5 after:h-px after:origin-left after:bg-[#253E38] after:transition-transform after:duration-300 hover:after:scale-x-100 focus-visible:outline-none focus-visible:after:scale-x-100 ${
+              link.emphasize ? "after:scale-x-100" : "after:scale-x-0"
+            }`
       }`}
     >
       {link.label}
@@ -281,7 +283,7 @@ export function MegaMenuPanel({
         <div className="grid min-w-0 grid-cols-2 content-start gap-x-10 gap-y-8 xl:grid-cols-4">
           {sections.map((section) => (
             <div key={section.title} className="min-w-0">
-              <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.18em] text-[#60736E]">
+              <p className="mb-3.5 text-[12px] font-extrabold uppercase tracking-[0.14em] text-black">
                 {section.title}
               </p>
               <ul className="m-0 flex list-none flex-col gap-2.5 p-0">
@@ -318,7 +320,7 @@ export function MobileMegaMenuSections({
     <div className="flex flex-col gap-5 pb-5">
       {sections.map((section) => (
         <div key={section.title}>
-          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.16em] text-gray-400">
+          <p className="mb-2.5 text-[12px] font-extrabold uppercase tracking-[0.14em] text-black">
             {section.title}
           </p>
           <ul className="m-0 flex list-none flex-col gap-2.5 p-0">

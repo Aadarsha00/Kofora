@@ -2,7 +2,6 @@
 import { useParams, useSearchParams } from "next/navigation";
 import Image from "next/image";
 import { useState, useCallback, useEffect, useId, useMemo, useRef } from "react";
-import type { CSSProperties } from "react";
 import Link from "next/link";
 import { Plus, X, ArrowLeft, ArrowRight } from "@phosphor-icons/react";
 import { ColorMixItem, Product, ProductVariant } from "@/interface/Product";
@@ -216,13 +215,15 @@ export default function ProductDetails({
     };
   }, [isModal]);
 
-  // Mobile gallery is a native scroll-snap carousel; desktop is transform driven.
+  // Keep one native carousel at every breakpoint. This lets touchpad, mouse,
+  // and touch gestures all update the same position as the arrow controls.
   const scrollToImage = useCallback((index: number) => {
     const gallery = galleryRef.current;
     const slide = gallery?.firstElementChild as HTMLElement | null;
-    setImageIndex(index);
     if (!gallery || !slide) return;
-    gallery.scrollTo({ left: slide.clientWidth * index, behavior: "smooth" });
+    const nextIndex = Math.max(0, Math.min(index, gallery.children.length - 1));
+    setImageIndex(nextIndex);
+    gallery.scrollTo({ left: slide.clientWidth * nextIndex, behavior: "smooth" });
   }, []);
 
   const handleGalleryScroll = useCallback(() => {
@@ -242,7 +243,7 @@ export default function ProductDetails({
     (i: number) => {
       setActiveColor(i);
       setImageIndex(0);
-      galleryRef.current?.scrollTo({ left: 0 });
+      galleryRef.current?.scrollTo({ left: 0, behavior: "auto" });
       setActiveSize(colorGroups[i]?.sizes[0] ?? null);
     },
     [colorGroups]
@@ -360,8 +361,8 @@ export default function ProductDetails({
   const total = images.length;
   const currentImageIndex = total > 0 ? Math.min(imageIndex, total - 1) : 0;
 
-  const prev = () => setImageIndex(currentImageIndex === 0 ? total - 1 : currentImageIndex - 1);
-  const next = () => setImageIndex(currentImageIndex === total - 1 ? 0 : currentImageIndex + 1);
+  const prev = () => scrollToImage(currentImageIndex === 0 ? total - 1 : currentImageIndex - 1);
+  const next = () => scrollToImage(currentImageIndex === total - 1 ? 0 : currentImageIndex + 1);
 
   const content = (
     <div
@@ -391,7 +392,7 @@ export default function ProductDetails({
 
       <div className="w-full px-4 py-6 lg:py-10 lg:pl-16 lg:pr-0">
         <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-12">
-          {/* ── PHOTO (right) — big image 1, image 2 peeks past the edge, ← N/total → pill at the bottom in the gap ── */}
+          {/* ── PHOTO (right) ── */}
           <div className={`order-1 w-full lg:order-2 lg:flex-1 lg:min-w-0 ${isModal ? "" : "lg:translate-x-8"}`}>
             <div className="relative w-full overflow-hidden [--slide:85%] lg:[--slide:min(72%,calc(100vh-10rem))]">
               {total > 0 ? (
@@ -399,8 +400,7 @@ export default function ProductDetails({
                   <div
                     ref={galleryRef}
                     onScroll={handleGalleryScroll}
-                    className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain [scrollbar-width:none] lg:snap-none lg:overflow-x-hidden lg:transition-transform lg:duration-300 lg:ease-out lg:[transform:translateX(calc(-1*var(--offset)*var(--slide)))] [&::-webkit-scrollbar]:hidden"
-                    style={{ "--offset": currentImageIndex } as CSSProperties}
+                    className="flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain scroll-smooth [scrollbar-width:none] touch-pan-x [&::-webkit-scrollbar]:hidden"
                   >
                     {images.map((img, i) => (
                       <div key={i} style={{ width: "var(--slide)" }} className="shrink-0 snap-start pr-1.5">
@@ -416,17 +416,19 @@ export default function ProductDetails({
                         </div>
                       </div>
                     ))}
+                    {/* Gives the final slide enough scroll range to sit fully at the start. */}
+                    <div aria-hidden="true" style={{ width: "calc(100% - var(--slide))" }} className="shrink-0" />
                   </div>
 
                   {total > 1 && (
                     <div className="absolute bottom-0 left-[var(--slide)] hidden -translate-x-1/2 items-center gap-3 rounded-full bg-white/90 px-3 py-1.5 shadow-sm backdrop-blur-sm lg:flex">
-                      <button onClick={prev} aria-label="Previous image" className="text-black transition hover:opacity-60">
+                      <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); prev(); }} aria-label="Previous image" className="text-black transition hover:opacity-60">
                         <ArrowLeft size={16} />
                       </button>
                       <span className="text-sm font-medium tabular-nums text-black">
                         {currentImageIndex + 1} / {total}
                       </span>
-                      <button onClick={next} aria-label="Next image" className="text-black transition hover:opacity-60">
+                      <button type="button" onClick={(event) => { event.preventDefault(); event.stopPropagation(); next(); }} aria-label="Next image" className="text-black transition hover:opacity-60">
                         <ArrowRight size={16} />
                       </button>
                     </div>

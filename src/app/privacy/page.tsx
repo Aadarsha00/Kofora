@@ -545,9 +545,11 @@ export default function PrivacyPage() {
             <address className="not-italic">
               Planet Living Ventures LLC
               <br />
-              1724 Buckingham Ct
+              1200 Riverplace Blvd
               <br />
-              Tallahassee, FL 32308
+              Suite 105
+              <br />
+              Jacksonville, FL 32207
               <br />
               United States
               <br />

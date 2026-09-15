@@ -46,6 +46,7 @@ jobs:
             git pull origin main
             npm ci
             npm run build
+            sudo chown -R www-data:www-data "$APP_DIR/.next"
 
             sudo cp deployment/systemd/kofora-frontend.service /etc/systemd/system/
             sudo systemctl daemon-reload

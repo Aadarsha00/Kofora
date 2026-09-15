@@ -49,6 +49,10 @@ jobs:
             sudo chown -R www-data:www-data "$APP_DIR/.next"
 
             sudo cp deployment/systemd/kofora-frontend.service /etc/systemd/system/
+            sudo cp deployment/nginx/kofora_frontend.conf /etc/nginx/sites-available/kofora_frontend
+            sudo ln -sfn /etc/nginx/sites-available/kofora_frontend /etc/nginx/sites-enabled/kofora_frontend
             sudo systemctl daemon-reload
             sudo systemctl enable kofora-frontend
             sudo systemctl restart kofora-frontend
+            sudo nginx -t
+            sudo systemctl reload nginx

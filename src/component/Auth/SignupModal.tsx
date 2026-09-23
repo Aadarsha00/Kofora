@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Eye, EyeSlash, X } from "@phosphor-icons/react";
 import { SignupInput, signupSchema } from "@/schema/auth.schema";
 import { AuthResponse } from "@/interface/auth";
-import { useGoogleLogin, useSignup, useVerifyOTP } from "@/hooks/useAuthMutations";
+import { useGoogleLogin, useRequestOTP, useSignup, useVerifyOTP } from "@/hooks/useAuthMutations";
 import { useAuth } from "@/context/AuthContext";
 import GoogleSignInButton from "@/component/Auth/GoogleSignInButton";
 
@@ -33,10 +33,12 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<Partial<Record<keyof SignupInput, string>>>({});
   const [apiError, setApiError] = useState<string | null>(null);
+  const [otpMessage, setOtpMessage] = useState<string | null>(null);
   const [showOTPStep, setShowOTPStep] = useState(false);
   const [otp, setOtp] = useState("");
 
   const signupMutation = useSignup();
+  const requestOTPMutation = useRequestOTP();
   const verifyOTPMutation = useVerifyOTP();
   const googleLoginMutation = useGoogleLogin();
   const { setAuthUser } = useAuth();
@@ -51,6 +53,7 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
     setShowOTPStep(false);
     setErrors({});
     setApiError(null);
+    setOtpMessage(null);
   }, []);
 
   const handleSubmit = () => {
@@ -82,10 +85,25 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
       },
       {
         onSuccess: () => {
+          setOtpMessage(null);
           setShowOTPStep(true);
         },
         onError: (error: unknown) => {
           setApiError(getAuthErrorMessage(error, "Signup failed. Please try again."));
+        },
+      }
+    );
+  };
+
+  const handleResendOTP = () => {
+    setApiError(null);
+    setOtpMessage(null);
+    requestOTPMutation.mutate(
+      { email },
+      {
+        onSuccess: () => setOtpMessage("A new verification code has been sent."),
+        onError: (error: unknown) => {
+          setApiError(getAuthErrorMessage(error, "Could not resend the verification code."));
         },
       }
     );
@@ -276,12 +294,25 @@ export default function SignupModal({ isOpen, onClose, onSwitchToLogin }: Signup
               <p className="text-red-500 text-sm p-2 bg-red-50 rounded mb-3">{apiError}</p>
             )}
 
+            {otpMessage && (
+              <p className="mb-3 rounded bg-green-50 p-2 text-sm text-green-700">{otpMessage}</p>
+            )}
+
             <button
               onClick={handleVerifyOTP}
               disabled={otp.length !== 6 || verifyOTPMutation.isPending}
               className="w-full h-11 bg-[#253E38] text-white text-sm font-semibold tracking-wide hover:opacity-90 transition-opacity cursor-pointer rounded-sm disabled:opacity-60"
             >
               {verifyOTPMutation.isPending ? "Verifying..." : "Verify Email"}
+            </button>
+
+            <button
+              type="button"
+              onClick={handleResendOTP}
+              disabled={requestOTPMutation.isPending}
+              className="mt-3 w-full text-sm font-semibold text-black underline transition-opacity hover:opacity-60 disabled:opacity-50"
+            >
+              {requestOTPMutation.isPending ? "Sending..." : "Resend code"}
             </button>
           </>
         )}

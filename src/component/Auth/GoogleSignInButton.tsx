@@ -50,9 +50,16 @@ export default function GoogleSignInButton({
   onError,
 }: GoogleSignInButtonProps) {
   const buttonRef = useRef<HTMLDivElement>(null);
+  const onCredentialRef = useRef(onCredential);
+  const onErrorRef = useRef(onError);
   const [setupError, setSetupError] = useState<string | null>(null);
   const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
   const missingConfigError = clientId ? null : "Google sign-in is not configured.";
+
+  useEffect(() => {
+    onCredentialRef.current = onCredential;
+    onErrorRef.current = onError;
+  }, [onCredential, onError]);
 
   useEffect(() => {
     let cancelled = false;
@@ -71,10 +78,10 @@ export default function GoogleSignInButton({
           client_id: clientId,
           callback: (response) => {
             if (response.credential) {
-              onCredential(response.credential);
+              onCredentialRef.current(response.credential);
               return;
             }
-            onError?.("Google did not return a sign-in credential.");
+            onErrorRef.current?.("Google did not return a sign-in credential.");
           },
         });
         window.google.accounts.id.renderButton(buttonRef.current, {
@@ -90,13 +97,13 @@ export default function GoogleSignInButton({
       .catch((error: Error) => {
         if (cancelled) return;
         setSetupError(error.message);
-        onError?.(error.message);
+        onErrorRef.current?.(error.message);
       });
 
     return () => {
       cancelled = true;
     };
-  }, [clientId, onCredential, onError, text]);
+  }, [clientId, text]);
 
   const visibleError = missingConfigError ?? setupError;
 

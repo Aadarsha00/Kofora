@@ -112,6 +112,11 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch {
         clearAuthTokens();
+        // An invalid token must not make public endpoints (catalog, categories,
+        // etc.) unavailable. Retry once anonymously; protected endpoints will
+        // still return 401 because _retry prevents another refresh attempt.
+        delete originalRequest.headers.Authorization;
+        return api(originalRequest);
       }
     }
 

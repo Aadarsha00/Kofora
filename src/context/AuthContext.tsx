@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import Cookies from "js-cookie";
 import { User } from "@/interface/auth";
-import api from "@/axios/api.axios";
+import api, { AUTH_SESSION_EXPIRED_EVENT } from "@/axios/api.axios";
 
 interface AuthContextType {
   isAuthenticated: boolean;
@@ -72,6 +72,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .finally(() => setIsLoading(false));
     });
     return () => cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    const handleSessionExpired = () => {
+      window.localStorage.removeItem(AUTH_USER_STORAGE_KEY);
+      setUser(null);
+      setIsAuthenticated(false);
+      setIsLoading(false);
+    };
+
+    window.addEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
+    return () => window.removeEventListener(AUTH_SESSION_EXPIRED_EVENT, handleSessionExpired);
   }, []);
 
   const logout = useCallback(() => {

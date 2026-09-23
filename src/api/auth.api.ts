@@ -130,12 +130,16 @@ export const refreshToken = async (): Promise<any> => {
     
     const response = await api.post("/auth/token/refresh/", { refresh: refreshToken });
     const access = response.data?.access ?? response.data?.data?.access;
+    const rotatedRefresh = response.data?.refresh ?? response.data?.data?.refresh;
     if (!access) {
       throw new Error("Refresh response did not include an access token");
     }
     
     // Update access token
     Cookies.set("access_token", access, { expires: 7 });
+    if (rotatedRefresh) {
+      Cookies.set("refresh_token", rotatedRefresh, { expires: 7 });
+    }
     api.defaults.headers.common["Authorization"] = `Bearer ${access}`;
     
     return response.data;

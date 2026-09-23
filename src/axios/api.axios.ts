@@ -12,10 +12,14 @@ type RetriableRequestConfig = InternalAxiosRequestConfig & {
 
 type RefreshResponse = {
   access?: string;
+  refresh?: string;
   data?: {
     access?: string;
+    refresh?: string;
   };
 };
+
+export const AUTH_SESSION_EXPIRED_EVENT = "auth:session-expired";
 
 // Server-side rendering runs inside the Docker network and can't necessarily
 // reach the public NEXT_PUBLIC_API_BASE_URL (e.g. it may be firewalled or
@@ -52,11 +56,15 @@ const refreshAccessToken = async (): Promise<string> => {
       )
       .then((response) => {
         const access = response.data.access ?? response.data.data?.access;
+        const rotatedRefresh = response.data.refresh ?? response.data.data?.refresh;
         if (!access) {
           throw new Error("Refresh response did not include an access token");
         }
 
         Cookies.set("access_token", access, { expires: 7 });
+        if (rotatedRefresh) {
+          Cookies.set("refresh_token", rotatedRefresh, { expires: 7 });
+        }
         api.defaults.headers.common["Authorization"] = `Bearer ${access}`;
         return access;
       })
@@ -72,6 +80,9 @@ const clearAuthTokens = () => {
   Cookies.remove("access_token");
   Cookies.remove("refresh_token");
   delete api.defaults.headers.common["Authorization"];
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(AUTH_SESSION_EXPIRED_EVENT));
+  }
 };
 
 api.interceptors.request.use(

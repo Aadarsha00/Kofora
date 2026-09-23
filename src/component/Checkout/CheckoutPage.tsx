@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { isAxiosError } from "axios";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -170,7 +171,6 @@ export default function CheckoutPage() {
     // Gate the auth-dependent branch behind mount to keep the first client render
     // identical to SSR output; AuthContext resolves isLoading before hydration
     // finishes for this Suspense-wrapped page, which otherwise mismatches.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
   }, []);
 
@@ -235,6 +235,7 @@ export default function CheckoutPage() {
     queryFn: () => getShippingRates(activeAddressId as number),
     enabled: isAuthenticated && !!activeAddressId,
   });
+  const ratesUnauthorized = isAxiosError(ratesQuery.error) && ratesQuery.error.response?.status === 401;
   const rateByMethodId = new Map((ratesQuery.data ?? []).map((quote) => [quote.method_id, quote]));
   // Once an address's rates have actually loaded, only show methods UPS priced
   // for that destination - e.g. a US-only method has no business appearing as
@@ -777,7 +778,9 @@ export default function CheckoutPage() {
                 </div>
                 {ratesQuery.isError && (
                   <p className="mt-3 text-xs text-red-600">
-                    Live shipping rates are temporarily unavailable. Please try again in a moment.
+                    {ratesUnauthorized
+                      ? "Your session has expired. Please log in again to continue checkout."
+                      : "Live shipping rates are temporarily unavailable. Please try again in a moment."}
                   </p>
                 )}
               </section>
